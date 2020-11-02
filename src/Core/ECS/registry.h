@@ -1,7 +1,7 @@
 #ifndef CORE_ECS_REGISTRY
 #define CORE_ECS_REGISTRY
 
-#include <Core/ECS/util.h>
+#include "util.h"
 #include <vector>
 #include <list>
 

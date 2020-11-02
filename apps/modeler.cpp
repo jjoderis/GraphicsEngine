@@ -5,8 +5,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <Core/Vector/vector.h>
-#include <Core/Matrix/matrix.h>
+#include <Math/math.h>
 
 #include <iostream>
 
@@ -70,21 +69,19 @@ int main()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    //io.ConfigViewportsNoAutoMerge = true;
+    //io.ConfigViewportsNoTaskBarIcon = true;
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    //OpenGl example code
-    // float vertices[] =
-    // {
-    //     -0.5f, -0.5f, 0.0f, 1.0f, 0.5f, 0.2f, 1.0f,
-    //     0.5f, -0.5f, 0.0f, 1.0f, 0.5f, 0.2f, 1.0f,
-    //     0.0f,  0.5f, 0.0f, 1.0f, 0.5f, 0.2f, 1.0f
-    // };
-
-    Core::Vector<float, 3> vertices[]{
+    Engine::Math::Vector3 vertices[]{
         {-0.5f, -0.5f, 0.0f},
         {0.5f, -0.5f, 0.0f},
         {0.0f,  0.5f, 0.0f}
@@ -105,13 +102,13 @@ int main()
 
     const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
-    "uniform vec3 translation;\n"
+    "uniform mat4 translation;\n"
     "uniform vec4 color;\n"
     "out vec4 fColor;\n"
     "void main()\n"
     "{\n"
     "   fColor = color;"
-    "   gl_Position = vec4(aPos+translation, 1.0);\n"
+    "   gl_Position = translation * vec4(aPos, 1.0);\n"
     "}\0";
 
     unsigned int vertexShader;
@@ -172,8 +169,10 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    Core::Vector<float, 3> translation{ 0.0, 0.0, 0.0 };
-    Core::Vector<float, 4> color{ 1.0f, 0.5f, 0.2f, 1.0f };
+    Engine::Math::Vector3 translation{ 0.0, 0.0, 0.0 };
+    Engine::Math::Vector4 color{ 1.0f, 0.5f, 0.2f, 1.0f };
+
+    bool showDemoWindow{true};
 
     while (!glfwWindowShouldClose(window))
     {
@@ -182,6 +181,10 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        ImGui::ShowDemoWindow(&showDemoWindow);
 
         {
             ImGui::Begin("Hello World!");
@@ -200,7 +203,7 @@ int main()
 
         glUseProgram(shaderProgram);
 
-        glUniform3fv(transLoc, 1, translation.raw());
+        glUniformMatrix4fv(transLoc, 1, GL_FALSE, Engine::Math::getTranslation(translation).raw());
         glUniform4fv(colorLoc, 1, color.raw());
 
         glBindVertexArray(VAO);
@@ -212,6 +215,16 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+
+
         glfwSwapBuffers(window);
     }
 
