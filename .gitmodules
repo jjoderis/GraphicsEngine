@@ -1,0 +1,6 @@
+[submodule "external/imgui"]
+	path = external/imgui
+	url = ../imgui
+[submodule "external/mathlib"]
+	path = external/mathlib
+	url = ../mathlib
