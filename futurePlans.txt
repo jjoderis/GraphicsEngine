@@ -1,0 +1,9 @@
+Possible ompimizations for the future: ☻
+
+    ►   (!) don't recompute groups all the time (!)
+    
+    ►   modeler: only rerender on events (glfwWaitEvents)
+    ►   only update changed values in buffer
+    ►   componentTable: getOwners return reference
+
+    ►   ComponentTables are raw void pointers -> most likely memory leak since we never free the memory

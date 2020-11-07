@@ -13,6 +13,15 @@ set(IMGUI_SOURCES
 
 set(IMGUI_INCLUDE_DIR "${EXTERN_DIR}/imgui")
 
-add_executable(Modeler modeler.cpp ${IMGUI_SOURCES})
-target_include_directories(Modeler PRIVATE ${IMGUI_INCLUDE_DIR} ${SRC_DIR})
-target_link_libraries(Modeler glfw glad engineCore)
+add_library(modelerLib 
+    modeler/glfw/window.cpp
+    modeler/glad/opengl.cpp
+    modeler/imgui/imgui.cpp
+)
+
+target_link_libraries(modelerLib glfw glad engineCore)
+target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR})
+
+add_executable(Modeler modeler/modeler.cpp ${IMGUI_SOURCES})
+target_include_directories(Modeler PRIVATE ${SRC_DIR})
+target_link_libraries(Modeler modelerLib)

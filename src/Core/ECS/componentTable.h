@@ -13,6 +13,7 @@ namespace Core {
         std::vector<std::unique_ptr<ComponentType>> m_components{};
         std::vector<std::list<unsigned int>> m_owners{};
 
+        //  Add component only if it does not exit: return index
         int ensureComponent(ComponentType* component)
         {
             for (unsigned int i = 0; i < m_components.size(); ++i)
@@ -28,14 +29,23 @@ namespace Core {
             return m_components.size() - 1;
         }
 
+        void ensureEntity(unsigned int entityId)
+        {
+            if (entityId >= m_sparse.size())
+            {
+                m_sparse.resize(entityId+1, -1);
+            }
+        }
+
     public: 
-        ComponentTable(int numEntities)
+        ComponentTable(unsigned int numEntities)
         {
             m_sparse = std::vector<int>(numEntities, -1);
         }
 
         ComponentType* addComponent(unsigned int entityId, ComponentType* component)
         {
+            ensureEntity(entityId);
             int componentIndex = ensureComponent(component);
 
             // entity has a component
@@ -61,8 +71,8 @@ namespace Core {
         }
 
         void removeComponent(unsigned int entityId)
-        {
-            
+        { 
+            ensureEntity(entityId);
             // entity has no component of this type
             if (m_sparse[entityId] == -1)
             {
@@ -78,7 +88,8 @@ namespace Core {
             // remove component if there are no owners
             if (allOwners.size() == 0)
             {
-                m_components.erase(m_components.begin() + componentIndex);
+                auto it = m_components.begin();
+                m_components.erase(it + componentIndex);
                 m_owners.erase(m_owners.begin() + componentIndex);
             }
 
@@ -87,11 +98,14 @@ namespace Core {
 
         bool hasComponent(unsigned int entityId)
         {
+            ensureEntity(entityId);
             return m_sparse[entityId] != -1;
         }
 
         ComponentType* getComponent(unsigned int entityId)
         {
+            ensureEntity(entityId);
+
             if (m_sparse[entityId] == -1)
             {
                 return nullptr;
@@ -109,8 +123,6 @@ namespace Core {
         {
             return m_owners;
         }
-
-        // TODO: add entry for entity in sparse
     };
 }
 

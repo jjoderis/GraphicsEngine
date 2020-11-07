@@ -25,6 +25,8 @@ namespace Engine {
         float radToDeg(float rad);
 
         Matrix4 getTranslation(Vector3 &location);
+        // gets a matrix describing a rotation around the x axis
+        // Matrix4 getRotationAroundX(float angle);
     }
 }
 

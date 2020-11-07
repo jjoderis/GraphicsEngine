@@ -1,15 +1,18 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(GraphicsEngine VERSION 0.1 DESCRIPTION "A graphics engine for practice purposes" LANGUAGES C CXX)
+project(GraphicsEngine VERSION 0.1 DESCRIPTION "A graphics engine for practice purposes" LANGUAGES CXX)
 
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 set(EXTERN_DIR "${PROJECT_SOURCE_DIR}/external")
 set(APP_DIR "${PROJECT_SOURCE_DIR}/apps")
 set(BUILD_DIR "${PROJECT_SOURCE_DIR}/build")
 
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+
 # TESTING
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
-    include(CTest)
     add_subdirectory(tests)
 endif()
 
