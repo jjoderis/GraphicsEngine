@@ -9,6 +9,8 @@
 #include <Core/Components/Tag/tag.h>
 #include <Core/Components/Material/material.h>
 #include <Core/Components/Geometry/geometry.h>
+#include <Core/Components/Transform/transform.h>
+#include <OpenGL/Components/Render/render.h>
 
 #include "../glfw/window.h"
 
@@ -16,7 +18,7 @@ class UI{
 public:
     static void init();
     static void preRender();
-    static void render(Core::Registry &registry);
+    static void render(Engine::Registry &registry);
     static void postRender();
 };
 

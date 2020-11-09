@@ -6,12 +6,12 @@
 
 TEST(ECS_REGISTRY_TEST, instanciable)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 }
 
 TEST(ECS_REGISTRY_TEST, addEntity)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     unsigned int entityId1 = a.addEntity();
     unsigned int entityId2 = a.addEntity();
@@ -22,7 +22,7 @@ TEST(ECS_REGISTRY_TEST, addEntity)
 
 TEST(ECS_REGISTRY_TEST, removeEntity)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     a.addEntity();
     a.addEntity();
@@ -37,7 +37,7 @@ TEST(ECS_REGISTRY_TEST, removeEntity)
 TEST(ECS_REGISTRY_TEST, addComponent)
 {
     // you are able to add any type of Component to an entity
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entity = a.addEntity();
 
@@ -63,7 +63,7 @@ TEST(ECS_REGISTRY_TEST, addComponent)
 
 TEST(ECS_REGISTRY_TEST, hasComponent)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entityA = a.addEntity();
     int entityB = a.addEntity();
@@ -81,7 +81,7 @@ TEST(ECS_REGISTRY_TEST, hasComponent)
 
 TEST(ECS_REGISTRY_TEST, getComponent)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entity = a.addEntity();
 
@@ -100,7 +100,7 @@ TEST(ECS_REGISTRY_TEST, getComponent)
 
 TEST(ECS_REGISTRY_TEST, removeComponent) 
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entity = a.addEntity();
 
@@ -115,7 +115,7 @@ TEST(ECS_REGISTRY_TEST, removeComponent)
 
 TEST(ECS_REGISTRY_TEST, getComponents)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entity = a.addEntity();
     int entityB = a.addEntity();
@@ -126,7 +126,7 @@ TEST(ECS_REGISTRY_TEST, getComponents)
     a.addComponent(entity, stringCompA);
     a.addComponent(entityB, stringCompB);
 
-    std::vector<std::unique_ptr<std::string>>& stringComps = a.getComponents<std::string>();
+    const std::vector<std::unique_ptr<std::string>>& stringComps = a.getComponents<std::string>();
 
     EXPECT_EQ(stringComps.size(), 2);
     EXPECT_EQ(stringComps[0].get(), stringCompA);
@@ -135,7 +135,7 @@ TEST(ECS_REGISTRY_TEST, getComponents)
 
 TEST(ECS_REGISTRY_TEST, getGroupedComponents)
 {
-    Core::Registry a{};
+    Engine::Registry a{};
 
     int entityA = a.addEntity();
     int entityB = a.addEntity();

@@ -9,10 +9,12 @@ namespace Engine {
     class GeometryComponent {
     private:
         std::vector<Math::Vector3> m_vertices;
+        std::vector<unsigned int> m_faces;
     public:
         GeometryComponent();
-        GeometryComponent(std::initializer_list<Math::Vector3> vertices);
+        GeometryComponent(std::initializer_list<Math::Vector3> vertices, std::initializer_list<unsigned int> faces);
         std::vector<Math::Vector3>& getVertices();
+        std::vector<unsigned int>& getFaces();
     };
 }
 

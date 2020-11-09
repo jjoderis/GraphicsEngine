@@ -19,7 +19,7 @@ add_library(modelerLib
     modeler/imgui/imgui.cpp
 )
 
-target_link_libraries(modelerLib glfw glad engineCore)
+target_link_libraries(modelerLib glfw glad engineCore engineOpenGL)
 target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR})
 
 add_executable(Modeler modeler/modeler.cpp ${IMGUI_SOURCES})

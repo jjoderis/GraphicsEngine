@@ -21,12 +21,25 @@ namespace Engine {
         using Matrix3 = MathLib::Matrix<float, 3, 3>;
         using Matrix4 = MathLib::Matrix<float, 4, 4>;
 
-        float degToRad(float deg);
-        float radToDeg(float rad);
+        template <typename T>
+        T degToRad(T deg)
+        {
+            return (deg * M_PI) / 180;
+        }
+
+        template <typename T>
+        T radToDeg(T rad)
+        {
+            return (rad * 180) / M_PI;
+        }
 
         Matrix4 getTranslation(Vector3 &location);
-        // gets a matrix describing a rotation around the x axis
-        // Matrix4 getRotationAroundX(float angle);
+        Matrix4 getScaling(Vector3 &scaling);
+
+        Matrix4 getRotateX(float radX);
+        Matrix4 getRotateY(float radY);
+        Matrix4 getRotateZ(float radZ);
+        Matrix4 getRotation(Vector3 &rotation);
     }
 }
 

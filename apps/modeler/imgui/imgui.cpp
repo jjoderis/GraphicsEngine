@@ -32,7 +32,7 @@ void UI::preRender() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-void drawEntityNode(unsigned int entity, Core::Registry &registry) {
+void drawEntityNode(unsigned int entity, Engine::Registry &registry) {
     const char* name = registry.getComponent<Engine::TagComponent>(entity)->get().c_str();
     bool isOpen = ImGui::TreeNode(name);
 
@@ -48,15 +48,21 @@ void drawEntityNode(unsigned int entity, Core::Registry &registry) {
     
 }
 
-void drawMaterialNode(Core::Registry &registry) {
+void drawMaterialNode(Engine::Registry &registry) {
     Engine::MaterialComponent* material = registry.getComponent<Engine::MaterialComponent>(selectedEntity);
 
     if (ImGui::CollapsingHeader("Material")) {
         ImGui::ColorEdit4("Color", material->getColor().raw());
+
+        if (ImGui::IsItemEdited()) {
+            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                renderComponent->updateColor(selectedEntity, material->getColor());
+            }
+        }
     }
 }
 
-void drawGeometryNode(Core::Registry &registry) {
+void drawGeometryNode(Engine::Registry &registry) {
     Engine::GeometryComponent* geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity);
 
     if (ImGui::CollapsingHeader("Geometry")) {
@@ -64,15 +70,67 @@ void drawGeometryNode(Core::Registry &registry) {
             std::vector<Engine::Math::Vector3> &vertices{geometry->getVertices()};
             for(int i = 0; i < vertices.size(); ++i) {
                 std::string str = std::to_string(i);
+                str.insert(0, "Vertex ");
                 ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
+                // TODO: use isItemEdited as way to update potential RenderComponent when values here are changed 
+                if (ImGui::IsItemEdited()) {
+                    if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                        renderComponent->updateVertex(selectedEntity, i, vertices[i]);
+                    }
+                }
             }
 
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Faces")) {
+            std::vector<unsigned int>& faces{ geometry->getFaces() };
+            for(int i = 0; i < faces.size(); i += 3) {
+                std::string str = std::to_string(i / 3);
+                str.insert(0, "Face ");
+                ImGui::InputScalarN(str.c_str(), ImGuiDataType_U32, faces.data() + i, 3);
+                if (ImGui::IsItemEdited()) {
+                    if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                        renderComponent->updateFace(selectedEntity, i / 3, faces.data() + i);
+                    }
+                }
+            }
             ImGui::TreePop();
         }
     }
 }
 
-void UI::render(Core::Registry &registry) {
+void drawTransformNode(Engine::Registry &registry) {
+    Engine::TransformComponent* transform = registry.getComponent<Engine::TransformComponent>(selectedEntity);
+
+    if (ImGui::CollapsingHeader("Transform")) {
+        ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
+        if(ImGui::IsItemEdited()) {
+            transform->update();
+            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
+            }
+        }
+        ImGui::DragFloat3("Scaling", transform->getScaling().raw(), 0.1);
+        if(ImGui::IsItemEdited()) {
+            transform->update();
+            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
+            }
+        }
+        
+        auto rotDeg = Engine::Math::radToDeg(transform->getRotation());
+        ImGui::DragFloat3("Rotation", rotDeg.raw(), 1.0);
+        if(ImGui::IsItemEdited()) {
+            transform->setRotation(Engine::Math::degToRad(rotDeg));
+            transform->update();
+            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
+            }
+        }
+    }
+}
+
+void UI::render(Engine::Registry &registry) {
     if (showDemoWindow) {
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
@@ -104,6 +162,9 @@ void UI::render(Core::Registry &registry) {
             }
             if (registry.hasComponent<Engine::GeometryComponent>(selectedEntity)) {
                 drawGeometryNode(registry);
+            }
+            if (registry.hasComponent<Engine::TransformComponent>(selectedEntity)) {
+                drawTransformNode(registry);
             }
         }
 

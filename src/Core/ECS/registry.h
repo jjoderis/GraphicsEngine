@@ -6,7 +6,7 @@
 #include <vector>
 #include <list>
 
-namespace Core{
+namespace Engine{
     class Registry {
     private:
         std::vector<void*> m_componentLinks{};
@@ -17,9 +17,8 @@ namespace Core{
         unsigned int m_maxEntities = 0;
 
         template <typename ComponentType>
-        std::vector<std::list<unsigned int>>& getOwners()
-        {
-           if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
+        ComponentTable<ComponentType>* ensureComponentTable() {
+            if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
             {
                 m_componentLinks.resize(type_index<ComponentType>::value()+1, nullptr);
             } 
@@ -29,10 +28,7 @@ namespace Core{
                 m_componentLinks[type_index<ComponentType>::value()] = new ComponentTable<ComponentType>{m_maxEntities};
             }
 
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
-
-            return compTable->getOwners();
+            return (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
         }
     public:
         Registry() {}
@@ -72,18 +68,7 @@ namespace Core{
                 throw "EntityId out of bounds\n";
             }
 
-            if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
-            {
-                m_componentLinks.resize(type_index<ComponentType>::value()+1, nullptr);
-            } 
-
-            if (m_componentLinks[type_index<ComponentType>::value()] == nullptr)
-            {
-                m_componentLinks[type_index<ComponentType>::value()] = new ComponentTable<ComponentType>{m_maxEntities};
-            }
-
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
             return compTable->addComponent(entityId, component);
         }
@@ -96,13 +81,7 @@ namespace Core{
                 throw "EntityId out of bounds\n";
             }
 
-            if (type_index<ComponentType>::value() >= m_componentLinks.size() || m_componentLinks[type_index<ComponentType>::value()] == nullptr) 
-            {
-                return false; 
-            }
-
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
             return compTable->hasComponent(entityId);
         }
@@ -115,13 +94,7 @@ namespace Core{
                 throw "EntityId out of bounds\n";
             }
 
-            if (type_index<ComponentType>::value() >= m_componentLinks.size() || m_componentLinks[type_index<ComponentType>::value()] == nullptr)
-            {
-                return nullptr; 
-            }
-
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
             return compTable->getComponent(entityId);
         }
@@ -134,41 +107,65 @@ namespace Core{
                 throw "EntityId out of bounds\n";
             }
             
-            if (type_index<ComponentType>::value() >= m_componentLinks.size() || m_componentLinks[type_index<ComponentType>::value()] == nullptr) 
-            {
-                return; 
-            }
-
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
             compTable->removeComponent(entityId);
         }
 
         template <typename ComponentType>
-        std::vector<std::unique_ptr<ComponentType>>& getComponents()
+        const std::vector<std::unique_ptr<ComponentType>>& getComponents()
         {
-           if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
-            {
-                m_componentLinks.resize(type_index<ComponentType>::value()+1, nullptr);
-            } 
-
-            if (m_componentLinks[type_index<ComponentType>::value()] == nullptr)
-            {
-                m_componentLinks[type_index<ComponentType>::value()] = new ComponentTable<ComponentType>{m_maxEntities};
-            }
-
-            ComponentTable<ComponentType>* compTable =
-                (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
             return compTable->getComponents();
+        }
+
+        // returns all owners for all components of a specific type
+        template <typename ComponentType>
+        const std::vector<std::list<unsigned int>>& getOwners()
+        {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            return compTable->getOwners();
+        }
+
+        template <typename ComponentType>
+        const std::list<unsigned int>& getOwners(ComponentType* component)
+        {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            return m_componentLinks[type_index<ComponentType>::value()].getOwners(component);
+        }
+
+        template <typename ComponentType>
+        std::shared_ptr<std::function<void(unsigned int, ComponentType*)>> onAdded(std::function<void(unsigned int, ComponentType*)> && cb)
+        {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            return compTable->onAdded(std::move(cb));
+        }
+
+        template <typename ComponentType>
+        std::shared_ptr<std::function<void(unsigned int, ComponentType*)>> onRemove(std::function<void(unsigned int, ComponentType*)> && cb)
+        {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            return compTable->onRemove(cb);
+        }
+
+        template <typename ComponentType>
+        std::shared_ptr<std::function<void(unsigned int, ComponentType*)>> onUpdate(unsigned int entityId, std::function<void(unsigned int, ComponentType*)> && cb)
+        {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            return compTable->onUpdate(entityId, cb);
         }
 
         template <typename TypeA, typename TypeB>
         std::vector<std::pair<TypeA*, std::vector<TypeB*>>> getGroupedComponents()
         {
-            std::vector<std::unique_ptr<TypeA>>& aComponents = getComponents<TypeA>();
-            std::vector<std::list<unsigned int>>& aOwners = getOwners<TypeA>();
+            const std::vector<std::unique_ptr<TypeA>>& aComponents = getComponents<TypeA>();
+            const std::vector<std::list<unsigned int>>& aOwners = getOwners<TypeA>();
 
             std::vector<std::pair<TypeA*, std::vector<TypeB*>>> out{};
             out.reserve(aComponents.size());

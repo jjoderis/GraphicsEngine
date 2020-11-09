@@ -1,7 +1,7 @@
 #include <Core/ECS/util.h>
 #include <gtest/gtest.h>
 
-using namespace Core;
+using namespace Engine;
 
 TEST(ECS_UTIL_TEST, creates_indices_for_Components)
 {
