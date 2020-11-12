@@ -1,75 +1,39 @@
 #include "render.h"
 
+struct Material {
+    float color[4];
+};
+
+float modelMatrix[16]{
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+};
+
+
 Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry) : m_registry{registry} {
     glGenVertexArrays(1, &m_VAO);
+    glBindVertexArray(m_VAO);
     glGenBuffers(1, &m_VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
     glGenBuffers(1, &m_EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
 
-    const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "uniform vec4 color;\n"
-    "uniform mat4 model;\n"
-    "out vec4 fColor;\n"
-    "void main()\n"
-    "{\n"
-    "   fColor = color;"
-    "   gl_Position = model * vec4(aPos, 1.0);\n"
-    "}\0";
+    // setup material buffer and insert base material
+    glGenBuffers(1, &m_materialUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_materialUBO);
+    Material baseMat{1.0, 0.01, 0.6, 1.0};
+    unsigned int blockIndex = m_program.getBlockIndex("Materials");
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Material), &baseMat, GL_DYNAMIC_DRAW);
+    glUniformBlockBinding(m_program.getProgram(), blockIndex, 0);
 
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION:FAILED\n" << infoLog << '\n';
-        exit(EXIT_FAILURE);
-    }
-
-    const char* fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "in vec4 fColor;\n"
-    "void main()\n"
-    "{\n"
-    "    FragColor = fColor;\n"
-    "}\n";
-
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION:FAILED\n" << infoLog << '\n';
-        exit(EXIT_FAILURE);
-    }
-
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::PROGRAM::LINKING::FAILED\n" << infoLog << '\n';
-        exit(EXIT_FAILURE);
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    m_program = shaderProgram;
+    // setup transform buffer and insert base model transform
+    glGenBuffers(1, &m_transformUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_transformUBO);
+    blockIndex = m_program.getBlockIndex("Transforms");
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(modelMatrix), modelMatrix, GL_DYNAMIC_DRAW);
+    glUniformBlockBinding(m_program.getProgram(), blockIndex, 1);
 }
 
 Engine::OpenGLRenderComponent::~OpenGLRenderComponent() {
@@ -78,9 +42,14 @@ Engine::OpenGLRenderComponent::~OpenGLRenderComponent() {
     glDeleteBuffers(1, &m_EBO);
 }
 
-void Engine::OpenGLRenderComponent::extendGeometryBuffers(unsigned int entityId, Engine::GeometryComponent* geometry) {
+size_t stride{5 * sizeof(float)};
+size_t vertexSize{3 * sizeof(float)};
+size_t transIndexOffset{4 * sizeof(float)};
+
+void Engine::OpenGLRenderComponent::addToGeometryBuffers(unsigned int entityId, Engine::GeometryComponent* geometry) {
+    meta_data &entityData = m_entityData.at(entityId);
     std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
-    size_t geometryVertexSize = 3 * sizeof(float) * vertices.size();
+    size_t geometryVertexSize = 5 * sizeof(float) * vertices.size();
 
     // create new buffer with space for the current geometries + space for the new geometry
     unsigned int newVBO{0};
@@ -89,30 +58,28 @@ void Engine::OpenGLRenderComponent::extendGeometryBuffers(unsigned int entityId,
     glBindBuffer(GL_ARRAY_BUFFER, newVBO);
     glBufferData(GL_ARRAY_BUFFER, m_vboSize + geometryVertexSize, NULL, GL_DYNAMIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)vertexSize);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, stride, (void*)(transIndexOffset));
+    glEnableVertexAttribArray(2);
 
     // copy the data from the old buffer into the new one
     if (m_vboSize) {
-        glCopyNamedBufferSubData(m_VBO, newVBO, 0, 0, m_vboSize);
-    }
-
-    //  TODO: compare with moving of data as a whole block e.g. geometry.getVerticesAsBlock()
-    // copy the data of the new geometry into the new buffer
-    for (int i = 0; i < vertices.size(); ++i) 
-    {   
-        glBufferSubData(GL_ARRAY_BUFFER, m_vboSize + 3 * sizeof(float) * i, 3 * sizeof(float), vertices[i].raw());
+        glBindBuffer(GL_COPY_READ_BUFFER, m_VBO);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ARRAY_BUFFER, 0, 0, m_vboSize);
     }
 
     // delete the old buffer and update the meta data
     glDeleteBuffers(1, &m_VBO);
     m_VBO = newVBO;
 
-    meta_data &entityData = m_entityData.at(entityId);
-    std::get<0>(entityData) = m_vboSize;
-    std::get<1>(entityData) = m_vboSize + geometryVertexSize;
+    std::get<0>(entityData) = m_numPoints;
+    std::get<1>(entityData) = m_numPoints + vertices.size();
 
     m_vboSize += geometryVertexSize;
+    m_numPoints += vertices.size();
 
     std::vector<unsigned int>& faces{geometry->getFaces()};
     size_t geometryFaceSize{sizeof(unsigned int) * faces.size()};
@@ -126,11 +93,9 @@ void Engine::OpenGLRenderComponent::extendGeometryBuffers(unsigned int entityId,
 
     // copy the data from the old buffer into the new one
     if (m_eboSize) {
-        glCopyNamedBufferSubData(m_EBO, newEBO, 0, 0, m_eboSize);
+        glBindBuffer(GL_COPY_READ_BUFFER, m_EBO);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 0, m_eboSize);
     }
-
-    // copy the data of the new geometry into the new buffer
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_eboSize, faces.size() * sizeof(unsigned int), faces.data());
 
     glDeleteBuffers(1, &m_EBO);
 
@@ -139,17 +104,190 @@ void Engine::OpenGLRenderComponent::extendGeometryBuffers(unsigned int entityId,
     std::get<2>(entityData) = m_eboSize;
     std::get<3>(entityData) = m_eboSize + geometryFaceSize;
 
+    updateGeometryData(entityId, geometry);
+    updateMaterialIndices(entityId, geometry);
+    updateTransformIndices(entityId, geometry);
+
+    size_t numVertices{vertices.size()};
+    size_t numFaces{faces.size()};
+    // subscribe for updates on the geometry to update the buffer data accordingly
+    std::get<6>(entityData) = m_registry.onUpdate<GeometryComponent>(entityId, [=](unsigned int entity, GeometryComponent* geometry) {
+        if (numVertices == geometry->getVertices().size() || numFaces == geometry->getFaces().size()) {
+            this->updateGeometryData(entityId, geometry);
+        }
+        // TODO: remove and readd if number of vertices or faces changes
+    });
+
     m_eboSize += geometryFaceSize;
-    m_numPrimitives = m_eboSize / sizeof(unsigned int);
+    m_numFaces += faces.size();
+    calculatePrimtiveCount();
 }
 
-void Engine::OpenGLRenderComponent::extendMaterialBuffers(unsigned int entityId, MaterialComponent* material) {
-    m_color = material->getColor();
+void Engine::OpenGLRenderComponent::calculatePrimtiveCount() {
+    if (m_primitiveType == GL_POINTS) {
+        m_numPrimitives = m_numPoints;
+    } else {
+        m_numPrimitives = m_numFaces;
+    }
 }
 
-void Engine::OpenGLRenderComponent::extendTransformBuffers(unsigned int entityId, TransformComponent* transform) {
-    auto temp = transform->getModelMatrix();
-    m_modelMatrix = temp;
+void Engine::OpenGLRenderComponent::updateGeometryData(unsigned int entityId, GeometryComponent* geometry) {
+    std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
+    size_t vertexOffset{std::get<0>(m_entityData.at(entityId))};
+    size_t objectStart{vertexOffset * stride};
+
+    for (int i = 0; i < vertices.size(); ++i) 
+    {  
+        glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i, vertexSize, vertices[i].raw());
+    }
+
+    // we need to make a copy because we have to offset all face indices by the amount of vertices comping before this object
+    std::vector<unsigned int> faces{geometry->getFaces()};
+    for(unsigned int& face: faces) {
+        face += vertexOffset;
+    }
+    size_t objectFaceStart{std::get<2>(m_entityData.at(entityId))};
+    // copy the data of the new geometry into the new buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, objectFaceStart, faces.size() * sizeof(unsigned int), faces.data());
+}
+
+void Engine::OpenGLRenderComponent::updateMaterialIndices(unsigned int entityId, GeometryComponent* geometry) {
+    std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
+    float matIndex{std::get<4>(m_entityData.at(entityId))};
+    size_t objectStart{std::get<0>(m_entityData.at(entityId)) * stride};
+
+    for (int i = 0; i < vertices.size(); ++i) 
+    {  
+        glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i + vertexSize, sizeof(float), &matIndex);
+    }    
+}
+
+void Engine::OpenGLRenderComponent::updateTransformIndices(unsigned int entityId, GeometryComponent* geometry) {
+    std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
+    float transIndex{std::get<5>(m_entityData.at(entityId))};
+    size_t objectStart{std::get<0>(m_entityData.at(entityId)) * stride};
+
+    for (int i = 0; i < vertices.size(); ++i) 
+    {  
+        glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i + transIndexOffset, sizeof(float), &transIndex);
+    }
+}
+
+void Engine::OpenGLRenderComponent::updatePrimitiveType(int primitiveType) {
+    m_primitiveType = primitiveType;
+    calculatePrimtiveCount();
+}
+
+void Engine::OpenGLRenderComponent::updateMaterialBuffers(unsigned int entityId, MaterialComponent* material) {
+    const std::list<unsigned int>& owners = m_registry.getOwners<MaterialComponent>(material);
+    float& matIndex = std::get<4>(m_entityData.at(entityId));
+
+    for (unsigned int owner: owners) {
+        if (m_entityData.find(owner) != m_entityData.end()) {
+            float ownerMatIndex = std::get<4>(m_entityData.at(owner));
+            if (ownerMatIndex) {
+                // material already known; just copy index
+                matIndex = ownerMatIndex;
+
+                // handle removal of the material from the given entity (use standard material)
+                std::get<9>(m_entityData.at(entityId)) = m_registry.onRemove<MaterialComponent>([=](unsigned int entity, MaterialComponent* material) {
+                    if (entity == entityId) {
+                        std::get<4>(this->m_entityData.at(entity)) = 0;
+                        this->updateMaterialIndices(entity, m_registry.getComponent<Engine::GeometryComponent>(entity));
+                    }
+                });
+                return;
+            }
+        }
+    }
+
+    // material not already known
+    matIndex = m_numMaterials;
+
+    unsigned int newMaterialUBO{};
+    glGenBuffers(1, &newMaterialUBO);
+    glBindBuffer(GL_COPY_READ_BUFFER, m_materialUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, newMaterialUBO);
+    glBufferData(GL_UNIFORM_BUFFER, (m_numMaterials + 1) * sizeof(Material), NULL, GL_DYNAMIC_DRAW);
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, m_numMaterials * sizeof(Material));
+    
+    glUniformBlockBinding(m_program.getProgram(), m_program.getBlockIndex("Materials"), 0);
+
+    glDeleteBuffers(1, &m_materialUBO);
+    m_materialUBO = newMaterialUBO;
+
+    updateMaterialData(entityId, material);
+
+    // subscribe to material updates
+    std::get<8>(m_entityData.at(entityId)) = m_registry.onUpdate<MaterialComponent>(entityId, [this, entityId] (unsigned int entity, MaterialComponent* material) {
+        this->updateMaterialData(entityId, material);
+    });
+
+    // TODO: handle removal from "owner entity" check if some other entity still references it and make it the owner else remmove from buffer and update all indices accordingly
+
+    ++m_numMaterials;
+}
+
+void Engine::OpenGLRenderComponent::updateMaterialData(unsigned int entity, MaterialComponent* material) {
+    glBindBuffer(GL_UNIFORM_BUFFER, this->m_materialUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material), sizeof(Material), material->getColor().raw());
+}
+
+void Engine::OpenGLRenderComponent::updateTransformBuffers(unsigned int entityId, TransformComponent* transform) {
+    const std::list<unsigned int>& owners = m_registry.getOwners<TransformComponent>(transform);
+    float& transIndex = std::get<5>(m_entityData.at(entityId));
+
+    for (unsigned int owner: owners) {
+        if (m_entityData.find(owner) != m_entityData.end()) {
+            float ownerTransIndex = std::get<5>(m_entityData.at(owner));
+            if (ownerTransIndex) {
+                // transform already known; just copy index
+                transIndex = ownerTransIndex;
+
+                // handle removal of the transform from the given entity (use standard transform)
+                std::get<11>(m_entityData.at(entityId)) = m_registry.onRemove<TransformComponent>([=](unsigned int entity, TransformComponent* transform) {
+                    if (entity == entityId) {
+                        std::get<5>(this->m_entityData.at(entity)) = 0;
+                        this->updateTransformIndices(entity, m_registry.getComponent<Engine::GeometryComponent>(entity));
+                    }
+                });
+                return;
+            }
+        }
+    }
+
+    // transform not already known
+    transIndex = m_numTransforms;
+
+    unsigned int newTransformUBO{};
+    glGenBuffers(1, &newTransformUBO);
+    glBindBuffer(GL_COPY_READ_BUFFER, m_transformUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, newTransformUBO);
+    glBufferData(GL_UNIFORM_BUFFER, (m_numTransforms + 1) * sizeof(modelMatrix), NULL, GL_DYNAMIC_DRAW);
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, m_numTransforms * sizeof(modelMatrix));
+    
+    glUniformBlockBinding(m_program.getProgram(), m_program.getBlockIndex("Transforms"), 1);
+
+    glDeleteBuffers(1, &m_transformUBO);
+    m_transformUBO = newTransformUBO;
+
+    updateTransformData(entityId, transform);
+
+    // subscribe to transform updates
+    std::get<10>(m_entityData.at(entityId)) = m_registry.onUpdate<TransformComponent>(entityId, [this, entityId] (unsigned int entity, TransformComponent* transform) {
+        this->updateTransformData(entityId, transform);
+    });
+
+    ++m_numTransforms;
+}
+
+void Engine::OpenGLRenderComponent::updateTransformData(unsigned int entity, TransformComponent* transform) {
+    glBindBuffer(GL_UNIFORM_BUFFER, this->m_transformUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(modelMatrix), sizeof(modelMatrix), transform->getModelMatrix().raw());
 }
 
 void Engine::OpenGLRenderComponent::associate(unsigned int entity) {
@@ -159,28 +297,42 @@ void Engine::OpenGLRenderComponent::associate(unsigned int entity) {
     }
 
     m_entityData.emplace(entity, std::tuple<
-        unsigned int, // start in VBO
-        unsigned int, // end in VBO
-        unsigned int, // start in EBO
-        unsigned int, // eng in EBO
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is added to the entity
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is removed from the entity
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>> // callback for when a GeometryComponent is updated to the entity
-    >{
-        -1, -1, -1, -1,
+            unsigned int, // start vert count
+            unsigned int, // end vert count
+            unsigned int, // start in EBO
+            unsigned int, // end in EBO
+            float, // material index
+            float, // transform index
+            std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>  // callback for when a MaterialComponent is removed from the entity
+        >{
+        -1, -1, -1, -1, 0.0, 0.0,
         std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>{},
         std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>{} 
+        std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>{},
+        std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>{},
+        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{},
+        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{} 
     });
+
+    MaterialComponent* material = m_registry.getComponent<Engine::MaterialComponent>(entity);
+    if (material) {
+        updateMaterialBuffers(entity, material);
+    }
+
+    TransformComponent* transform = m_registry.getComponent<TransformComponent>(entity);
+    if (transform) {
+        updateTransformBuffers(entity, transform);
+    }
 
     // entity has a geometry component => setup buffers to use geometry data of that component
     GeometryComponent* geometry = m_registry.getComponent<Engine::GeometryComponent>(entity);
-    MaterialComponent* material = m_registry.getComponent<Engine::MaterialComponent>(entity);
-    TransformComponent* transform = m_registry.getComponent<TransformComponent>(entity);
     if (geometry && material) {
-        extendMaterialBuffers(entity, material);
-        extendTransformBuffers(entity, transform);
-        extendGeometryBuffers(entity, geometry);
+        addToGeometryBuffers(entity, geometry);
         // TODO: set callback on component to update the buffers when the geometry is updated
     } else {
         // TODO: setup callback that calls the insert function as soon as a geometry becomes available
@@ -194,39 +346,16 @@ void Engine::OpenGLRenderComponent::dissassociate(unsigned int entity) {
     // TODO: remove components from buffers
 }
 
-void Engine::OpenGLRenderComponent::updateVertex(unsigned int entity, int vertexIndex, Math::Vector3& newVertexData) {
-    if (m_entityData.find(entity) != m_entityData.end()) {
-        meta_data &entityData = m_entityData.at(entity);
-
-        glBindVertexArray(m_VAO);
-        glBufferSubData(GL_ARRAY_BUFFER, std::get<0>(entityData) + 3 * sizeof(float) * vertexIndex, 3 * sizeof(float), newVertexData.raw());
-    }
-}
-
-void Engine::OpenGLRenderComponent::updateFace(unsigned int entity, int faceIndex, const unsigned int* newFace) {
-    if (m_entityData.find(entity) != m_entityData.end()) {
-        meta_data &entityData = m_entityData.at(entity);
-
-        glBindVertexArray(m_VAO);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, std::get<2>(entityData) + 3 * sizeof(unsigned int) * faceIndex, 3 * sizeof(unsigned int), newFace);
-    }
-}
-
-void Engine::OpenGLRenderComponent::updateColor(unsigned int entity, Math::Vector4& newColor) {
-    m_color = newColor;
-}
-
-void Engine::OpenGLRenderComponent::updateTransform(unsigned int entity, Math::Matrix4& modelMatrix) {
-    m_modelMatrix = modelMatrix;
-}
-
 void Engine::OpenGLRenderComponent::render() {
-    glUseProgram(m_program);
+    m_program.use();
 
     glBindVertexArray(m_VAO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_materialUBO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, m_transformUBO);
 
-    glUniform4fv(glGetUniformLocation(m_program, "color"), 1, m_color.raw());
-    glUniformMatrix4fv(glGetUniformLocation(m_program, "model"), 1, GL_FALSE, m_modelMatrix.raw());
-
-    glDrawElements(GL_TRIANGLES, m_numPrimitives, GL_UNSIGNED_INT, 0);
+    if (m_numPrimitives == GL_POINTS) {
+        glDrawArrays(GL_POINTS, 0, m_numPrimitives);
+    } else {
+        glDrawElements(m_primitiveType, m_numPrimitives, GL_UNSIGNED_INT, 0);
+    }
 }

@@ -16,16 +16,22 @@ namespace Engine{
         std::list<unsigned int> m_usedEntityIds{};
         unsigned int m_maxEntities = 0;
 
+        std::vector<std::function<void(unsigned int)>> m_componentLinkCleaners{};
+
         template <typename ComponentType>
         ComponentTable<ComponentType>* ensureComponentTable() {
             if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
             {
                 m_componentLinks.resize(type_index<ComponentType>::value()+1, nullptr);
+                m_componentLinkCleaners.resize(type_index<ComponentType>::value()+1, [](unsigned int foo) {});
             } 
 
             if (m_componentLinks[type_index<ComponentType>::value()] == nullptr)
             {
                 m_componentLinks[type_index<ComponentType>::value()] = new ComponentTable<ComponentType>{m_maxEntities};
+                m_componentLinkCleaners[type_index<ComponentType>::value()] = [&](unsigned int entity) {
+                    this->removeComponent<ComponentType>(entity);
+                };
             }
 
             return (ComponentTable<ComponentType>*)m_componentLinks[type_index<ComponentType>::value()];
@@ -56,6 +62,9 @@ namespace Engine{
 
         void removeEntity(unsigned int index)
         {
+            for (std::function<void(unsigned int)>& cleaner: m_componentLinkCleaners) {
+                cleaner(index);
+            }
             m_freeEntityIds.remove(index);
             m_usedEntityIds.remove(index);
             m_freeEntityIds.push_front(index);
@@ -134,7 +143,7 @@ namespace Engine{
         {
             ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
-            return m_componentLinks[type_index<ComponentType>::value()].getOwners(component);
+            return compTable->getOwners(component);
         }
 
         template <typename ComponentType>
@@ -150,7 +159,7 @@ namespace Engine{
         {
             ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
-            return compTable->onRemove(cb);
+            return compTable->onRemove(std::move(cb));
         }
 
         template <typename ComponentType>
@@ -158,7 +167,14 @@ namespace Engine{
         {
             ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
 
-            return compTable->onUpdate(entityId, cb);
+            return compTable->onUpdate(entityId, std::move(cb));
+        }
+
+        template <typename ComponentType>
+        void updated(unsigned int entity) {
+            ComponentTable<ComponentType>* compTable = ensureComponentTable<ComponentType>();
+
+            compTable->updated(entity);
         }
 
         template <typename TypeA, typename TypeB>

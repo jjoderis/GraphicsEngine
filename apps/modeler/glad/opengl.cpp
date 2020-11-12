@@ -43,6 +43,8 @@ void OpenGL::init() {
     glViewport(0, 0, width, height);
 
     glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
+
+    glPointSize(2.0);
 }
 
 void OpenGL::preRender() {

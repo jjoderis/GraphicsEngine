@@ -121,6 +121,14 @@ namespace Engine {
             if (allOwners.size() == 0)
             {
                 auto it = m_components.begin();
+                // decrease the pointed to index of all entities which point to a following component
+                auto ownerIt = m_owners.begin();
+                for (auto following{ownerIt + componentIndex + 1}; following != m_owners.end(); ++following) {
+                    for(unsigned int owner: *following) {
+                        m_sparse[owner]--;
+                    }
+                }
+
                 m_components.erase(it + componentIndex);
                 m_owners.erase(m_owners.begin() + componentIndex);
                 m_updateCallbacks.erase(m_updateCallbacks.begin() + componentIndex);

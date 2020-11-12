@@ -32,51 +32,113 @@ void UI::preRender() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-void drawEntityNode(unsigned int entity, Engine::Registry &registry) {
-    const char* name = registry.getComponent<Engine::TagComponent>(entity)->get().c_str();
-    bool isOpen = ImGui::TreeNode(name);
+template <typename ComponentType>
+void createImGuiComponentDragSource(ComponentType* component) {
+    ImGui::Button("Start Drag");
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    {
+        char dragDropType[256]{};
+        sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
+    
+        // Set payload to carry the index of our item (could be anything)
+        ImGui::SetDragDropPayload(dragDropType, &component, sizeof(ComponentType*));
 
+        ImGui::Text("Assign Component");
+        ImGui::EndDragDropSource();
+    }
+}
+
+template <typename ComponentType>
+void createImGuiComponentDropTarget(unsigned int entity, Engine::Registry& registry) {
+    if (ImGui::BeginDragDropTarget())
+    {
+        char dragDropType[256]{};
+        sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
+
+
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragDropType))
+        {
+            IM_ASSERT(payload->DataSize == sizeof(ComponentType*));
+            ComponentType* payload_n = *(ComponentType**)payload->Data;
+            registry.addComponent<ComponentType>(entity, payload_n);
+        }
+        ImGui::EndDragDropTarget();
+    }
+}
+
+bool drawEntityNode(unsigned int entity, Engine::Registry &registry) {
+    bool removed{ false };
+    const std::string& name = registry.getComponent<Engine::TagComponent>(entity)->get();
+    bool isOpen = ImGui::TreeNode(name.c_str());
     if (ImGui::IsItemClicked(2)) {
         selectedEntity = entity;
+    }
+    createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
+    createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
+    createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
+    createImGuiComponentDropTarget<Engine::OpenGLRenderComponent>(entity, registry);
+
+    ImGui::SameLine();
+    std::string id{"x##"};
+    id.append(std::to_string(entity));
+    if (ImGui::Button(id.c_str())) {
+        removed = true;
     }
     
     if (isOpen)
     {
-        ImGui::Text("Itsa me Mario");
         ImGui::TreePop();
     }
-    
+
+    return removed;  
+}
+
+template <typename ComponentType>
+void createComponentNodeOutline(const char* componentName, Engine::Registry& registry, ComponentType* component, std::function<void(void)> drawFunc) {
+    // TODO: find out why right click is not always doing something, drag and drop seems to be buggy too (maybe somthing with the ids)
+    if (ImGui::CollapsingHeader(componentName)) {
+        char buff[64]{'\0'};
+        sprintf(buff, "%s_remove_popup", componentName);
+        if(ImGui::IsItemClicked(1)) {
+            ImGui::OpenPopup(buff);
+        }
+        if (ImGui::BeginPopup(buff))
+        {
+            sprintf(buff, "Remove %s", componentName);
+            if (ImGui::Button(buff)) {
+                registry.removeComponent<ComponentType>(selectedEntity);
+            }
+            ImGui::EndPopup();
+        }
+        createImGuiComponentDragSource<ComponentType>(component);
+        drawFunc();
+    }
 }
 
 void drawMaterialNode(Engine::Registry &registry) {
     Engine::MaterialComponent* material = registry.getComponent<Engine::MaterialComponent>(selectedEntity);
 
-    if (ImGui::CollapsingHeader("Material")) {
+    createComponentNodeOutline<Engine::MaterialComponent>("Material", registry, material, [&]() {
         ImGui::ColorEdit4("Color", material->getColor().raw());
 
         if (ImGui::IsItemEdited()) {
-            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                renderComponent->updateColor(selectedEntity, material->getColor());
-            }
+            registry.updated<Engine::MaterialComponent>(selectedEntity);
         }
-    }
+    });
 }
 
 void drawGeometryNode(Engine::Registry &registry) {
     Engine::GeometryComponent* geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity);
 
-    if (ImGui::CollapsingHeader("Geometry")) {
+    createComponentNodeOutline<Engine::GeometryComponent>("Geometry", registry, geometry, [&]() {
         if (ImGui::TreeNode("Vertices")) { 
             std::vector<Engine::Math::Vector3> &vertices{geometry->getVertices()};
             for(int i = 0; i < vertices.size(); ++i) {
                 std::string str = std::to_string(i);
                 str.insert(0, "Vertex ");
                 ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
-                // TODO: use isItemEdited as way to update potential RenderComponent when values here are changed 
                 if (ImGui::IsItemEdited()) {
-                    if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                        renderComponent->updateVertex(selectedEntity, i, vertices[i]);
-                    }
+                    registry.updated<Engine::GeometryComponent>(selectedEntity);
                 }
             }
 
@@ -89,33 +151,27 @@ void drawGeometryNode(Engine::Registry &registry) {
                 str.insert(0, "Face ");
                 ImGui::InputScalarN(str.c_str(), ImGuiDataType_U32, faces.data() + i, 3);
                 if (ImGui::IsItemEdited()) {
-                    if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                        renderComponent->updateFace(selectedEntity, i / 3, faces.data() + i);
-                    }
+                    registry.updated<Engine::GeometryComponent>(selectedEntity);
                 }
             }
             ImGui::TreePop();
         }
-    }
+    });
 }
 
 void drawTransformNode(Engine::Registry &registry) {
     Engine::TransformComponent* transform = registry.getComponent<Engine::TransformComponent>(selectedEntity);
 
-    if (ImGui::CollapsingHeader("Transform")) {
+    createComponentNodeOutline<Engine::TransformComponent>("Transform", registry, transform, [&]() {
         ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
         if(ImGui::IsItemEdited()) {
             transform->update();
-            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
-            }
+            registry.updated<Engine::TransformComponent>(selectedEntity);
         }
         ImGui::DragFloat3("Scaling", transform->getScaling().raw(), 0.1);
         if(ImGui::IsItemEdited()) {
             transform->update();
-            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
-            }
+            registry.updated<Engine::TransformComponent>(selectedEntity);
         }
         
         auto rotDeg = Engine::Math::radToDeg(transform->getRotation());
@@ -123,17 +179,39 @@ void drawTransformNode(Engine::Registry &registry) {
         if(ImGui::IsItemEdited()) {
             transform->setRotation(Engine::Math::degToRad(rotDeg));
             transform->update();
-            if (Engine::OpenGLRenderComponent* renderComponent = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                renderComponent->updateTransform(selectedEntity, transform->getModelMatrix());
-            }
+            registry.updated<Engine::TransformComponent>(selectedEntity);
         }
-    }
+    });
 }
+
+void drawRenderNode(Engine::Registry& registry) {
+    Engine::OpenGLRenderComponent* render = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity);
+
+    createComponentNodeOutline<Engine::OpenGLRenderComponent>("Render", registry, render, [&]() {
+        const char* types[2]{"Points\0", "Triangles\0"};
+        static int primitive_type_current = 1;
+        const char* comboLabel = types[primitive_type_current];
+        static int primitive_type = GL_TRIANGLES;
+        if (ImGui::RadioButton("Points", primitive_type == GL_POINTS)) {
+            primitive_type = GL_POINTS;
+            render->updatePrimitiveType(primitive_type);
+        } 
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Triangles", primitive_type == GL_TRIANGLES)) {
+            primitive_type = GL_TRIANGLES;
+            render->updatePrimitiveType(primitive_type);
+        }
+    });
+}
+
+char name[64];
 
 void UI::render(Engine::Registry &registry) {
     if (showDemoWindow) {
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
+
+    std::list<unsigned int> removals{};
 
     {
         ImGui::Begin("Hello World!");
@@ -152,25 +230,101 @@ void UI::render(Engine::Registry &registry) {
         if (ImGui::CollapsingHeader("Entities"))
         { 
             for (unsigned int entity: entities) {
-                drawEntityNode(entity, registry);
-            }   
+                if (drawEntityNode(entity, registry)) {
+                    removals.push_back(entity);
+                }
+            } 
+            if (ImGui::Button("Add Entity")) {
+                ImGui::OpenPopup("entity_add_popup");
+            }
+            if (ImGui::BeginPopup("entity_add_popup"))
+            {
+                ImGui::InputTextWithHint("##name_input", "Enter a name", name, IM_ARRAYSIZE(name));
+                ImGui::SameLine();
+                if(ImGui::Button("+")) {
+                    unsigned int newEntity = registry.addEntity();
+                    if (!std::strlen(name)) {
+                        registry.addComponent<Engine::TagComponent>(newEntity, new Engine::TagComponent{"Unnamed Entity"});
+                    } else {
+                        registry.addComponent<Engine::TagComponent>(newEntity, new Engine::TagComponent{name});
+                    }
+                    name[0] = '\0';
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+                if(ImGui::Button("x")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            } 
         }
 
         if (selectedEntity > -1) {
+            std::vector<const char*> possibleComponents{"Material", "Geometry", "Transform", "Render"};
+
             if (registry.hasComponent<Engine::MaterialComponent>(selectedEntity)) {
+                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
+                    return !strcmp(compName, "Material");
+                }), possibleComponents.end());
+
                 drawMaterialNode(registry);
             }
             if (registry.hasComponent<Engine::GeometryComponent>(selectedEntity)) {
+                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
+                    return !strcmp(compName, "Geometry");
+                }), possibleComponents.end());
+
                 drawGeometryNode(registry);
             }
             if (registry.hasComponent<Engine::TransformComponent>(selectedEntity)) {
+                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
+                    return !strcmp(compName, "Transform");
+                }), possibleComponents.end());
+
                 drawTransformNode(registry);
+            }
+            if (registry.hasComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
+                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
+                    return !strcmp(compName, "Render");
+                }), possibleComponents.end());
+
+                drawRenderNode(registry);
+            }
+
+            if (possibleComponents.size()) {
+                static int possible_component_current = 0;
+                ImGui::Combo("##Available Components", &possible_component_current, possibleComponents.data(), possibleComponents.size());
+                ImGui::SameLine();
+                if (ImGui::Button("+")) {
+                    if (!strcmp(possibleComponents[possible_component_current], "Material")) {
+                        registry.addComponent<Engine::MaterialComponent>(selectedEntity, new Engine::MaterialComponent{});
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
+                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, new Engine::GeometryComponent{
+                            {
+                                Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
+                                Engine::Math::Vector3{  0.5, -0.5, 0.0 },
+                                Engine::Math::Vector3{  0.0,  0.5, 0.0 }
+                            },
+                            {
+                                0, 1, 2
+                            }
+                        });
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
+                        registry.addComponent<Engine::TransformComponent>(selectedEntity, new Engine::TransformComponent{});
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
+                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, new Engine::OpenGLRenderComponent{registry});
+                    }
+                }
             }
         }
 
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
+    }
+
+    for (unsigned int entity: removals) {
+        registry.removeEntity(entity);
     }
 
     ImGui::Render();

@@ -29,10 +29,12 @@ target_include_directories(engineCore INTERFACE Core/)
 
 set(OPENGL_HEADERS
     OpenGL/Components/Render/render.h
+    OpenGL/Shader/shader.h
 )
 
 set(OPENGL_SOURCES
     OpenGL/Components/Render/render.cpp
+    OpenGL/Shader/shader.cpp
 )
 
 add_library(engineOpenGL ${OPENGL_SOURCES} ${OPENGL_HEADERS})
