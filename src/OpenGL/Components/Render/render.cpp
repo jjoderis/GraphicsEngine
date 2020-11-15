@@ -34,6 +34,16 @@ Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry)
     blockIndex = m_program.getBlockIndex("Transforms");
     glBufferData(GL_UNIFORM_BUFFER, sizeof(modelMatrix), modelMatrix, GL_DYNAMIC_DRAW);
     glUniformBlockBinding(m_program.getProgram(), blockIndex, 1);
+
+    unsigned int cameraIndex = m_program.getBlockIndex("Camera");
+    glUniformBlockBinding(m_program.getProgram(), cameraIndex, 2);
+
+    // add callback that is invoked every time a RenderComponent is added to an entity which then associates them
+    m_associateCallback = registry.onAdded<Engine::OpenGLRenderComponent>([=](unsigned int entity, Engine::OpenGLRenderComponent* renderComponent) {
+        if (renderComponent == this) {
+            renderComponent->associate(entity);
+        }
+    });
 }
 
 Engine::OpenGLRenderComponent::~OpenGLRenderComponent() {

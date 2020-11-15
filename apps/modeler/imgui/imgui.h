@@ -13,6 +13,7 @@
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Transform/transform.h>
 #include <OpenGL/Components/Render/render.h>
+#include <OpenGL/Components/Camera/activeCamera.h>
 
 #include "../glfw/window.h"
 

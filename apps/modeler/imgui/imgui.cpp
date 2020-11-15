@@ -298,7 +298,7 @@ void UI::render(Engine::Registry &registry) {
         }
 
         if (selectedEntity > -1) {
-            std::vector<const char*> possibleComponents{"Material", "Geometry", "Transform", "Render"};
+            std::vector<const char*> possibleComponents{"Material", "Geometry", "Transform", "Render", "Camera"};
 
             if (registry.hasComponent<Engine::MaterialComponent>(selectedEntity)) {
                 possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
@@ -328,6 +328,13 @@ void UI::render(Engine::Registry &registry) {
 
                 drawRenderNode(registry);
             }
+            if (registry.hasComponent<Engine::CameraComponent>(selectedEntity)) {
+                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
+                    return !strcmp(compName, "Camera");
+                }), possibleComponents.end());
+
+                // drawCameraNode(registry);
+            }
 
             if (possibleComponents.size()) {
                 static int possible_component_current = 0;
@@ -351,6 +358,8 @@ void UI::render(Engine::Registry &registry) {
                         registry.addComponent<Engine::TransformComponent>(selectedEntity, new Engine::TransformComponent{});
                     } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
                         registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, new Engine::OpenGLRenderComponent{registry});
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
+                        registry.addComponent<Engine::CameraComponent>(selectedEntity, new Engine::CameraComponent{registry});
                     }
                 }
             }

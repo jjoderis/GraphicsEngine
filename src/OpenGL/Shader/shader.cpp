@@ -78,11 +78,17 @@ Engine::OpenGLProgram::OpenGLProgram() {
         "   mat4 model[maxModelMatrices];\n"
         "};\n\n"
 
+        "uniform Camera{\n"
+        "   mat4 viewMatrix;\n"
+        "   mat4 viewMatrixInverse;\n"
+        "   mat4 projectionMatrix;\n"
+        "};\n\n"
+
         "out vec4 color;\n"
         "void main()\n"
         "{\n"
         "   color = material[int(aMatIndex)].color;\n"
-        "   gl_Position = model[int(aTransIndex)] * vec4(aPos, 1.0);\n"
+        "   gl_Position = projectionMatrix * viewMatrix * model[int(aTransIndex)] * vec4(aPos, 1.0);\n"
         "}\0"
     };
     bool success = vertexShader.compileShader();

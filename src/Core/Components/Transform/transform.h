@@ -11,6 +11,7 @@ namespace Engine {
         Math::Vector3 m_scaling{1.0f, 1.0f, 1.0f};
 
         Math::Matrix4 m_modelMatrix{};
+        Math::Matrix4 m_modelMatrixInverse{};
 
     public:
         TransformComponent();
@@ -30,6 +31,7 @@ namespace Engine {
 
         void update();
         Math::Matrix4& getModelMatrix();
+        Math::Matrix4& getModelMatrixInverse();
     };
 }
 

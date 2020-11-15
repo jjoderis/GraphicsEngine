@@ -8,6 +8,7 @@
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Transform/transform.h>
 #include <OpenGL/Components/Render/render.h>
+#include <OpenGL/Components/Camera/activeCamera.h>
 
 #include <iostream>
 
@@ -21,13 +22,13 @@ int main()
 
     Engine::Registry registry{};
 
-    // add callback that is invoked every time a RenderComponent is added to an entity which then associates them
-    std::shared_ptr<std::function<void(unsigned int, Engine::OpenGLRenderComponent*)>> a = 
-        registry.onAdded<Engine::OpenGLRenderComponent>(
-            [](unsigned int entity, Engine::OpenGLRenderComponent* renderComponent) {
-                renderComponent->associate(entity);
+    // when the first camera enters the scene make it the active one
+    std::shared_ptr<std::function<void(unsigned int, Engine::CameraComponent*)>> ensureActiveCamera =
+        registry.onAdded<Engine::CameraComponent>([&registry](unsigned int entity, Engine::CameraComponent* camera){
+            if (registry.getComponents<Engine::CameraComponent>().size() == 1) {
+                registry.addComponent<Engine::OpenGLActiveCameraComponent>(entity, new Engine::OpenGLActiveCameraComponent{registry});
             }
-        );
+        });
 
     GLFWwindow* window = Window::getWindow();
 
@@ -46,10 +47,17 @@ int main()
 
         UI::render(registry);
 
-        const std::vector<std::unique_ptr<Engine::OpenGLRenderComponent>> &renderComponents = registry.getComponents<Engine::OpenGLRenderComponent>();
+        const std::vector<std::unique_ptr<Engine::OpenGLActiveCameraComponent>> &activeCameras = registry.getComponents<Engine::OpenGLActiveCameraComponent>();
 
-        for( const std::unique_ptr<Engine::OpenGLRenderComponent>& renderComponent: renderComponents ) {
-            renderComponent.get()->render();
+        // if there is an active camera (we extect there to be one or none)
+        if (activeCameras.size()) {
+            activeCameras[0].get()->bind();
+
+            const std::vector<std::unique_ptr<Engine::OpenGLRenderComponent>> &renderComponents = registry.getComponents<Engine::OpenGLRenderComponent>();
+
+            for( const std::unique_ptr<Engine::OpenGLRenderComponent>& renderComponent: renderComponents ) {
+                renderComponent.get()->render();
+            }
         }
 
         UI::postRender();

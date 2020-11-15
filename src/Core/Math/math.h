@@ -21,9 +21,9 @@ namespace Engine {
         using Matrix3 = MathLib::Matrix<float, 3, 3>;
         using Matrix4 = MathLib::Matrix<float, 4, 4>;
 
-        Matrix4 getTranslation(Vector3 &location);
-        Matrix4 getScaling(Vector3 &scaling);
-        Matrix4 getRotation(Vector3 &rotation);
+        Matrix4 getTranslation(const Vector3 &location);
+        Matrix4 getScaling(const Vector3 &scaling);
+        Matrix4 getRotation(const Vector3 &rotation);
     }
 }
 

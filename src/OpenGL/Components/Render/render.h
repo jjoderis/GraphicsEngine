@@ -14,6 +14,9 @@ class RenderTest;
 namespace Engine {
     class OpenGLRenderComponent {
     private:
+        // waits for the component to be added to an entity to then set up callbacks to react to changes in the components of that entity
+        std::shared_ptr<std::function<void(unsigned int, OpenGLRenderComponent*)>> m_associateCallback;
+
         unsigned int m_VAO{};
         unsigned int m_VBO{}; // stores vertex data
         unsigned int m_EBO{}; // stores index data

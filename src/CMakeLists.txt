@@ -8,6 +8,7 @@ set(CORE_HEADERS
     Core/Components/Material/material.h
     Core/Components/Geometry/geometry.h
     Core/Components/Transform/transform.h
+    Core/Components/Camera/camera.h
 )
 
 set(CORE_SOURCES
@@ -16,6 +17,7 @@ set(CORE_SOURCES
     Core/Components/Material/material.cpp
     Core/Components/Geometry/geometry.cpp
     Core/Components/Transform/transform.cpp
+    Core/Components/Camera/camera.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
 
@@ -29,11 +31,13 @@ target_include_directories(engineCore INTERFACE Core/)
 
 set(OPENGL_HEADERS
     OpenGL/Components/Render/render.h
+    OpenGL/Components/Camera/activeCamera.h
     OpenGL/Shader/shader.h
 )
 
 set(OPENGL_SOURCES
     OpenGL/Components/Render/render.cpp
+    OpenGL/Components/Camera/activeCamera.cpp
     OpenGL/Shader/shader.cpp
 )
 
