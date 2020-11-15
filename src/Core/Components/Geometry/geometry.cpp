@@ -11,3 +11,13 @@ std::vector<Engine::Math::Vector3>& Engine::GeometryComponent::getVertices() {
 std::vector<unsigned int>& Engine::GeometryComponent::getFaces() {
     return m_faces;
 }
+
+void Engine::GeometryComponent::addVertex(Math::Vector3 && newVertex) {
+    m_vertices.emplace_back(newVertex);
+}
+
+void Engine::GeometryComponent::addFace(unsigned int a, unsigned int b, unsigned int c) {
+    m_faces.emplace_back(a);
+    m_faces.emplace_back(b);
+    m_faces.emplace_back(c);
+}

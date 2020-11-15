@@ -10,6 +10,7 @@
 #include <map>
 #include <tuple>
 
+class RenderTest;
 namespace Engine {
     class OpenGLRenderComponent {
     private:
@@ -34,12 +35,11 @@ namespace Engine {
             std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
             std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is removed from the entity
             std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
-            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>  // callback for when a MaterialComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>,  // callback for when a MaterialComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, OpenGLRenderComponent*)>> // callback for when the Render component is removed from the entity
         >;
         std::map<unsigned int, meta_data> m_entityData;
-        unsigned int m_vboSize{0};
         unsigned int m_numPoints{0};
-        unsigned int m_eboSize{0};
         unsigned int m_numFaces{0};
         unsigned int m_numPrimitives{0};
         unsigned int m_primitiveType{GL_TRIANGLES};
@@ -47,15 +47,31 @@ namespace Engine {
         unsigned int m_numMaterials{1};
         unsigned int m_numTransforms{1};
 
-        void addToGeometryBuffers(unsigned int entityId, GeometryComponent* geometry);
-        void updateGeometryData(unsigned int entityId, GeometryComponent* geometry);
-        void updateMaterialIndices(unsigned int entityId, GeometryComponent* geometry);
-        void updateTransformIndices(unsigned int entitiyId, GeometryComponent* geometry);
-        void updateMaterialBuffers(unsigned int entityId, MaterialComponent* material);
-        void updateMaterialData(unsigned int entity, MaterialComponent* material);
-        void updateTransformBuffers(unsigned int entityId, TransformComponent* transform);
-        void updateTransformData(unsigned int entity, TransformComponent* transform);
-        void calculatePrimtiveCount();
+        void setupEntity(unsigned int entity, GeometryComponent* geometry);
+        void teardownEntity(unsigned int entity);
+
+        void addVertices(unsigned int entity, GeometryComponent* geometry);
+        void updateVertices(unsigned int entity, GeometryComponent* geometry);
+        void removeVertices(unsigned int entity);
+
+        void addFaces(unsigned int entity, GeometryComponent* geometry);
+        void updateFaces(unsigned int entity, GeometryComponent* geometry);
+        void removeFaces(unsigned int entity);
+
+        void addMaterial(unsigned int entity, MaterialComponent* material);
+        void updateMaterial(unsigned int entity, MaterialComponent* material);
+        void updateMaterialIndices(unsigned int entity);
+        void removeMaterial(unsigned int entity, MaterialComponent* material);
+        
+
+        void addTransform(unsigned int entityId, TransformComponent* transform);
+        void updateTransform(unsigned int entity, TransformComponent* transform);
+        void updateTransformIndices(unsigned int entitiyId);
+        void removeTransform(unsigned int entity, TransformComponent* transform);
+
+        void calculatePrimitiveCount();
+
+        friend RenderTest;
     public:
         OpenGLRenderComponent(Engine::Registry &registry);
         ~OpenGLRenderComponent();

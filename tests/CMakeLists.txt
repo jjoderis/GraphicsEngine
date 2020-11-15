@@ -10,11 +10,12 @@ set(TEST_FILES
     Core/ECS/util.test.cpp
     Core/ECS/registry.test.cpp
     Core/ECS/componentTable.test.cpp
+    OpenGL/Components/Render/render.test.cpp
 )
 
 # link test files against gtest_main
 add_executable(tests ${TEST_FILES})
-target_link_libraries(tests gtest gmock gtest_main)
+target_link_libraries(tests gtest gmock gtest_main glfw glad engineCore engineOpenGL)
 add_test(NAME example_test COMMAND tests)
 
 target_include_directories(tests PUBLIC

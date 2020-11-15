@@ -7,15 +7,6 @@ set(EXTERN_DIR "${PROJECT_SOURCE_DIR}/external")
 set(APP_DIR "${PROJECT_SOURCE_DIR}/apps")
 set(BUILD_DIR "${PROJECT_SOURCE_DIR}/build")
 
-if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    include(CTest)
-endif()
-
-# TESTING
-if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
 # automatically update git submodules
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
@@ -39,3 +30,12 @@ endif()
 
 add_subdirectory(src/)
 add_subdirectory(apps/)
+
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+
+# TESTING
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

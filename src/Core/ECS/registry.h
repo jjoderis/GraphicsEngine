@@ -23,7 +23,7 @@ namespace Engine{
             if (type_index<ComponentType>::value() >= m_componentLinks.size()) 
             {
                 m_componentLinks.resize(type_index<ComponentType>::value()+1, nullptr);
-                m_componentLinkCleaners.resize(type_index<ComponentType>::value()+1, [](unsigned int foo) {});
+                m_componentLinkCleaners.resize(type_index<ComponentType>::value()+1, [](unsigned int foo) { (void)foo; });
             } 
 
             if (m_componentLinks[type_index<ComponentType>::value()] == nullptr)

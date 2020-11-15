@@ -15,6 +15,12 @@ namespace Engine {
         GeometryComponent(std::initializer_list<Math::Vector3> vertices, std::initializer_list<unsigned int> faces);
         std::vector<Math::Vector3>& getVertices();
         std::vector<unsigned int>& getFaces();
+
+        // adds a single vertex
+        void addVertex(Math::Vector3 && newVertex);
+
+        // adds a face consisting of three indices
+        void addFace(unsigned int a, unsigned int b, unsigned int c);
     };
 }
 

@@ -102,16 +102,21 @@ void createComponentNodeOutline(const char* componentName, Engine::Registry& reg
         if(ImGui::IsItemClicked(1)) {
             ImGui::OpenPopup(buff);
         }
+        // dont draw a component after it was removed
+        bool removed{false};
         if (ImGui::BeginPopup(buff))
         {
             sprintf(buff, "Remove %s", componentName);
             if (ImGui::Button(buff)) {
                 registry.removeComponent<ComponentType>(selectedEntity);
+                removed = true;
             }
             ImGui::EndPopup();
         }
         createImGuiComponentDragSource<ComponentType>(component);
-        drawFunc();
+        if (!removed) {
+            drawFunc();
+        }
     }
 }
 
@@ -141,6 +146,21 @@ void drawGeometryNode(Engine::Registry &registry) {
                     registry.updated<Engine::GeometryComponent>(selectedEntity);
                 }
             }
+            static Engine::Math::Vector3 newVertex{0.0, 0.0, 0.0};
+            if (ImGui::Button("+##open_add_vertex_popup")) {
+                ImGui::OpenPopup("Add Vertex");
+            }
+            if (ImGui::BeginPopup("Add Vertex"))
+            {
+                ImGui::InputFloat3("##new_vertex_input", newVertex.raw());
+                ImGui::SameLine();
+                if (ImGui::Button("+##add_vertex")) {
+                    geometry->addVertex(Engine::Math::Vector3{newVertex});
+                    registry.updated<Engine::GeometryComponent>(selectedEntity);
+                    newVertex = Engine::Math::Vector3{ 0.0f, 0.0f, 0.0f };
+                }
+                ImGui::EndPopup();
+            }
 
             ImGui::TreePop();
         }
@@ -154,6 +174,24 @@ void drawGeometryNode(Engine::Registry &registry) {
                     registry.updated<Engine::GeometryComponent>(selectedEntity);
                 }
             }
+            static unsigned int newFace[3]{0u, 0u, 0u};
+            if (ImGui::Button("+##open_add_face_popup")) {
+                ImGui::OpenPopup("Add Face");
+            }
+            if (ImGui::BeginPopup("Add Face"))
+            {
+                ImGui::InputScalarN("##new_face_input", ImGuiDataType_U32, newFace, 3);
+                ImGui::SameLine();
+                if (ImGui::Button("+##add_face")) {
+                    geometry->addFace(newFace[0], newFace[1], newFace[2]);
+                    registry.updated<Engine::GeometryComponent>(selectedEntity);
+                    newFace[0] = 0u;
+                    newFace[1] = 0u;
+                    newFace[2] = 0u;
+                }
+                ImGui::EndPopup();
+            }
+
             ImGui::TreePop();
         }
     });

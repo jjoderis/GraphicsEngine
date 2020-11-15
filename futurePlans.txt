@@ -1,3 +1,7 @@
+TODO:
+    ►   highlight selected entity
+    ►   hightlight associated entities when clicked on component (in case of shared reference)
+
 Possible ompimizations for the future: ☻
 
     ►   (!) don't recompute groups all the time (!)
