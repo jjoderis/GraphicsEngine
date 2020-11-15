@@ -212,10 +212,10 @@ void drawTransformNode(Engine::Registry &registry) {
             registry.updated<Engine::TransformComponent>(selectedEntity);
         }
         
-        auto rotDeg = Engine::Math::radToDeg(transform->getRotation());
+        auto rotDeg = MathLib::Util::radToDeg(transform->getRotation());
         ImGui::DragFloat3("Rotation", rotDeg.raw(), 1.0);
         if(ImGui::IsItemEdited()) {
-            transform->setRotation(Engine::Math::degToRad(rotDeg));
+            transform->setRotation(MathLib::Util::degToRad(rotDeg));
             transform->update();
             registry.updated<Engine::TransformComponent>(selectedEntity);
         }
