@@ -12,14 +12,15 @@ public:
 
         geometry1 = m_registry.addComponent<Engine::GeometryComponent>(entity1, new Engine::GeometryComponent{
             {
-                Engine::Math::Vector3{ 1.0, 1.0, 1.0 },
-                Engine::Math::Vector3{ 2.0, 2.0, 2.0 },
-                Engine::Math::Vector3{ 3.0, 3.0, 3.0 },
+                Engine::Math::Vector3{-1.0, 0.0, 0.0 },
+                Engine::Math::Vector3{ 1.0, 0.0, 0.0 },
+                Engine::Math::Vector3{ 0.0, 1.0, 0.0 },
             },
             {
                 0, 1, 2
             }
         });
+        geometry1->calculateNormals();
 
         entity2 = m_registry.addEntity(); // entityId = 1
         m_registry.addComponent<Engine::GeometryComponent>(entity2, geometry1);
@@ -131,9 +132,9 @@ TEST_F(RenderTest, writes_geometry_to_buffer_if_one_exists) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 0, 0, // vertex 1 position and material index and transform index 
-        2, 2, 2, 0, 0, // vertex 2 position and material index and transform index 
-        3, 3, 3, 0, 0  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 0, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -150,9 +151,9 @@ TEST_F(RenderTest, writes_material_to_buffer_and_sets_index) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 1, 0, // vertex 1 position and material index and transform index 
-        2, 2, 2, 1, 0, // vertex 2 position and material index and transform index 
-        3, 3, 3, 1, 0  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 1, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 1, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 1, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -174,9 +175,9 @@ TEST_F(RenderTest, writes_material_to_buffer_and_sets_index_after_add) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 1, 0, // vertex 1 position and material index and transform index 
-        2, 2, 2, 1, 0, // vertex 2 position and material index and transform index 
-        3, 3, 3, 1, 0  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 1, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 1, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 1, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -198,9 +199,9 @@ TEST_F(RenderTest, removes_material_from_buffer_and_resets_indices_on_remove) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 0, 0, // vertex 1 position and material index and transform index 
-        2, 2, 2, 0, 0, // vertex 2 position and material index and transform index 
-        3, 3, 3, 0, 0  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 0, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -219,9 +220,9 @@ TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 0, 1, // vertex 1 position and material index and transform index 
-        2, 2, 2, 0, 1, // vertex 2 position and material index and transform index 
-        3, 3, 3, 0, 1  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 0, 1, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 1, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 1  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -243,9 +244,9 @@ TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index_after_add) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 0, 1, // vertex 1 position and material index and transform index 
-        2, 2, 2, 0, 1, // vertex 2 position and material index and transform index 
-        3, 3, 3, 0, 1  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 0, 1, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 1, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 1  // vertex 3 position and normal and material index and transform index  
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -267,9 +268,9 @@ TEST_F(RenderTest, removes_transform_from_buffer_and_resets_indices_on_remove) {
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
-        1, 1, 1, 0, 0, // vertex 1 position and material index and transform index 
-        2, 2, 2, 0, 0, // vertex 2 position and material index and transform index 
-        3, 3, 3, 0, 0  // vertex 3 position and material index and transform index 
+       -1, 0, 0, 0, 0, 1, 0, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     EXPECT_EQ(vertexBuffer, expected);
@@ -302,9 +303,9 @@ TEST_F(RenderTest, awaits_geometry_before_initializing_entity) {
 
     vertexBuffer = getVertexBufferContent(renderComponent);
     expected = {
-        1.0, 1.0, 1.0,
-        2.0, 2.0, 2.0,
-        3.0, 3.0, 3.0
+       -1, 0, 0, 0, 0, 1, 0, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 0, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 0, 0  // vertex 3 position and normal and material index and transform index 
     };
 
     indexBuffer = getIndexBufferContent(renderComponent);
@@ -318,13 +319,14 @@ TEST_F(RenderTest, resizes_buffer_on_additional_vertices) {
         = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, new Engine::OpenGLRenderComponent{m_registry});
 
     geometry1->addVertex(Engine::Math::Vector3{ 2.0f, 4.0f, 6.0f });
+    geometry1->getNormals().emplace_back(Engine::Math::Vector3{-1.0, 0.0, 0.0});
     m_registry.updated<Engine::GeometryComponent>(entity2);
 
     std::vector<float> expectedVertices{
-        1, 1, 1, 1, 0, // existing vertex 
-        2, 2, 2, 1, 0, // existing vertex 
-        3, 3, 3, 1, 0, // existing vertex
-        2, 4, 6, 1, 0  // new vertex
+       -1, 0, 0, 0, 0, 1, 1, 0, // vertex 1 position and normal and material index and transform index 
+        1, 0, 0, 0, 0, 1, 1, 0, // vertex 2 position and normal and material index and transform index 
+        0, 1, 0, 0, 0, 1, 1, 0,  // vertex 3 position and normal and material index and transform index 
+        2, 4, 6,-1, 0, 0, 1, 0  // new vertex
     };
 
     EXPECT_EQ(getVertexBufferContent(renderComponent), expectedVertices);

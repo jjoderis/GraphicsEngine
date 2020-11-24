@@ -9,6 +9,8 @@ set(CORE_HEADERS
     Core/Components/Geometry/geometry.h
     Core/Components/Transform/transform.h
     Core/Components/Camera/camera.h
+    Core/Components/Light/light.h
+    Util/fileHandling.h
 )
 
 set(CORE_SOURCES
@@ -18,6 +20,8 @@ set(CORE_SOURCES
     Core/Components/Geometry/geometry.cpp
     Core/Components/Transform/transform.cpp
     Core/Components/Camera/camera.cpp
+    Core/Components/Light/light.cpp
+    Util/fileHandling.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
 
@@ -31,14 +35,18 @@ target_include_directories(engineCore INTERFACE Core/)
 
 set(OPENGL_HEADERS
     OpenGL/Components/Render/render.h
-    OpenGL/Components/Camera/activeCamera.h
     OpenGL/Shader/shader.h
+    OpenGL/Renderer/renderer.h
+    OpenGL/Systems/CameraTracker/cameraTracker.h
+    OpenGL/Systems/LightsTracker/lightsTracker.h
 )
 
 set(OPENGL_SOURCES
     OpenGL/Components/Render/render.cpp
-    OpenGL/Components/Camera/activeCamera.cpp
     OpenGL/Shader/shader.cpp
+    OpenGL/Renderer/renderer.cpp
+    OpenGL/Systems/CameraTracker/cameraTracker.cpp
+    OpenGL/Systems/LightsTracker/lightsTracker.cpp
 )
 
 add_library(engineOpenGL ${OPENGL_SOURCES} ${OPENGL_HEADERS})

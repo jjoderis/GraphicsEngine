@@ -1,5 +1,11 @@
 #include "shader.h"
 
+Engine::ShaderException::ShaderException(std::string message) : m_message{message} {}
+
+const char* Engine::ShaderException::what() const throw() {
+    return m_message.c_str();
+}
+
 Engine::OpenGLShader::OpenGLShader(GLenum type, const char* source) : m_type{type}, m_source{source} {}
 
 Engine::OpenGLShader::OpenGLShader(const OpenGLShader& other) {
@@ -8,7 +14,7 @@ Engine::OpenGLShader::OpenGLShader(const OpenGLShader& other) {
     m_source = other.m_source;
 }
 
-bool Engine::OpenGLShader::compileShader() {
+void Engine::OpenGLShader::compileShader() {
     m_id = glCreateShader(m_type);
     const char* source{m_source.c_str()};
     glShaderSource(m_id, 1, &source, NULL);
@@ -45,111 +51,62 @@ bool Engine::OpenGLShader::compileShader() {
                 printf("Shader compilation with unknown shader type!\n");
                 exit(EXIT_FAILURE);
         }
-
-
-        fprintf(stderr, "ERROR::SHADER::%s::COMPILATION:FAILED: \n%s\n", typeString, infoLog);
+        char extendedLog[640];
+        sprintf(extendedLog, "ERROR::SHADER::%s::COMPILATION:FAILED: \n%s\n", typeString, infoLog);
         glDeleteShader(m_id);
-        return false;
+        throw ShaderException{extendedLog};
     }
-
-    return true;
 }
 
-Engine::OpenGLProgram::OpenGLProgram() {
-    // create very basic shader program
-    OpenGLShader vertexShader{
-        GL_VERTEX_SHADER, 
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 aPos;\n"
-        "layout (location = 1) in float aMatIndex;\n"
-        "layout (location = 2) in float aTransIndex;\n"
-
-        "struct MaterialProperties {\n"
-        "   vec4 color;\n"
-        "};\n\n"
-
-        "const int maxMaterials = 20;\n"
-        "uniform Materials{\n"
-        "   MaterialProperties material[maxMaterials];\n"
-        "};\n\n"
-
-        "const int maxModelMatrices = 20;\n"
-        "uniform Transforms{\n"
-        "   mat4 model[maxModelMatrices];\n"
-        "};\n\n"
-
-        "uniform Camera{\n"
-        "   mat4 viewMatrix;\n"
-        "   mat4 viewMatrixInverse;\n"
-        "   mat4 projectionMatrix;\n"
-        "};\n\n"
-
-        "out vec4 color;\n"
-        "void main()\n"
-        "{\n"
-        "   color = material[int(aMatIndex)].color;\n"
-        "   gl_Position = projectionMatrix * viewMatrix * model[int(aTransIndex)] * vec4(aPos, 1.0);\n"
-        "}\0"
-    };
-    bool success = vertexShader.compileShader();
-
-    if (!success) {
-        printf("Failed to compile most basic shader!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    OpenGLShader fragmentShader{
-        GL_FRAGMENT_SHADER,
-        "#version 330 core\n"
-        "in vec4 color;"
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColor = color;\n"
-        "}\n"
-    };
-    success = fragmentShader.compileShader();
-
-    if (!success) {
-        printf("Failed to compile most basic shader!\n");
-        exit(EXIT_FAILURE);
+Engine::OpenGLProgram::OpenGLProgram(std::initializer_list<OpenGLShader> shaders) {
+    for (OpenGLShader shader: shaders) {
+        try {
+            shader.compileShader();
+            m_shaders.emplace(shader.m_type, shader);
+        } catch (ShaderException& err) {
+            cleanupShaders();
+            throw err;
+        }
     }
 
     m_program = glCreateProgram();
-    glAttachShader(m_program, vertexShader.m_id);
-    glAttachShader(m_program, fragmentShader.m_id);
 
-    success = linkProgram();
-
-    if (!success) {
-        printf("Failed to link most basic program!\n");
-        exit(EXIT_FAILURE);
+    for (auto& entry: m_shaders) {
+        glAttachShader(m_program, entry.second.m_id);
     }
 
-    m_shaders.push_back(vertexShader);
-    m_shaders.push_back(fragmentShader);
+    try{
+        linkProgram();
+    } catch (ShaderException& err) {
+        cleanupShaders();
+        throw err;
+    }
+}
+
+void Engine::OpenGLProgram::cleanupShaders() {
+    for (auto& entry: m_shaders) {
+        glDeleteShader(entry.second.m_id);
+    }
 }
 
 Engine::OpenGLProgram::~OpenGLProgram() {
-    for (Engine::OpenGLShader shader: m_shaders) {
-        glDeleteShader(shader.m_id);
-    }
+    cleanupShaders();
 
     glDeleteProgram(m_program);
 }
 
-bool Engine::OpenGLProgram::linkProgram() {
+void Engine::OpenGLProgram::linkProgram() {
     glLinkProgram(m_program);
     int success{0};
     glGetProgramiv(m_program, GL_LINK_STATUS, &success);
     if (!success) {
         char infoLog[512];
         glGetProgramInfoLog(m_program, 512, NULL, infoLog);
-        fprintf(stderr, "ERROR::SHADER::PROGRAM::LINKING::FAILED\n %s\n", infoLog);
-        return false;
+        char extendedLog[640];
+        sprintf(extendedLog, "ERROR::SHADER::PROGRAM::LINKING::FAILED\n %s\n", infoLog);
+        glDeleteProgram(m_program);
+        throw ShaderException{extendedLog};
     }
-
-    return true;
 }
 
 void Engine::OpenGLProgram::use() {
@@ -162,6 +119,72 @@ GLuint Engine::OpenGLProgram::getBlockIndex(const char* blockName) {
 
 GLuint Engine::OpenGLProgram::getProgram() {
     return m_program;
+}
+
+void Engine::OpenGLProgram::rollback() {
+    glDeleteProgram(m_program);
+
+    // recreate a program that was like the old one
+    m_program = glCreateProgram();
+
+    for (auto& entry: m_shaders) {
+        glAttachShader(m_program, entry.second.m_id);
+    }
+}
+
+void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders) {
+    int compiled{0};
+
+    for (OpenGLShader& newShader: newShaders) {
+        try {
+            newShader.compileShader();
+        } catch(ShaderException& err) {
+            // rollback to old version and delete all newly compiled shaders
+            for (int i{0}; i < compiled; ++i) {
+                glDeleteShader(newShaders[i].m_id);
+            }
+
+            rollback();
+
+            throw err;
+        }
+
+        // if there is a shader of the same type detach and attach the new shader
+        if (m_shaders.find(newShader.m_type) != m_shaders.end()) {
+            OpenGLShader& oldShader{ m_shaders.at(newShader.m_type) };
+
+            glDetachShader(m_program, oldShader.m_id);
+        }
+
+        glAttachShader(m_program, newShader.m_id);
+
+        ++compiled;
+    }
+
+    try {
+        glLinkProgram(m_program);
+    } catch (ShaderException& err) {
+        // rollback to old version and delete all newly compiled shaders
+        for (int i{0}; i < compiled; ++i) {
+            glDeleteShader(newShaders[i].m_id);
+        }
+
+        rollback();
+
+        throw err;
+    }
+
+    // new shaders are usable; delete old ones and replace with new ones
+    for(OpenGLShader& newShader: newShaders) {
+        if (m_shaders.find(newShader.m_type) != m_shaders.end()) {
+            OpenGLShader& oldShader{ m_shaders.at(newShader.m_type) };
+            glDeleteShader(oldShader.m_id);
+            oldShader.m_id = newShader.m_id;
+            oldShader.m_source = newShader.m_source;
+        } else {
+            m_shaders.emplace(newShader.m_type, newShader);
+        }
+    }
 }
 
 

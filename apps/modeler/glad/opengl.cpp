@@ -45,6 +45,8 @@ void OpenGL::init() {
     glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
 
     glPointSize(2.0);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
 void OpenGL::preRender() {

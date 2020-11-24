@@ -11,26 +11,27 @@ namespace Engine {
         Math::Vector3 m_scaling{1.0f, 1.0f, 1.0f};
 
         Math::Matrix4 m_modelMatrix{};
+        Math::Matrix4 m_normalMatrix{};
         Math::Matrix4 m_modelMatrixInverse{};
 
     public:
         TransformComponent();
 
-        void translate(Math::Vector3& translation);
-        void setTranslation(Math::Vector3& translation);
+        void translate(const Math::Vector3& translation);
+        void setTranslation(const Math::Vector3& translation);
         Math::Vector3& getTranslation();
 
-        void scale(Math::Vector3& scaling);
-        void setScale(Math::Vector3& scaling);
+        void scale(const Math::Vector3& scaling);
+        void setScale(const Math::Vector3& scaling);
         Math::Vector3& getScaling();
 
-        void rotate(Math::Vector3& rotation);
-        void setRotation(Math::Vector3& rotation);
-        void setRotation(Math::Vector3 rotation);
+        void rotate(const Math::Vector3& rotation);
+        void setRotation(const Math::Vector3& rotation);
         Math::Vector3& getRotation();
 
         void update();
         Math::Matrix4& getModelMatrix();
+        Math::Matrix4& getNormalMatrix();
         Math::Matrix4& getModelMatrixInverse();
     };
 }

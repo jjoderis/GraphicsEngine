@@ -6,8 +6,7 @@
 #include "../Transform/transform.h"
 
 namespace Engine {
-    // TODO: add actual implementation of perspective transformation
-
+    enum class ProjectionType { Ortographic, Perspective };
     class CameraComponent {
     private:
         // waits for the component to be added to an entity to then set up callbacks to react to changes in the Transform of that entity
@@ -22,6 +21,17 @@ namespace Engine {
         Math::Matrix4 m_projectionMatrix{};
         Registry& m_registry;
 
+        float m_near{ 0.1f };
+        float m_far{ 10.0f };
+        float m_left{ -1.0f };
+        float m_right{ 1.0f };
+        float m_bottom { -1.0f };
+        float m_top{ 1.0f };
+        float m_fov{M_PI_4}; // 45 degrees
+        float m_aspect{16/9}; // use actual screen values here
+
+        ProjectionType m_projection{ProjectionType::Perspective};
+
         // sets up callbacks to react to the Transform of the entity changing
         void registerEntity(unsigned int entity);
         void setupUpdateCallback(unsigned int entity);
@@ -30,12 +40,40 @@ namespace Engine {
     public:
         CameraComponent() = delete;
         CameraComponent(Registry& registry);
+        
+        void updateAspect(float aspect);
+        void calculateProjection();
 
         const Math::Matrix4& getViewMatrix();
         const Math::Matrix4& getViewMatrixInverse();
         const Math::Matrix4& getProjectionMatrix();
+
+        float& getNear();
+        void setNear(float near);
+
+        float& getFar();
+        void setFar(float far);
+
+        float& getLeft();
+        void setLeft(float left);
+
+        float& getRight();
+        void setRight(float right);
+
+        float& getBottom();
+        void setBottom(float bottom);
+
+        float& getTop();
+        void setTop(float top);
+
+        float& getFov();
+        void setFov(float fov);
+
+        float& getAspect();
+        void setAspect(float aspect);
     };
 
+    class ActiveCameraComponent {}; // The only point of this class is to keep track through which camera we are currently looking
 }
 
 

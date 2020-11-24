@@ -4,10 +4,21 @@
 #include <glad/glad.h>
 #include <string>
 #include <vector>
+#include <map>
 #include <cstring>
+#include <initializer_list>
+#include <exception>
 
 namespace Engine {
     class OpenGLProgram;
+
+    struct ShaderException : public std::exception
+    {
+        ShaderException(std::string message);
+        const char* what() const throw();
+    private:
+        std::string m_message;
+    };
 
     struct OpenGLShader{
         OpenGLShader() = delete;
@@ -17,22 +28,26 @@ namespace Engine {
         GLuint m_id{0};
         GLenum m_type{};
         std::string m_source{};
-        bool compileShader();
+        void compileShader();
         friend class OpenGLProgram;
     };
 
     class OpenGLProgram{
     private:
         GLuint m_program{0};
-        std::vector<OpenGLShader> m_shaders{};
+        std::map<GLenum, OpenGLShader> m_shaders{};
 
-        bool linkProgram();
+        void linkProgram();
+        void cleanupShaders();
+        void rollback();
     public:
-        OpenGLProgram();
+        OpenGLProgram(std::initializer_list<OpenGLShader> shaders);
         ~OpenGLProgram();
         void use();
         GLuint getBlockIndex(const char* blockName);
         GLuint getProgram();
+
+        void updateProgram(std::vector<OpenGLShader> newShaders);
     };
 }
 

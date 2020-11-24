@@ -74,11 +74,6 @@ namespace Engine {
 
         void calculatePrimitiveCount();
 
-        friend RenderTest;
-    public:
-        OpenGLRenderComponent(Engine::Registry &registry);
-        ~OpenGLRenderComponent();
-
         // associates the render component with an entity 
         // allocates memory in buffers and stores offsets in map for Geometry associated with entity
         void associate(unsigned int entity);
@@ -86,8 +81,17 @@ namespace Engine {
         // dissassociates the render component with an entity
         void dissassociate(unsigned int entity);
 
+        void setupUniforms();
+
+        friend RenderTest;
+    public:
+        OpenGLRenderComponent(Engine::Registry &registry, std::initializer_list<OpenGLShader> shaders);
+        ~OpenGLRenderComponent();
+
         void updatePrimitiveType(int primitiveType);
         void updateTransform(unsigned int entity, Math::Matrix4& modelMatrix);
+
+        void updateShaders(std::vector<OpenGLShader>& newShaders);
 
         void render();
     };

@@ -1,9 +1,12 @@
 #include "imgui.h"
 
 bool showDemoWindow{false};
-int selectedEntity{-1};
+unsigned int mainCamera{0};
 
-void UI::init() {
+using namespace UICreation;
+int selectedEntity = -1;
+
+void UI::init(Engine::Registry& registry) {
     //setup imgui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -23,6 +26,19 @@ void UI::init() {
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+
+    int width, height;
+
+    glfwGetFramebufferSize(window, &width, &height);
+
+    mainCamera = registry.addEntity();
+    registry.addComponent<Engine::TagComponent>(mainCamera, new Engine::TagComponent{"Modeler Camera"});
+    Engine::TransformComponent* transform = registry.addComponent<Engine::TransformComponent>(mainCamera, new Engine::TransformComponent{});
+    transform->setRotation(Engine::Math::Vector3{0.0, M_PI,0.0});
+    transform->update();
+    Engine::CameraComponent* camera = registry.addComponent<Engine::CameraComponent>(mainCamera, new Engine::CameraComponent{registry});
+    camera->updateAspect((float)width/(float)height);
+    registry.updated<Engine::CameraComponent>(mainCamera);
 }
 
 void UI::preRender() {
@@ -32,39 +48,7 @@ void UI::preRender() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-template <typename ComponentType>
-void createImGuiComponentDragSource(ComponentType* component) {
-    ImGui::Button("Start Drag");
-    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-    {
-        char dragDropType[256]{};
-        sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
-    
-        // Set payload to carry the index of our item (could be anything)
-        ImGui::SetDragDropPayload(dragDropType, &component, sizeof(ComponentType*));
 
-        ImGui::Text("Assign Component");
-        ImGui::EndDragDropSource();
-    }
-}
-
-template <typename ComponentType>
-void createImGuiComponentDropTarget(unsigned int entity, Engine::Registry& registry) {
-    if (ImGui::BeginDragDropTarget())
-    {
-        char dragDropType[256]{};
-        sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
-
-
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragDropType))
-        {
-            IM_ASSERT(payload->DataSize == sizeof(ComponentType*));
-            ComponentType* payload_n = *(ComponentType**)payload->Data;
-            registry.addComponent<ComponentType>(entity, payload_n);
-        }
-        ImGui::EndDragDropTarget();
-    }
-}
 
 bool drawEntityNode(unsigned int entity, Engine::Registry &registry) {
     bool removed{ false };
@@ -91,155 +75,6 @@ bool drawEntityNode(unsigned int entity, Engine::Registry &registry) {
     }
 
     return removed;  
-}
-
-template <typename ComponentType>
-void createComponentNodeOutline(const char* componentName, Engine::Registry& registry, ComponentType* component, std::function<void(void)> drawFunc) {
-    // TODO: find out why right click is not always doing something, drag and drop seems to be buggy too (maybe somthing with the ids)
-    if (ImGui::CollapsingHeader(componentName)) {
-        char buff[64]{'\0'};
-        sprintf(buff, "%s_remove_popup", componentName);
-        if(ImGui::IsItemClicked(1)) {
-            ImGui::OpenPopup(buff);
-        }
-        // dont draw a component after it was removed
-        bool removed{false};
-        if (ImGui::BeginPopup(buff))
-        {
-            sprintf(buff, "Remove %s", componentName);
-            if (ImGui::Button(buff)) {
-                registry.removeComponent<ComponentType>(selectedEntity);
-                removed = true;
-            }
-            ImGui::EndPopup();
-        }
-        createImGuiComponentDragSource<ComponentType>(component);
-        if (!removed) {
-            drawFunc();
-        }
-    }
-}
-
-void drawMaterialNode(Engine::Registry &registry) {
-    Engine::MaterialComponent* material = registry.getComponent<Engine::MaterialComponent>(selectedEntity);
-
-    createComponentNodeOutline<Engine::MaterialComponent>("Material", registry, material, [&]() {
-        ImGui::ColorEdit4("Color", material->getColor().raw());
-
-        if (ImGui::IsItemEdited()) {
-            registry.updated<Engine::MaterialComponent>(selectedEntity);
-        }
-    });
-}
-
-void drawGeometryNode(Engine::Registry &registry) {
-    Engine::GeometryComponent* geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity);
-
-    createComponentNodeOutline<Engine::GeometryComponent>("Geometry", registry, geometry, [&]() {
-        if (ImGui::TreeNode("Vertices")) { 
-            std::vector<Engine::Math::Vector3> &vertices{geometry->getVertices()};
-            for(int i = 0; i < vertices.size(); ++i) {
-                std::string str = std::to_string(i);
-                str.insert(0, "Vertex ");
-                ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
-                if (ImGui::IsItemEdited()) {
-                    registry.updated<Engine::GeometryComponent>(selectedEntity);
-                }
-            }
-            static Engine::Math::Vector3 newVertex{0.0, 0.0, 0.0};
-            if (ImGui::Button("+##open_add_vertex_popup")) {
-                ImGui::OpenPopup("Add Vertex");
-            }
-            if (ImGui::BeginPopup("Add Vertex"))
-            {
-                ImGui::InputFloat3("##new_vertex_input", newVertex.raw());
-                ImGui::SameLine();
-                if (ImGui::Button("+##add_vertex")) {
-                    geometry->addVertex(Engine::Math::Vector3{newVertex});
-                    registry.updated<Engine::GeometryComponent>(selectedEntity);
-                    newVertex = Engine::Math::Vector3{ 0.0f, 0.0f, 0.0f };
-                }
-                ImGui::EndPopup();
-            }
-
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Faces")) {
-            std::vector<unsigned int>& faces{ geometry->getFaces() };
-            for(int i = 0; i < faces.size(); i += 3) {
-                std::string str = std::to_string(i / 3);
-                str.insert(0, "Face ");
-                ImGui::InputScalarN(str.c_str(), ImGuiDataType_U32, faces.data() + i, 3);
-                if (ImGui::IsItemEdited()) {
-                    registry.updated<Engine::GeometryComponent>(selectedEntity);
-                }
-            }
-            static unsigned int newFace[3]{0u, 0u, 0u};
-            if (ImGui::Button("+##open_add_face_popup")) {
-                ImGui::OpenPopup("Add Face");
-            }
-            if (ImGui::BeginPopup("Add Face"))
-            {
-                ImGui::InputScalarN("##new_face_input", ImGuiDataType_U32, newFace, 3);
-                ImGui::SameLine();
-                if (ImGui::Button("+##add_face")) {
-                    geometry->addFace(newFace[0], newFace[1], newFace[2]);
-                    registry.updated<Engine::GeometryComponent>(selectedEntity);
-                    newFace[0] = 0u;
-                    newFace[1] = 0u;
-                    newFace[2] = 0u;
-                }
-                ImGui::EndPopup();
-            }
-
-            ImGui::TreePop();
-        }
-    });
-}
-
-void drawTransformNode(Engine::Registry &registry) {
-    Engine::TransformComponent* transform = registry.getComponent<Engine::TransformComponent>(selectedEntity);
-
-    createComponentNodeOutline<Engine::TransformComponent>("Transform", registry, transform, [&]() {
-        ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
-        if(ImGui::IsItemEdited()) {
-            transform->update();
-            registry.updated<Engine::TransformComponent>(selectedEntity);
-        }
-        ImGui::DragFloat3("Scaling", transform->getScaling().raw(), 0.1);
-        if(ImGui::IsItemEdited()) {
-            transform->update();
-            registry.updated<Engine::TransformComponent>(selectedEntity);
-        }
-        
-        auto rotDeg = MathLib::Util::radToDeg(transform->getRotation());
-        ImGui::DragFloat3("Rotation", rotDeg.raw(), 1.0);
-        if(ImGui::IsItemEdited()) {
-            transform->setRotation(MathLib::Util::degToRad(rotDeg));
-            transform->update();
-            registry.updated<Engine::TransformComponent>(selectedEntity);
-        }
-    });
-}
-
-void drawRenderNode(Engine::Registry& registry) {
-    Engine::OpenGLRenderComponent* render = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity);
-
-    createComponentNodeOutline<Engine::OpenGLRenderComponent>("Render", registry, render, [&]() {
-        const char* types[2]{"Points\0", "Triangles\0"};
-        static int primitive_type_current = 1;
-        const char* comboLabel = types[primitive_type_current];
-        static int primitive_type = GL_TRIANGLES;
-        if (ImGui::RadioButton("Points", primitive_type == GL_POINTS)) {
-            primitive_type = GL_POINTS;
-            render->updatePrimitiveType(primitive_type);
-        } 
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Triangles", primitive_type == GL_TRIANGLES)) {
-            primitive_type = GL_TRIANGLES;
-            render->updatePrimitiveType(primitive_type);
-        }
-    });
 }
 
 char name[64];
@@ -333,7 +168,7 @@ void UI::render(Engine::Registry &registry) {
                     return !strcmp(compName, "Camera");
                 }), possibleComponents.end());
 
-                // drawCameraNode(registry);
+                drawCameraNode(registry);
             }
 
             if (possibleComponents.size()) {
@@ -344,23 +179,69 @@ void UI::render(Engine::Registry &registry) {
                     if (!strcmp(possibleComponents[possible_component_current], "Material")) {
                         registry.addComponent<Engine::MaterialComponent>(selectedEntity, new Engine::MaterialComponent{});
                     } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
-                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, new Engine::GeometryComponent{
+                        ImGui::OpenPopup("Select Geometry Type");
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
+                        registry.addComponent<Engine::TransformComponent>(selectedEntity, new Engine::TransformComponent{});
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
+                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, new Engine::OpenGLRenderComponent{
+                            registry,
                             {
-                                Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
+                                Engine::OpenGLShader{GL_VERTEX_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.vert").c_str()},
+                                Engine::OpenGLShader{GL_FRAGMENT_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.frag").c_str()},
+                            }
+                        });
+                    } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
+                        Engine::CameraComponent* camera = registry.addComponent<Engine::CameraComponent>(selectedEntity, new Engine::CameraComponent{registry});
+                        int width, height;
+                        GLFWwindow* window = Window::getWindow();
+                        glfwGetFramebufferSize(window, &width, &height);
+                        camera->updateAspect((float)width/(float)height);
+                        registry.updated<Engine::CameraComponent>(mainCamera);
+                    }
+                }
+                if (ImGui::BeginPopup("Select Geometry Type"))
+                {
+                    if(ImGui::Button("Blank")) {
+                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, new Engine::GeometryComponent{});
+                    }
+                    if (ImGui::Button("Triangle")) {
+                        Engine::GeometryComponent* geometry = new Engine::GeometryComponent{
+                            {
                                 Engine::Math::Vector3{  0.5, -0.5, 0.0 },
+                                Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
                                 Engine::Math::Vector3{  0.0,  0.5, 0.0 }
                             },
                             {
                                 0, 1, 2
                             }
-                        });
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
-                        registry.addComponent<Engine::TransformComponent>(selectedEntity, new Engine::TransformComponent{});
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
-                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, new Engine::OpenGLRenderComponent{registry});
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
-                        registry.addComponent<Engine::CameraComponent>(selectedEntity, new Engine::CameraComponent{registry});
+                        };
+                        geometry->calculateNormals();
+                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
                     }
+                    if (ImGui::Button("Sphere")) {
+                        ImGui::OpenPopup("Sphere Parameters");
+                        
+                    }
+                    static float sphereRadius{1.0f};
+                    static int horizontalPoints{10};
+                    static int verticalPoints{10};
+                    if (ImGui::BeginPopup("Sphere Parameters"))
+                    {
+                        ImGui::InputFloat("Radius", &sphereRadius, 0.0f);
+                        ImGui::SameLine();
+                        ImGui::InputInt("Horizontal", &horizontalPoints);
+                        ImGui::SameLine();
+                        ImGui::InputInt("Vertical", &verticalPoints);
+                        ImGui::SameLine();
+                        if (ImGui::Button("+##add_sphere_geometry")) {
+                            registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::createSphereGeometry(sphereRadius, horizontalPoints, verticalPoints));
+                            sphereRadius = 1.0f;
+                            horizontalPoints = 10;
+                            verticalPoints = 10;
+                        }
+                        ImGui::EndPopup();
+                    }
+                    ImGui::EndPopup();
                 }
             }
         }

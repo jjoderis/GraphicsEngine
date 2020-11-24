@@ -4,7 +4,12 @@ struct Material {
     float color[4];
 };
 
-float modelMatrix[16]{
+float baseTransform[32]{
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0,
+
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0,
@@ -12,7 +17,9 @@ float modelMatrix[16]{
 };
 
 
-Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry) : m_registry{registry} {
+Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry, std::initializer_list<OpenGLShader> shaders)
+    : m_registry{registry}, m_program{shaders} 
+{
     glGenVertexArrays(1, &m_VAO);
     glBindVertexArray(m_VAO);
     glGenBuffers(1, &m_VBO);
@@ -24,19 +31,16 @@ Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry)
     glGenBuffers(1, &m_materialUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, m_materialUBO);
     Material baseMat{1.0, 0.01, 0.6, 1.0};
-    unsigned int blockIndex = m_program.getBlockIndex("Materials");
+    
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Material), &baseMat, GL_DYNAMIC_DRAW);
-    glUniformBlockBinding(m_program.getProgram(), blockIndex, 0);
-
+    
     // setup transform buffer and insert base model transform
     glGenBuffers(1, &m_transformUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, m_transformUBO);
-    blockIndex = m_program.getBlockIndex("Transforms");
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(modelMatrix), modelMatrix, GL_DYNAMIC_DRAW);
-    glUniformBlockBinding(m_program.getProgram(), blockIndex, 1);
+    
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(baseTransform), baseTransform, GL_DYNAMIC_DRAW);
 
-    unsigned int cameraIndex = m_program.getBlockIndex("Camera");
-    glUniformBlockBinding(m_program.getProgram(), cameraIndex, 2);
+    setupUniforms();
 
     // add callback that is invoked every time a RenderComponent is added to an entity which then associates them
     m_associateCallback = registry.onAdded<Engine::OpenGLRenderComponent>([=](unsigned int entity, Engine::OpenGLRenderComponent* renderComponent) {
@@ -54,14 +58,49 @@ Engine::OpenGLRenderComponent::~OpenGLRenderComponent() {
     glDeleteBuffers(1, &m_transformUBO);
 }
 
-size_t stride{5 * sizeof(float)};
-size_t vertexSize{3 * sizeof(float)};
-size_t transIndexOffset{4 * sizeof(float)};
+void Engine::OpenGLRenderComponent::updateShaders(std::vector<OpenGLShader>& newShaders) {
+    try {
+        m_program.updateProgram(newShaders);
+        setupUniforms();
+    } catch(ShaderException& err) {
+        setupUniforms();
+        throw err;
+    }
+}
 
+void Engine::OpenGLRenderComponent::setupUniforms() {
+    int blockIndex = m_program.getBlockIndex("Materials");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 0);
+    }
+
+    blockIndex = m_program.getBlockIndex("Transforms");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 1);
+    }
+
+    blockIndex = m_program.getBlockIndex("Camera");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 2);
+    }
+
+    blockIndex = m_program.getBlockIndex("Lights");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 3);
+    }
+}
+
+size_t stride{8 * sizeof(float)};
+size_t vertexSize{3 * sizeof(float)};
+size_t normalSize{3* sizeof(float)};
+size_t matIndexOffset{vertexSize + normalSize};
+size_t transIndexOffset{matIndexOffset + sizeof(float)};
+
+// TODO: we always expect there to be vertex normals at the moment => maybe make this dependent on the shader in the future (are normals needed)
 void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, GeometryComponent* geometry) {
     meta_data &entityData = m_entityData.at(entity);
     std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
-    size_t geometryVertexSize = 5 * sizeof(float) * vertices.size();
+    size_t geometryVertexSize = stride * vertices.size();
     size_t bufferSize{m_numPoints * stride};
 
     // create new buffer with space for the current geometries + space for the new geometry
@@ -73,10 +112,12 @@ void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, GeometryCom
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)vertexSize);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)vertexSize);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, stride, (void*)(transIndexOffset));
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, stride, (void*)matIndexOffset);
     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, stride, (void*)transIndexOffset);
+    glEnableVertexAttribArray(3);
 
     // copy the data from the old buffer into the new one
     if (bufferSize) {
@@ -96,6 +137,7 @@ void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, GeometryCom
 
 void Engine::OpenGLRenderComponent::updateVertices(unsigned int entity, GeometryComponent* geometry) {
     std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
+    std::vector<Math::Vector3>& normals{ geometry->getNormals() };
     size_t vertexOffset{std::get<0>(m_entityData.at(entity))};
     size_t objectStart{vertexOffset * stride};
 
@@ -103,6 +145,7 @@ void Engine::OpenGLRenderComponent::updateVertices(unsigned int entity, Geometry
     {  
         glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
         glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i, vertexSize, vertices[i].raw());
+        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i + vertexSize, normalSize, normals[i].raw());
     }
 }
 
@@ -239,7 +282,7 @@ void Engine::OpenGLRenderComponent::updateMaterialIndices(unsigned int entity) {
     for (int i = 0; i < numVertices; ++i) 
     {  
         glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i + vertexSize, sizeof(float), &matIndex);
+        glBufferSubData(GL_ARRAY_BUFFER, objectStart + stride * i + matIndexOffset, sizeof(float), &matIndex);
     }    
 }
 
@@ -407,8 +450,8 @@ void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, Transfor
     glGenBuffers(1, &newTransformUBO);
     glBindBuffer(GL_COPY_READ_BUFFER, m_transformUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, newTransformUBO);
-    glBufferData(GL_UNIFORM_BUFFER, (m_numTransforms + 1) * sizeof(modelMatrix), NULL, GL_DYNAMIC_DRAW);
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, m_numTransforms * sizeof(modelMatrix));
+    glBufferData(GL_UNIFORM_BUFFER, (m_numTransforms + 1) * sizeof(baseTransform), NULL, GL_DYNAMIC_DRAW);
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, m_numTransforms * sizeof(baseTransform));
     
     glUniformBlockBinding(m_program.getProgram(), m_program.getBlockIndex("Transforms"), 1);
 
@@ -426,10 +469,11 @@ void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, Transfor
 
     ++m_numTransforms;
 }
-
+const size_t matrixSize{ 16 * sizeof(float) };
 void Engine::OpenGLRenderComponent::updateTransform(unsigned int entity, TransformComponent* transform) {
     glBindBuffer(GL_UNIFORM_BUFFER, this->m_transformUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(modelMatrix), sizeof(modelMatrix), transform->getModelMatrix().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(baseTransform), matrixSize, transform->getModelMatrix().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(baseTransform) + matrixSize, matrixSize, transform->getNormalMatrix().raw());
 }
 
 void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, TransformComponent* transform) {
@@ -469,12 +513,12 @@ void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, Transfo
         glGenBuffers(1, &newTransformUBO);
         glBindBuffer(GL_COPY_READ_BUFFER, m_transformUBO);
         glBindBuffer(GL_UNIFORM_BUFFER, newTransformUBO);
-        glBufferData(GL_UNIFORM_BUFFER, (m_numTransforms - 1) * sizeof(modelMatrix), NULL, GL_DYNAMIC_DRAW);
-        size_t firstBlockSize{oldTransIndex * sizeof(modelMatrix)};
-        size_t secondBlockSize{((m_numTransforms - 1) - oldTransIndex) * sizeof(modelMatrix)};
+        glBufferData(GL_UNIFORM_BUFFER, (m_numTransforms - 1) * sizeof(baseTransform), NULL, GL_DYNAMIC_DRAW);
+        size_t firstBlockSize{oldTransIndex * sizeof(baseTransform)};
+        size_t secondBlockSize{((m_numTransforms - 1) - oldTransIndex) * sizeof(baseTransform)};
         glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, firstBlockSize);
         // skip over the transform to delete in old buffer
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, firstBlockSize + sizeof(modelMatrix), firstBlockSize, secondBlockSize);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, firstBlockSize + sizeof(baseTransform), firstBlockSize, secondBlockSize);
         
         glUniformBlockBinding(m_program.getProgram(), m_program.getBlockIndex("Transforms"), 1);
 

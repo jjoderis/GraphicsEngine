@@ -17,6 +17,12 @@ add_library(modelerLib
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
+    modeler/imgui/Nodes/helpers.cpp
+    modeler/imgui/Nodes/Camera/camera.cpp
+    modeler/imgui/Nodes/Geometry/geometry.cpp
+    modeler/imgui/Nodes/Material/material.cpp
+    modeler/imgui/Nodes/Render/render.cpp
+    modeler/imgui/Nodes/Transform/transform.cpp
 )
 
 target_link_libraries(modelerLib glfw glad engineCore engineOpenGL)

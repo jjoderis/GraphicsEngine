@@ -3,14 +3,38 @@
 Engine::CameraComponent::CameraComponent(Registry& registry) : m_registry{registry} {
     // sets basics; camera at (0,0,0); projection project on x-y plane
     m_viewMatrix.setIdentity();
-    m_projectionMatrix.setIdentity();
-    m_projectionMatrix(2, 2) = 0;
+    calculateProjection();
 
     m_associateCallback = m_registry.onAdded<CameraComponent>([=](unsigned int entity, CameraComponent* camera) {
         if (this == camera) {
             this->registerEntity(entity);
         }
     });
+}
+
+void Engine::CameraComponent::updateAspect(float aspect) {
+    m_aspect = aspect;
+    calculateProjection();
+}
+
+void Engine::CameraComponent::calculateProjection() {
+    if (m_projection == ProjectionType::Ortographic) {
+        m_projectionMatrix = Math::Matrix4 {
+            2.0f / (m_right - m_left),                      0.0f,                    0.0f, -(m_right+m_left)/(m_right-m_left),
+                                 0.0f, 2.0f / (m_top - m_bottom),                    0.0f, -(m_top+m_bottom)/(m_top-m_bottom),
+                                 0.0f,                      0.0f, 2.0f / (m_far - m_near),     -(m_far+m_near)/(m_far-m_near),
+                                 0.0f,                      0.0f,                    0.0f,                               1.0f
+        };
+    } else {
+        float c{1.0f/tan(m_fov/2)};
+
+        m_projectionMatrix = Math::Matrix4 {
+            c / m_aspect, 0.0f,                      0.0f,                                      0.0f,
+                    0.0f,    c,                      0.0f,                                      0.0f,
+                    0.0f, 0.0f,  -(m_far+m_near)/(m_far-m_near), -(2.0f*m_far*m_near)/(m_far-m_near),
+                    0.0f, 0.0f,                           -1.0f,                                0.0f
+        };
+    }
 }
  
 void Engine::CameraComponent::registerEntity(unsigned int entity) {
@@ -65,4 +89,60 @@ const Engine::Math::Matrix4& Engine::CameraComponent::getViewMatrixInverse() {
 
 const Engine::Math::Matrix4& Engine::CameraComponent::getProjectionMatrix() {
     return m_projectionMatrix;
+}
+
+float& Engine::CameraComponent::getNear(){
+    return m_near;
+}
+void Engine::CameraComponent::setNear(float near) {
+    m_near = near;
+}
+
+float& Engine::CameraComponent::getFar() {
+    return m_far;
+}
+void Engine::CameraComponent::setFar(float far) {
+    m_far = far;
+}
+
+float& Engine::CameraComponent::getLeft() {
+    return m_left;
+}
+void Engine::CameraComponent::setLeft(float left) {
+    m_left = left;
+}
+
+float& Engine::CameraComponent::getRight() {
+    return m_right;
+}
+void Engine::CameraComponent::setRight(float right) {
+    m_right = right;
+}
+
+float& Engine::CameraComponent::getBottom() {
+    return m_bottom;
+}
+void Engine::CameraComponent::setBottom(float bottom) {
+    m_bottom = bottom;
+}
+
+float& Engine::CameraComponent::getTop() {
+    return m_top;
+}
+void Engine::CameraComponent::setTop(float top) {
+    m_top = top;
+}
+
+float& Engine::CameraComponent::getFov() {
+    return m_fov;
+}
+void Engine::CameraComponent::setFov(float fov) {
+    m_fov = fov;
+}
+
+float& Engine::CameraComponent::getAspect() {
+    return m_aspect;
+}
+void Engine::CameraComponent::setAspect(float aspect) {
+    m_aspect = aspect;
 }

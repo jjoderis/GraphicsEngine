@@ -24,6 +24,10 @@ namespace Engine {
         Matrix4 getTranslation(const Vector3 &location);
         Matrix4 getScaling(const Vector3 &scaling);
         Matrix4 getRotation(const Vector3 &rotation);
+
+        Matrix4 lookAt(const Vector3& position, const Vector3& up, const Vector3& target);
+
+        Vector3 extractEuler(const Matrix4& rotationMat);
     }
 }
 
