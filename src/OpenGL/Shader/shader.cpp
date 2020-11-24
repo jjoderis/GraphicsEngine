@@ -58,7 +58,7 @@ void Engine::OpenGLShader::compileShader() {
     }
 }
 
-Engine::OpenGLProgram::OpenGLProgram(std::initializer_list<OpenGLShader> shaders) {
+Engine::OpenGLProgram::OpenGLProgram(std::vector<OpenGLShader> shaders) {
     for (OpenGLShader shader: shaders) {
         try {
             shader.compileShader();
@@ -185,6 +185,42 @@ void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders) 
             m_shaders.emplace(newShader.m_type, newShader);
         }
     }
+}
+
+Engine::OpenGLShader Engine::loadShader(const Util::Path& filePath) {
+    GLenum type{};
+
+    std::string extension{filePath.extension().string()};
+
+    if (extension == ".vert") {
+        type = GL_VERTEX_SHADER;
+    } else if (extension == ".frag") {
+        type = GL_FRAGMENT_SHADER;
+    } else if (extension == ".geom") {
+        type = GL_GEOMETRY_SHADER;
+    } else if (extension == ".teval") {
+        type = GL_TESS_EVALUATION_SHADER;
+    } else if (extension == ".tcont") {
+        type = GL_TESS_CONTROL_SHADER;
+    } else if (extension == ".comp") {
+        type = GL_COMPUTE_SHADER;
+    } else {
+        throw ShaderException{"Unknown file extension for shader loading."};
+    }
+
+    std::string shaderSource{Util::readTextFile(filePath.c_str())};
+
+    return OpenGLShader{type, shaderSource.c_str()};
+}
+
+std::vector<Engine::OpenGLShader> Engine::loadShaders(const char* directoryPaths) {
+    std::vector<OpenGLShader> shaders{};
+
+    for(auto& filePath: Util::getFilePaths(directoryPaths)) {
+        shaders.push_back(loadShader(filePath));
+    }
+
+    return shaders;
 }
 
 

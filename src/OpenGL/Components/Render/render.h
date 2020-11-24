@@ -22,7 +22,7 @@ namespace Engine {
         unsigned int m_EBO{}; // stores index data
         unsigned int m_materialUBO{}; // stores material data
         unsigned int m_transformUBO{}; // stores transform data
-        Engine::OpenGLProgram m_program{}; // the shader program to use
+        Engine::OpenGLProgram m_program; // the shader program to use
         Engine::Registry &m_registry; // the registry holding all entities and components
 
         // stores the offsets of the specific Geometry into the Vertex and Index Buffer; later transform and material (index of the material used for an entity)
@@ -85,7 +85,7 @@ namespace Engine {
 
         friend RenderTest;
     public:
-        OpenGLRenderComponent(Engine::Registry &registry, std::initializer_list<OpenGLShader> shaders);
+        OpenGLRenderComponent(Engine::Registry &registry, std::vector<OpenGLShader> shaders);
         ~OpenGLRenderComponent();
 
         void updatePrimitiveType(int primitiveType);

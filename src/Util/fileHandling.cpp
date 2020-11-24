@@ -14,3 +14,15 @@ std::string Util::readTextFile(const char* filePath){
   }
   throw(errno);
 }
+
+std::vector<Util::Path> Util::getFilePaths(const char* directoryPath) {
+  std::vector<Path> filePaths{};
+
+  for(const auto& entry: std::filesystem::directory_iterator(directoryPath)) {
+        if (entry.is_regular_file()) {
+          filePaths.push_back(entry.path());
+        }
+  }
+
+  return filePaths;
+}

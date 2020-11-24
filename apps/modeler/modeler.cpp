@@ -36,8 +36,9 @@ int main()
     Window::init();
     OpenGL::init();
 
-    Engine::OpenGLRenderer renderer{registry};
+    Engine::OpenGLRenderer* renderer = new Engine::OpenGLRenderer{registry};
 
+    // we have to delete the renderer before we tear down the OpenGL Context => we have to be able to delete the renderer before this function ends
     GLFWwindow* window = Window::getWindow();
 
     glfwSetFramebufferSizeCallback(window, cameraAspectCallback);
@@ -60,10 +61,7 @@ int main()
     std::weak_ptr<Engine::GeometryComponent> geometry{ registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20)) };
     registry.addComponent<Engine::OpenGLRenderComponent>(object1, std::make_shared<Engine::OpenGLRenderComponent>(
         registry,
-        std::initializer_list<Engine::OpenGLShader>{
-            Engine::OpenGLShader{GL_VERTEX_SHADER, Util::readTextFile("../../data/shaders/Basic_Shader/base.vert").c_str()},
-            Engine::OpenGLShader{GL_FRAGMENT_SHADER, Util::readTextFile("../../data/shaders/Basic_Shader/base.frag").c_str()},
-        }
+        Engine::loadShaders("../../data/shaders/Basic_Shader")
     ));
 
     while (!glfwWindowShouldClose(window))
@@ -76,12 +74,14 @@ int main()
 
         UI::render(registry);
 
-        renderer.render();
+        renderer->render();
 
         UI::postRender();
 
         Window::postRender();
     }
+
+    delete renderer;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

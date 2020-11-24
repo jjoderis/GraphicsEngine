@@ -6,8 +6,8 @@
 #include <vector>
 #include <map>
 #include <cstring>
-#include <initializer_list>
 #include <exception>
+#include "../../Util/fileHandling.h"
 
 namespace Engine {
     class OpenGLProgram;
@@ -41,7 +41,7 @@ namespace Engine {
         void cleanupShaders();
         void rollback();
     public:
-        OpenGLProgram(std::initializer_list<OpenGLShader> shaders);
+        OpenGLProgram(std::vector<OpenGLShader> shaders);
         ~OpenGLProgram();
         void use();
         GLuint getBlockIndex(const char* blockName);
@@ -49,6 +49,9 @@ namespace Engine {
 
         void updateProgram(std::vector<OpenGLShader> newShaders);
     };
+
+    OpenGLShader loadShader(const Util::Path& filePath);
+    std::vector<OpenGLShader> loadShaders(const char* directoryPaths);
 }
 
 

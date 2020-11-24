@@ -17,7 +17,7 @@ float baseTransform[32]{
 };
 
 
-Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry, std::initializer_list<OpenGLShader> shaders)
+Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry, std::vector<OpenGLShader> shaders)
     : m_registry{registry}, m_program{shaders} 
 {
     glGenVertexArrays(1, &m_VAO);
