@@ -9,25 +9,25 @@ Engine::Systems::OpenGLLightsTracker::OpenGLLightsTracker(unsigned int& lightsUB
     glBufferData(GL_UNIFORM_BUFFER, 4 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(int), &m_numLights);
 
-    m_AddLightCB = m_registry.onAdded<LightComponent>([this](unsigned int entity, LightComponent* light) {
-        // if the entity is not wan't associated with this component before
+    m_AddLightCB = m_registry.onAdded<LightComponent>([this](unsigned int entity, std::weak_ptr<LightComponent> light) {
+        // if the entity wasn't associated with this component before
         if (m_entityData.find(entity) == m_entityData.end()) {
             m_entityData.emplace(entity, meta_data{
                 0,
-                std::shared_ptr<std::function<void(unsigned int, LightComponent*)>>{},
-                std::shared_ptr<std::function<void(unsigned int, LightComponent*)>>{},
-                std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{},
-                std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{}
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightComponent>)>>{},
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightComponent>)>>{},
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{},
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{}
             });
 
-            addLight(entity, light);
+            addLight(entity, light.lock());
         }
     });
 }
 
 const size_t lightInfoSize{3 * sizeof(float)};
 
-void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, LightComponent* light) {
+void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, const std::shared_ptr<LightComponent>& light) {
     size_t offset{4 * sizeof(int) + m_numLights * lightInfoSize};
 
     unsigned int newUBO{};
@@ -55,10 +55,10 @@ void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, LightCo
     std::get<0>(entityData) = offset;
     
     // setup callbacks for changes in entity light
-    std::get<1>(entityData) = m_registry.onUpdate<LightComponent>(entity, [this](unsigned int updateEntity, LightComponent* updatedlight) {
+    std::get<1>(entityData) = m_registry.onUpdate<LightComponent>(entity, [this](unsigned int updateEntity, std::weak_ptr<LightComponent> updatedlight) {
         // TODO: update light info in buffer
     });
-    std::get<2>(entityData) = m_registry.onRemove<LightComponent>([this, entity](unsigned int removeEntity, LightComponent* light) {
+    std::get<2>(entityData) = m_registry.onRemove<LightComponent>([this, entity](unsigned int removeEntity, std::weak_ptr<LightComponent> light) {
         if (removeEntity == entity) {
             this->removeLight(entity);
         }
@@ -104,17 +104,17 @@ void Engine::Systems::OpenGLLightsTracker::removeLight(unsigned int entity) {
 }
 
 void Engine::Systems::OpenGLLightsTracker::awaitTransform(unsigned int entity) {
-    TransformComponent* transform{ m_registry.getComponent<TransformComponent>(entity) };
+    std::shared_ptr<TransformComponent> transform{ m_registry.getComponent<TransformComponent>(entity) };
 
     if(transform) {
         this->updateTransformInfo(entity, transform);
-        std::get<3>(m_entityData.at(entity)) = m_registry.onUpdate<TransformComponent>(entity, [this](unsigned int updateEntity, TransformComponent* transform) {
-            this->updateTransformInfo(updateEntity, transform);
+        std::get<3>(m_entityData.at(entity)) = m_registry.onUpdate<TransformComponent>(entity, [this](unsigned int updateEntity, std::weak_ptr<TransformComponent> transform) {
+            this->updateTransformInfo(updateEntity, transform.lock());
         });
-        std::get<4>(m_entityData.at(entity)) = m_registry.onRemove<TransformComponent>([this, entity](unsigned int removeEntity, TransformComponent* removedTransform) {
+        std::get<4>(m_entityData.at(entity)) = m_registry.onRemove<TransformComponent>([this, entity](unsigned int removeEntity, std::weak_ptr<TransformComponent> removedTransform) {
             if (entity == removeEntity) {
                 this->resetTransformInfo(removeEntity);
-                std::get<3>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([this, removeEntity](unsigned int addEntity, TransformComponent* addedTransform) {
+                std::get<3>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([this, removeEntity](unsigned int addEntity, std::weak_ptr<TransformComponent> addedTransform) {
                     if (removeEntity == addEntity) {
                         this->awaitTransform(addEntity);
                     }
@@ -123,7 +123,7 @@ void Engine::Systems::OpenGLLightsTracker::awaitTransform(unsigned int entity) {
         });
     } else {
         resetTransformInfo(entity);
-        std::get<3>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([this, entity](unsigned int addEntity, TransformComponent* addedTransform) {
+        std::get<3>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([this, entity](unsigned int addEntity, std::weak_ptr<TransformComponent> addedTransform) {
             if (entity == addEntity) {
                 this->awaitTransform(addEntity);
             }
@@ -140,7 +140,7 @@ void Engine::Systems::OpenGLLightsTracker::resetTransformInfo(unsigned int entit
     glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), origin);
 }
 
-void Engine::Systems::OpenGLLightsTracker::updateTransformInfo(unsigned int entity, TransformComponent* transform) {
+void Engine::Systems::OpenGLLightsTracker::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
     size_t offset{ std::get<0>(m_entityData.at(entity)) };
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);

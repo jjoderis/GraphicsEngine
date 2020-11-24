@@ -2,56 +2,65 @@
 #include <Components/Render/render.h>
 #include <GLFW/glfw3.h>
 
+const char* vertexShader =
+"#version 330 core\n"
+"layout (location = 0) in vec3 vPosition;\n"
+
+"void main() {\n"
+"    gl_Position = vec4(vPosition, 1.0);\n"
+"}\n";
+
+const char* fragmentShader = 
+"#version 330 core\n"
+
+"out vec4 FragColor;\n"
+"void main() {\n"
+"    FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+"}\n";
+
+using namespace Engine;
 class RenderTest : public ::testing::Test
 {
 public:
     RenderTest() {
-        Engine::TransformComponent transform{};
+        TransformComponent transform{};
 
         entity1 = m_registry.addEntity(); // entityId = 0
 
-        geometry1 = m_registry.addComponent<Engine::GeometryComponent>(entity1, new Engine::GeometryComponent{
-            {
+        geometry1 = m_registry.addComponent<Engine::GeometryComponent>(entity1, std::make_shared<GeometryComponent>(
+            std::initializer_list<Math::Vector3>{
                 Engine::Math::Vector3{-1.0, 0.0, 0.0 },
                 Engine::Math::Vector3{ 1.0, 0.0, 0.0 },
                 Engine::Math::Vector3{ 0.0, 1.0, 0.0 },
             },
-            {
+            std::initializer_list<unsigned int>{
                 0, 1, 2
             }
-        });
+        ));
         geometry1->calculateNormals();
 
         entity2 = m_registry.addEntity(); // entityId = 1
         m_registry.addComponent<Engine::GeometryComponent>(entity2, geometry1);
-        material1 = m_registry.addComponent<Engine::MaterialComponent>(entity2, new Engine::MaterialComponent{ 1.0, 2.0, 3.0, 4.0 });
+        material1 = m_registry.addComponent<Engine::MaterialComponent>(entity2, std::make_shared<Engine::MaterialComponent>( 1.0, 2.0, 3.0, 4.0 ));
 
         entity3 = m_registry.addEntity(); // entityId = 2
         m_registry.addComponent<Engine::GeometryComponent>(entity3, geometry1);
-        transform1 = m_registry.addComponent<Engine::TransformComponent>(entity3, new Engine::TransformComponent{});        
-
-        // add callback that is invoked every time a RenderComponent is added to an entity which then associates them
-        onRenderComponent = 
-            m_registry.onAdded<Engine::OpenGLRenderComponent>(
-                [](unsigned int entity, Engine::OpenGLRenderComponent* renderComponent) {
-                    renderComponent->associate(entity);
-                }
-            );
+        transform1 = m_registry.addComponent<Engine::TransformComponent>(entity3, std::make_shared<Engine::TransformComponent>());        
 
         entity4 = m_registry.addEntity(); // entityId = 3
     }
 protected :
-    Engine::Registry m_registry{};
-    std::shared_ptr<std::function<void(unsigned int, Engine::OpenGLRenderComponent*)>> onRenderComponent;
+    Registry m_registry{};
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<OpenGLRenderComponent>)>> onRenderComponent;
     unsigned int entity1;
     unsigned int entity2;
     unsigned int entity3;
     unsigned int entity4;
-    Engine::GeometryComponent* geometry1;
-    Engine::MaterialComponent* material1;
-    Engine::TransformComponent* transform1;
+    std::shared_ptr<GeometryComponent> geometry1;
+    std::shared_ptr<MaterialComponent> material1;
+    std::shared_ptr<TransformComponent> transform1;
 
-    std::vector<float> getVertexBufferContent(Engine::OpenGLRenderComponent* render) {
+    std::vector<float> getVertexBufferContent(const std::shared_ptr<OpenGLRenderComponent>& render) {
         int bufferSize{};
         glBindBuffer(GL_ARRAY_BUFFER, render->m_VBO);
         glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &bufferSize);
@@ -60,7 +69,7 @@ protected :
         return buffer;
     }
 
-    std::vector<unsigned int> getIndexBufferContent(Engine::OpenGLRenderComponent* render) {
+    std::vector<unsigned int> getIndexBufferContent(const std::shared_ptr<OpenGLRenderComponent>& render) {
         int bufferSize{};
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render->m_EBO);
         glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &bufferSize);
@@ -69,7 +78,7 @@ protected :
         return buffer;
     }
 
-    std::vector<float> getMaterialBufferContent(Engine::OpenGLRenderComponent* render) {
+    std::vector<float> getMaterialBufferContent(const std::shared_ptr<OpenGLRenderComponent>& render) {
         int bufferSize{};
         glBindBuffer(GL_UNIFORM_BUFFER, render->m_materialUBO);
         glGetBufferParameteriv(GL_UNIFORM_BUFFER, GL_BUFFER_SIZE, &bufferSize);
@@ -78,7 +87,7 @@ protected :
         return buffer;
     }
 
-    std::vector<float> getTransformBufferContent(Engine::OpenGLRenderComponent* render) {
+    std::vector<float> getTransformBufferContent(const std::shared_ptr<OpenGLRenderComponent>& render) {
         int bufferSize{};
         glBindBuffer(GL_UNIFORM_BUFFER, render->m_transformUBO);
         glGetBufferParameteriv(GL_UNIFORM_BUFFER, GL_BUFFER_SIZE, &bufferSize);
@@ -90,7 +99,7 @@ protected :
 
 TEST_F(RenderTest, init_opengl) {
     // completetly stupid but no idea how to avoid this
-    // TODO: find a way to avoid this (az least the window)
+    // TODO: find a way to avoid this (at least the window)
     if(!glfwInit()) {
         std::cout << "TEST\n";
         FAIL();
@@ -103,8 +112,14 @@ TEST_F(RenderTest, init_opengl) {
 }
 
 TEST_F(RenderTest, initial_state) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity4, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity4, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     // expect there to be no vertices and indices in the respective buffers
     std::vector<float> expectedVertices{};
@@ -121,14 +136,21 @@ TEST_F(RenderTest, initial_state) {
 
     // expect there to be a default transform
     std::vector<float> expectedTransforms{
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default transform
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default normalMatrix
     };
     EXPECT_EQ(getTransformBufferContent(renderComponent), expectedTransforms);
 }
 
 TEST_F(RenderTest, writes_geometry_to_buffer_if_one_exists) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
@@ -146,8 +168,14 @@ TEST_F(RenderTest, writes_geometry_to_buffer_if_one_exists) {
 }
 
 TEST_F(RenderTest, writes_material_to_buffer_and_sets_index) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
@@ -168,8 +196,14 @@ TEST_F(RenderTest, writes_material_to_buffer_and_sets_index) {
 }
 
 TEST_F(RenderTest, writes_material_to_buffer_and_sets_index_after_add) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     m_registry.addComponent<Engine::MaterialComponent>(entity1, material1);
 
@@ -192,8 +226,14 @@ TEST_F(RenderTest, writes_material_to_buffer_and_sets_index_after_add) {
 }
 
 TEST_F(RenderTest, removes_material_from_buffer_and_resets_indices_on_remove) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     m_registry.removeComponent<Engine::MaterialComponent>(entity2);
 
@@ -215,8 +255,14 @@ TEST_F(RenderTest, removes_material_from_buffer_and_resets_indices_on_remove) {
 }
 
 TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity3, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity3, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     std::vector<float> vertexBuffer{ getVertexBufferContent(renderComponent) };
     std::vector<float> expected{
@@ -229,16 +275,24 @@ TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index) {
 
     std::vector<float> transformBuffer{ getTransformBufferContent(renderComponent) };
     std::vector<float> expectedTransformBuffer{
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default transform
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0  // transform1
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default normalMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,  // transform1 modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0  // transform1 normalMatrix
     };
 
     EXPECT_EQ(transformBuffer, expectedTransformBuffer); // float equality; maybe not the best idea
 }
 
 TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index_after_add) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity1, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     m_registry.addComponent<Engine::TransformComponent>(entity1, transform1);
 
@@ -253,16 +307,24 @@ TEST_F(RenderTest, writes_transform_to_buffer_and_sets_index_after_add) {
 
     std::vector<float> transformBuffer{ getTransformBufferContent(renderComponent) };
     std::vector<float> expectedTransformBuffer{
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default transform
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0  // transform1
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default normalMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,  // transform1 modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0  // transform1 normalMatrix
     };
 
     EXPECT_EQ(transformBuffer, expectedTransformBuffer); // float equality; maybe not the best idea
 }
 
 TEST_F(RenderTest, removes_transform_from_buffer_and_resets_indices_on_remove) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity3, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity3, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     m_registry.removeComponent<Engine::TransformComponent>(entity3);
 
@@ -277,15 +339,22 @@ TEST_F(RenderTest, removes_transform_from_buffer_and_resets_indices_on_remove) {
 
     std::vector<float> transformBuffer{ getTransformBufferContent(renderComponent) };
     std::vector<float> expectedTransformBuffer{
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default transform
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default modelMatrix
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, // Default normalMatrix
     };
 
     EXPECT_EQ(transformBuffer, expectedTransformBuffer); // float equality; maybe not the best idea
 }
 
 TEST_F(RenderTest, awaits_geometry_before_initializing_entity) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity4, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity4, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     m_registry.removeComponent<Engine::TransformComponent>(entity3);
 
@@ -315,8 +384,14 @@ TEST_F(RenderTest, awaits_geometry_before_initializing_entity) {
 }
 
 TEST_F(RenderTest, resizes_buffer_on_additional_vertices) {
-    Engine::OpenGLRenderComponent* renderComponent
-        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, new Engine::OpenGLRenderComponent{m_registry});
+    std::shared_ptr<OpenGLRenderComponent> renderComponent
+        = m_registry.addComponent<Engine::OpenGLRenderComponent>(entity2, std::make_shared<Engine::OpenGLRenderComponent>(
+            m_registry,
+            std::initializer_list<OpenGLShader>{
+                OpenGLShader{GL_VERTEX_SHADER, vertexShader},
+                OpenGLShader{GL_FRAGMENT_SHADER, fragmentShader}
+            }
+        ));
 
     geometry1->addVertex(Engine::Math::Vector3{ 2.0f, 4.0f, 6.0f });
     geometry1->getNormals().emplace_back(Engine::Math::Vector3{-1.0, 0.0, 0.0});

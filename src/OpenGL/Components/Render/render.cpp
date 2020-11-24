@@ -43,9 +43,9 @@ Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry,
     setupUniforms();
 
     // add callback that is invoked every time a RenderComponent is added to an entity which then associates them
-    m_associateCallback = registry.onAdded<Engine::OpenGLRenderComponent>([=](unsigned int entity, Engine::OpenGLRenderComponent* renderComponent) {
-        if (renderComponent == this) {
-            renderComponent->associate(entity);
+    m_associateCallback = registry.onAdded<Engine::OpenGLRenderComponent>([=](unsigned int entity, std::weak_ptr<OpenGLRenderComponent> renderComponent) {
+        if (renderComponent.lock().get() == this) {
+            this->associate(entity);
         }
     });
 }
@@ -97,7 +97,7 @@ size_t matIndexOffset{vertexSize + normalSize};
 size_t transIndexOffset{matIndexOffset + sizeof(float)};
 
 // TODO: we always expect there to be vertex normals at the moment => maybe make this dependent on the shader in the future (are normals needed)
-void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, GeometryComponent* geometry) {
+void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry) {
     meta_data &entityData = m_entityData.at(entity);
     std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
     size_t geometryVertexSize = stride * vertices.size();
@@ -135,7 +135,7 @@ void Engine::OpenGLRenderComponent::addVertices(unsigned int entity, GeometryCom
     m_numPoints += vertices.size();
 }
 
-void Engine::OpenGLRenderComponent::updateVertices(unsigned int entity, GeometryComponent* geometry) {
+void Engine::OpenGLRenderComponent::updateVertices(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry) {
     std::vector<Math::Vector3>& vertices{ geometry->getVertices() };
     std::vector<Math::Vector3>& normals{ geometry->getNormals() };
     size_t vertexOffset{std::get<0>(m_entityData.at(entity))};
@@ -190,7 +190,7 @@ void Engine::OpenGLRenderComponent::removeVertices(unsigned int entity) {
     m_numPoints -= numObjectPoints;
 }
 
-void Engine::OpenGLRenderComponent::addFaces(unsigned int entity, GeometryComponent* geometry) {
+void Engine::OpenGLRenderComponent::addFaces(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry) {
     meta_data &entityData = m_entityData.at(entity);
     std::vector<unsigned int>& faces{geometry->getFaces()};
     size_t geometryFaceSize{sizeof(unsigned int) * faces.size()};
@@ -219,7 +219,7 @@ void Engine::OpenGLRenderComponent::addFaces(unsigned int entity, GeometryCompon
     m_numFaces += faces.size();
 }
 
-void Engine::OpenGLRenderComponent::updateFaces(unsigned int entity, GeometryComponent* geometry) {
+void Engine::OpenGLRenderComponent::updateFaces(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry) {
     // we need to make a copy because we have to offset all face indices by the amount of vertices comping before this object
     std::vector<unsigned int> faces{geometry->getFaces()};
     size_t vertexOffset{std::get<0>(m_entityData.at(entity))};
@@ -304,14 +304,14 @@ void Engine::OpenGLRenderComponent::updatePrimitiveType(int primitiveType) {
     calculatePrimitiveCount();
 }
 
-void Engine::OpenGLRenderComponent::addMaterial(unsigned int entityId, MaterialComponent* material) {
+void Engine::OpenGLRenderComponent::addMaterial(unsigned int entityId, const std::shared_ptr<MaterialComponent>& material) {
     const std::list<unsigned int>& owners = m_registry.getOwners<MaterialComponent>(material);
     float& matIndex = std::get<4>(m_entityData.at(entityId));
 
     // handle removal of the material from the given entity (use standard material)
-    std::get<9>(m_entityData.at(entityId)) = m_registry.onRemove<MaterialComponent>([=](unsigned int removeEntity, MaterialComponent* removedMaterial) {
+    std::get<9>(m_entityData.at(entityId)) = m_registry.onRemove<MaterialComponent>([=](unsigned int removeEntity, std::weak_ptr<MaterialComponent> removedMaterial) {
         if (removeEntity == entityId) {
-            this->removeMaterial(removeEntity, removedMaterial);
+            this->removeMaterial(removeEntity, removedMaterial.lock());
         }
     });
 
@@ -345,8 +345,8 @@ void Engine::OpenGLRenderComponent::addMaterial(unsigned int entityId, MaterialC
     updateMaterial(entityId, material);
 
     // subscribe to material updates
-    std::get<8>(m_entityData.at(entityId)) = m_registry.onUpdate<MaterialComponent>(entityId, [this, entityId] (unsigned int updateEntity, MaterialComponent* updatedMaterial) {
-        this->updateMaterial(entityId, updatedMaterial);
+    std::get<8>(m_entityData.at(entityId)) = m_registry.onUpdate<MaterialComponent>(entityId, [this, entityId] (unsigned int updateEntity, std::weak_ptr<MaterialComponent> updatedMaterial) {
+        this->updateMaterial(entityId, updatedMaterial.lock());
     });
 
     updateMaterialIndices(entityId);
@@ -354,7 +354,7 @@ void Engine::OpenGLRenderComponent::addMaterial(unsigned int entityId, MaterialC
     ++m_numMaterials;
 }
 
-void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, MaterialComponent* material) {
+void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, const std::shared_ptr<MaterialComponent>& material) {
     meta_data& entityData = m_entityData.at(entityId);
     unsigned int oldMatIndex = std::get<4>(entityData);
 
@@ -365,10 +365,10 @@ void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, Materi
     bool holdsOnUpdate{std::get<8>(entityData)};
 
     // wait for new material to be added
-    std::get<8>(entityData) = m_registry.onAdded<MaterialComponent>([=](unsigned int addEntity, MaterialComponent* addedMaterial) {
+    std::get<8>(entityData) = m_registry.onAdded<MaterialComponent>([=](unsigned int addEntity, std::weak_ptr<MaterialComponent> addedMaterial) {
         if (addEntity == entityId) {
             std::get<8>(this->m_entityData.at(addEntity)).reset();
-            this->addMaterial(addEntity, addedMaterial);
+            this->addMaterial(addEntity, addedMaterial.lock());
         }
     });
 
@@ -379,8 +379,8 @@ void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, Materi
             // there is another entity using the material 
             if (owner != entityId && m_entityData.find(owner) != m_entityData.end()) {
                 // make the other entity handle the updates
-                std::get<8>(m_entityData.at(owner)) = m_registry.onUpdate<MaterialComponent>(owner, [=](unsigned int updateEntity, MaterialComponent* updatedMaterial) {
-                    this->updateMaterial(owner, updatedMaterial);
+                std::get<8>(m_entityData.at(owner)) = m_registry.onUpdate<MaterialComponent>(owner, [=](unsigned int updateEntity, std::weak_ptr<MaterialComponent> updatedMaterial) {
+                    this->updateMaterial(owner, updatedMaterial.lock());
                 });
                 return;
             }
@@ -415,19 +415,19 @@ void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, Materi
     }    
 }
 
-void Engine::OpenGLRenderComponent::updateMaterial(unsigned int entity, MaterialComponent* material) {
+void Engine::OpenGLRenderComponent::updateMaterial(unsigned int entity, const std::shared_ptr<MaterialComponent>& material) {
     glBindBuffer(GL_UNIFORM_BUFFER, this->m_materialUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material), sizeof(Material), material->getColor().raw());
 }
 
-void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, TransformComponent* transform) {
+void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, const std::shared_ptr<TransformComponent>& transform) {
     const std::list<unsigned int>& owners = m_registry.getOwners<TransformComponent>(transform);
     float& transIndex = std::get<5>(m_entityData.at(entityId));
 
     // handle removal of the transform from the given entity (use standard transform)
-    std::get<11>(m_entityData.at(entityId)) = m_registry.onRemove<TransformComponent>([=](unsigned int removeEntity, TransformComponent* removedTransform) {
+    std::get<11>(m_entityData.at(entityId)) = m_registry.onRemove<TransformComponent>([=](unsigned int removeEntity, std::weak_ptr<TransformComponent> removedTransform) {
         if (removeEntity == entityId) {
-            this->removeTransform(removeEntity, removedTransform);
+            this->removeTransform(removeEntity, removedTransform.lock());
         }
     });
 
@@ -461,8 +461,8 @@ void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, Transfor
     updateTransform(entityId, transform);
 
     // subscribe to transform updates
-    std::get<10>(m_entityData.at(entityId)) = m_registry.onUpdate<TransformComponent>(entityId, [this, entityId] (unsigned int updateEntity, TransformComponent* updatedTransform) {
-        this->updateTransform(entityId, updatedTransform);
+    std::get<10>(m_entityData.at(entityId)) = m_registry.onUpdate<TransformComponent>(entityId, [this, entityId] (unsigned int updateEntity, std::weak_ptr<TransformComponent> updatedTransform) {
+        this->updateTransform(entityId, updatedTransform.lock());
     });
 
     updateTransformIndices(entityId);
@@ -470,13 +470,13 @@ void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, Transfor
     ++m_numTransforms;
 }
 const size_t matrixSize{ 16 * sizeof(float) };
-void Engine::OpenGLRenderComponent::updateTransform(unsigned int entity, TransformComponent* transform) {
+void Engine::OpenGLRenderComponent::updateTransform(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
     glBindBuffer(GL_UNIFORM_BUFFER, this->m_transformUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(baseTransform), matrixSize, transform->getModelMatrix().raw());
     glBufferSubData(GL_UNIFORM_BUFFER, std::get<5>(this->m_entityData.at(entity)) * sizeof(baseTransform) + matrixSize, matrixSize, transform->getNormalMatrix().raw());
 }
 
-void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, TransformComponent* transform) {
+void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
     meta_data& entityData = m_entityData.at(entity);
     unsigned int oldTransIndex = std::get<5>(entityData);
 
@@ -487,10 +487,10 @@ void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, Transfo
     bool holdsOnUpdate{std::get<10>(entityData)};
 
     // wait for new transform to be added
-    std::get<10>(entityData) = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, TransformComponent* addedTransform) {
+    std::get<10>(entityData) = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, std::weak_ptr<TransformComponent> addedTransform) {
         if (addEntity == entity) {
             std::get<10>(this->m_entityData.at(addEntity)).reset();
-            this->addTransform(addEntity, addedTransform);
+            this->addTransform(addEntity, addedTransform.lock());
         }
     });
 
@@ -501,8 +501,8 @@ void Engine::OpenGLRenderComponent::removeTransform(unsigned int entity, Transfo
             // there is another entity using the transform 
             if (owner != entity && m_entityData.find(owner) != m_entityData.end()) {
                 // make the other entity handle the updates
-                std::get<10>(m_entityData.at(owner)) = m_registry.onUpdate<TransformComponent>(owner, [=](unsigned int updateEntity, TransformComponent* updatedTransform) {
-                    this->updateTransform(owner, updatedTransform);
+                std::get<10>(m_entityData.at(owner)) = m_registry.onUpdate<TransformComponent>(owner, [=](unsigned int updateEntity, std::weak_ptr<TransformComponent> updatedTransform) {
+                    this->updateTransform(owner, updatedTransform.lock());
                 });
                 return;
             }
@@ -550,46 +550,46 @@ void Engine::OpenGLRenderComponent::associate(unsigned int entity) {
             unsigned int, // end in EBO
             float, // material index
             float, // transform index
-            std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is added or updated to the entity
-            std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>, // callback for when a GeometryComponent is removed from the entity
-            std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
-            std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>, // callback for when a MaterialComponent is removed from the entity
-            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>, // callback for when a MaterialComponent is added or updated to the entity
-            std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>,  // callback for when a MaterialComponent is removed from the entity
-            std::shared_ptr<std::function<void(unsigned int, OpenGLRenderComponent*)>> // callback for when the Render component is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<GeometryComponent>)>>, // callback for when a GeometryComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<GeometryComponent>)>>, // callback for when a GeometryComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<MaterialComponent>)>>, // callback for when a MaterialComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<MaterialComponent>)>>, // callback for when a MaterialComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>, // callback for when a MaterialComponent is added or updated to the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>,  // callback for when a MaterialComponent is removed from the entity
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<OpenGLRenderComponent>)>> // callback for when the Render component is removed from the entity
         >{
         -1, -1, -1, -1, 0.0, 0.0,
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, GeometryComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, MaterialComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{},
-        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>>{}, 
-        std::shared_ptr<std::function<void(unsigned int, OpenGLRenderComponent*)>>{}
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<GeometryComponent>)>>{},
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<GeometryComponent>)>>{},
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<MaterialComponent>)>>{},
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<MaterialComponent>)>>{},
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{},
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{}, 
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<OpenGLRenderComponent>)>>{}
     });
 
-    GeometryComponent* geometry = m_registry.getComponent<Engine::GeometryComponent>(entity);
+    std::shared_ptr<GeometryComponent> geometry = m_registry.getComponent<Engine::GeometryComponent>(entity);
     if (geometry) {
         // entity has a geometry component => setup buffers to use geometry data of that component
         setupEntity(entity, geometry);
     } else {
         // entity has no geometry; setup callback and postpone setup until it gets one
-        std::get<6>(m_entityData.at(entity)) = m_registry.onAdded<GeometryComponent>([=](unsigned int addEntity, GeometryComponent* geometry) {
+        std::get<6>(m_entityData.at(entity)) = m_registry.onAdded<GeometryComponent>([=](unsigned int addEntity, std::weak_ptr<GeometryComponent> geometry) {
             if (addEntity == entity) {
-                this->setupEntity(entity, geometry);
+                this->setupEntity(entity, geometry.lock());
             }
         });
     }
 
     // callback that removes all information for the entity if the renderer component is removed from the entity
-    std::get<12>(m_entityData.at(entity)) = m_registry.onRemove<OpenGLRenderComponent>([=](unsigned int removeEntity, OpenGLRenderComponent* render) {
+    std::get<12>(m_entityData.at(entity)) = m_registry.onRemove<OpenGLRenderComponent>([=](unsigned int removeEntity, std::weak_ptr<OpenGLRenderComponent> render) {
         if (removeEntity == entity) {
             this->dissassociate(entity);
         }
     });
 }
 
-void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, GeometryComponent* geometry) {
+void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry) {
     addVertices(entity, geometry);
     addFaces(entity, geometry);
     updateVertices(entity, geometry);
@@ -598,46 +598,48 @@ void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, GeometryCom
 
 
     // subscribe for updates on the geometry to update the buffer data accordingly
-    std::get<6>(m_entityData.at(entity)) = m_registry.onUpdate<GeometryComponent>(entity, [=](unsigned int updateEntity, GeometryComponent* updatedGeometry) {
+    std::get<6>(m_entityData.at(entity)) = m_registry.onUpdate<GeometryComponent>(entity, [=](unsigned int updateEntity, std::weak_ptr<GeometryComponent> updatedGeometry) {
         unsigned int numVertices{std::get<1>(this->m_entityData.at(updateEntity)) - std::get<0>(this->m_entityData.at(updateEntity))};
+        std::shared_ptr<GeometryComponent> updated{updatedGeometry.lock()};
 
-        if (numVertices != updatedGeometry->getVertices().size()) {
+
+        if (numVertices != updated->getVertices().size()) {
             removeVertices(updateEntity);
-            addVertices(updateEntity, updatedGeometry);
+            addVertices(updateEntity, updated);
             updateMaterialIndices(entity);
             updateTransformIndices(entity);
         }  
 
         unsigned int numFaces{std::get<3>(this->m_entityData.at(updateEntity)) - std::get<2>(this->m_entityData.at(updateEntity))};
 
-        if (numFaces != updatedGeometry->getFaces().size()) {
+        if (numFaces != updated->getFaces().size()) {
             removeFaces(updateEntity);
-            addFaces(updateEntity, updatedGeometry);
+            addFaces(updateEntity, updated);
         }  
 
-        updateVertices(updateEntity, updatedGeometry);
-        updateFaces(updateEntity, updatedGeometry);
+        updateVertices(updateEntity, updated);
+        updateFaces(updateEntity, updated);
         calculatePrimitiveCount();
     });
 
-    MaterialComponent* material = m_registry.getComponent<Engine::MaterialComponent>(entity);
+    std::shared_ptr<MaterialComponent> material = m_registry.getComponent<Engine::MaterialComponent>(entity);
     if (material) {
         addMaterial(entity, material);
     } else {
-        std::get<8>(m_entityData.at(entity)) = m_registry.onAdded<MaterialComponent>([=](unsigned int addEntity, MaterialComponent* material) {
+        std::get<8>(m_entityData.at(entity)) = m_registry.onAdded<MaterialComponent>([=](unsigned int addEntity, std::weak_ptr<MaterialComponent> material) {
            if (addEntity == entity) {
-               addMaterial(entity, material);
+               addMaterial(entity, material.lock());
            } 
         });
     }
 
-    TransformComponent* transform = m_registry.getComponent<TransformComponent>(entity);
+    std::shared_ptr<TransformComponent> transform = m_registry.getComponent<TransformComponent>(entity);
     if (transform) {
         addTransform(entity, transform);
     } else {
-        std::get<10>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, TransformComponent* transform) {
+        std::get<10>(m_entityData.at(entity)) = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, std::weak_ptr<TransformComponent> transform) {
            if (addEntity == entity) {
-               addTransform(entity, transform);
+               addTransform(entity, transform.lock());
            } 
         });
     }
@@ -645,18 +647,19 @@ void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, GeometryCom
     updateMaterialIndices(entity);
     updateTransformIndices(entity);
 
-    std::get<7>(m_entityData.at(entity)) = m_registry.onRemove<GeometryComponent>([=](unsigned int removeEntity, GeometryComponent* removeGeometry) {
+    std::get<7>(m_entityData.at(entity)) = m_registry.onRemove<GeometryComponent>([=](unsigned int removeEntity, std::weak_ptr<GeometryComponent> removeGeometry) {
         if (entity == removeEntity) {
             removeVertices(removeEntity);
             removeFaces(removeEntity);
             calculatePrimitiveCount();
             // entity has no geometry anymore; setup callback
-            std::get<6>(m_entityData.at(removeEntity)) = m_registry.onAdded<GeometryComponent>([=](unsigned int addEntity, GeometryComponent* addGeometry) {
+            std::get<6>(m_entityData.at(removeEntity)) = m_registry.onAdded<GeometryComponent>([=](unsigned int addEntity, std::weak_ptr<GeometryComponent> addGeometry) {
                 if (addEntity == removeEntity) {
-                    addVertices(addEntity, addGeometry);
-                    addFaces(addEntity, addGeometry);
-                    updateVertices(addEntity, addGeometry);
-                    updateFaces(addEntity, addGeometry);
+                    std::shared_ptr<GeometryComponent> added{addGeometry.lock()};
+                    addVertices(addEntity, added);
+                    addFaces(addEntity, added);
+                    updateVertices(addEntity, added);
+                    updateFaces(addEntity, added);
                     calculatePrimitiveCount();
                     updateMaterialIndices(addEntity);
                     updateTransformIndices(addEntity);

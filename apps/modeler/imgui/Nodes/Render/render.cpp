@@ -1,9 +1,9 @@
 #include "render.h"
 
 void UICreation::drawRenderNode(Engine::Registry& registry) {
-    Engine::OpenGLRenderComponent* render = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity);
+    std::shared_ptr<Engine::OpenGLRenderComponent> render = registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity);
 
-    createComponentNodeOutline<Engine::OpenGLRenderComponent>("Render", registry, render, [&]() {
+    createComponentNodeOutline<Engine::OpenGLRenderComponent>("Render", registry, render.get(), [&]() {
         const char* types[2]{"Points\0", "Triangles\0"};
         static int primitive_type_current = 1;
         const char* comboLabel = types[primitive_type_current];

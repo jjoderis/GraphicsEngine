@@ -14,7 +14,7 @@ extern int selectedEntity;
 namespace UICreation {
 
 template <typename ComponentType>
-void createImGuiComponentDragSource(ComponentType* component);
+void createImGuiComponentDragSource();
 
 template <typename ComponentType>
 void createImGuiComponentDropTarget(unsigned int entity, Engine::Registry& registry);

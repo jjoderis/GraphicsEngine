@@ -2,6 +2,7 @@
 #define CORE_COMPONENTS_GEOMETRY
 
 #include <vector>
+#include <memory>
 #include <initializer_list>
 #include "../../Math/math.h"
 
@@ -34,7 +35,7 @@ namespace Engine {
      *  param hIntersections: the number of points on a latitude
      *  param vIntersections: the number of points when going from the north to the south pole (excluding the poles)
      **/
-    GeometryComponent* createSphereGeometry(float radius, int hIntersections, int vIntersections);
+    std::shared_ptr<GeometryComponent> createSphereGeometry(float radius, int hIntersections, int vIntersections);
 }
 
 #endif

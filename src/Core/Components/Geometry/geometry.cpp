@@ -63,8 +63,8 @@ void Engine::GeometryComponent::calculateNormals() {
     }
 }
 
-Engine::GeometryComponent* Engine::createSphereGeometry(float radius, int hIntersections, int vIntersections) {
-    GeometryComponent* geometry = new GeometryComponent{};
+std::shared_ptr<Engine::GeometryComponent> Engine::createSphereGeometry(float radius, int hIntersections, int vIntersections) {
+    std::shared_ptr<GeometryComponent> geometry = std::make_shared<GeometryComponent>();
     std::vector<Math::Vector3>& vertices{geometry->getVertices()};
     std::vector<Math::Vector3>& normals{geometry->getNormals()};
     std::vector<unsigned int>& faces{geometry->getFaces()};

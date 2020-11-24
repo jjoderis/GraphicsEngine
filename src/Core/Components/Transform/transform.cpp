@@ -4,6 +4,7 @@
 Engine::TransformComponent::TransformComponent() {
     m_modelMatrix.setIdentity();
     m_modelMatrixInverse.setIdentity();
+    m_normalMatrix.setIdentity();
 }
 
 void Engine::TransformComponent::translate(const Math::Vector3& translation) {

@@ -1,9 +1,9 @@
 #include "geometry.h"
 
 void UICreation::drawGeometryNode(Engine::Registry &registry) {
-    Engine::GeometryComponent* geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity);
+    std::shared_ptr<Engine::GeometryComponent> geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity);
 
-    createComponentNodeOutline<Engine::GeometryComponent>("Geometry", registry, geometry, [&]() {
+    createComponentNodeOutline<Engine::GeometryComponent>("Geometry", registry, geometry.get(), [&]() {
         if (ImGui::TreeNode("Vertices")) { 
             std::vector<Engine::Math::Vector3> &vertices{geometry->getVertices()};
             for(int i = 0; i < vertices.size(); ++i) {

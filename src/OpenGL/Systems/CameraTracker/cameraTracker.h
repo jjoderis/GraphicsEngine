@@ -12,11 +12,11 @@ namespace Engine {
             unsigned int& m_cameraUBO;
 
             // cb that makes a new camera active if there is no currently active camera or updates the buffer if the currently active camera changes
-            std::shared_ptr<std::function<void(unsigned int, CameraComponent* camera)>> m_activeCB{};
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<CameraComponent> camera)>> m_activeCB{};
             // cb that makes sure that only one camera is currently active
-            std::shared_ptr<std::function<void(unsigned int, ActiveCameraComponent* activeCamera)>> m_changeActive;
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ActiveCameraComponent> activeCamera)>> m_changeActive;
             // cb that handles when the active camera is set to being inactive
-            std::shared_ptr<std::function<void(unsigned int, ActiveCameraComponent* activeCamera)>> m_removeActive;
+            std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ActiveCameraComponent> activeCamera)>> m_removeActive;
 
             int m_currentActiveCamera{-1};
 
@@ -26,7 +26,7 @@ namespace Engine {
             void createInitActiveCB();
             void createUpdateActiveCB();
 
-            void updateCameraBuffer(CameraComponent* camera);
+            void updateCameraBuffer(const std::shared_ptr<CameraComponent>& camera);
         public:
             OpenGLCameraTracker() = delete;
 

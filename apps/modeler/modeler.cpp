@@ -21,12 +21,12 @@ void cameraAspectCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 
-    const std::vector<std::unique_ptr<Engine::CameraComponent>> &cameras = registry.getComponents<Engine::CameraComponent>();
+    std::vector<std::shared_ptr<Engine::CameraComponent>> cameras = registry.getComponents<Engine::CameraComponent>();
 
-    for(const std::unique_ptr<Engine::CameraComponent>& camera: cameras) {
+    for(std::shared_ptr<Engine::CameraComponent>& camera: cameras) {
         camera->updateAspect((float)width/(float)height);
 
-        const std::list<unsigned int>& owners{registry.getOwners<Engine::CameraComponent>(camera.get())};
+        const std::list<unsigned int> owners{registry.getOwners<Engine::CameraComponent>(camera)};
         registry.updated<Engine::CameraComponent>(owners.front());
     }
 }
@@ -45,28 +45,26 @@ int main()
     UI::init(registry);
 
     unsigned int light1{registry.addEntity()};
-    registry.addComponent<Engine::TagComponent>(light1, new Engine::TagComponent{"Light 1"});
-    registry.addComponent<Engine::LightComponent>(light1, new Engine::LightComponent{});
-    registry.addComponent<Engine::TransformComponent>(light1, new Engine::TransformComponent{});
+    registry.addComponent<Engine::TagComponent>(light1, std::make_shared<Engine::TagComponent>("Light 1"));
+    registry.addComponent<Engine::LightComponent>(light1, std::make_shared<Engine::LightComponent>());
+    registry.addComponent<Engine::TransformComponent>(light1, std::make_shared<Engine::TransformComponent>());
     registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
-    registry.addComponent<Engine::MaterialComponent>(light1, new Engine::MaterialComponent{1.0, 1.0, 1.0, 1.0});
+    registry.addComponent<Engine::MaterialComponent>(light1, std::make_shared<Engine::MaterialComponent>(1.0, 1.0, 1.0, 1.0));
 
     unsigned int object1{registry.addEntity()};
-    registry.addComponent<Engine::TagComponent>(object1, new Engine::TagComponent{"Object 1"});
-    registry.addComponent<Engine::MaterialComponent>(object1, new Engine::MaterialComponent{ 1, 0, 0, 1.0 });
-    Engine::TransformComponent* transform{ registry.addComponent<Engine::TransformComponent>(object1, new Engine::TransformComponent{}) };
-    transform->translate(Engine::Math::Vector3{ 0.0f, 0.0f, 4.0f });
-    transform->update();
-    Engine::GeometryComponent* geometry = registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20));
-    geometry->calculateNormals();
-    registry.updated<Engine::GeometryComponent>(object1);
-    registry.addComponent<Engine::OpenGLRenderComponent>(object1, new Engine::OpenGLRenderComponent{
+    registry.addComponent<Engine::TagComponent>(object1, std::make_shared<Engine::TagComponent>("Object 1"));
+    registry.addComponent<Engine::MaterialComponent>(object1, std::make_shared<Engine::MaterialComponent>( 1, 0, 0, 1.0 ));
+    std::weak_ptr<Engine::TransformComponent> transform{ registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>()) };
+    transform.lock()->translate(Engine::Math::Vector3{ 0.0f, 0.0f, 4.0f });
+    transform.lock()->update();
+    std::weak_ptr<Engine::GeometryComponent> geometry{ registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20)) };
+    registry.addComponent<Engine::OpenGLRenderComponent>(object1, std::make_shared<Engine::OpenGLRenderComponent>(
         registry,
-        {
+        std::initializer_list<Engine::OpenGLShader>{
             Engine::OpenGLShader{GL_VERTEX_SHADER, Util::readTextFile("../../data/shaders/Basic_Shader/base.vert").c_str()},
             Engine::OpenGLShader{GL_FRAGMENT_SHADER, Util::readTextFile("../../data/shaders/Basic_Shader/base.frag").c_str()},
         }
-    });
+    ));
 
     while (!glfwWindowShouldClose(window))
     {

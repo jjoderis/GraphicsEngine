@@ -5,8 +5,8 @@ Engine::CameraComponent::CameraComponent(Registry& registry) : m_registry{regist
     m_viewMatrix.setIdentity();
     calculateProjection();
 
-    m_associateCallback = m_registry.onAdded<CameraComponent>([=](unsigned int entity, CameraComponent* camera) {
-        if (this == camera) {
+    m_associateCallback = m_registry.onAdded<CameraComponent>([=](unsigned int entity, std::weak_ptr<CameraComponent> camera) {
+        if (this == camera.lock().get()) {
             this->registerEntity(entity);
         }
     });
@@ -38,7 +38,7 @@ void Engine::CameraComponent::calculateProjection() {
 }
  
 void Engine::CameraComponent::registerEntity(unsigned int entity) {
-    TransformComponent* transform{ m_registry.getComponent<TransformComponent>(entity)};
+    std::shared_ptr<TransformComponent> transform{ m_registry.getComponent<TransformComponent>(entity)};
 
     if (transform) {
         update(entity, transform);
@@ -49,13 +49,13 @@ void Engine::CameraComponent::registerEntity(unsigned int entity) {
 }
 
 void Engine::CameraComponent::setupUpdateCallback(unsigned int entity) {
-    m_transformUpdateCallback = m_registry.onUpdate<TransformComponent>(entity, [=](unsigned int updateEntity, TransformComponent* updatedTransform) {
+    m_transformUpdateCallback = m_registry.onUpdate<TransformComponent>(entity, [=](unsigned int updateEntity, std::weak_ptr<TransformComponent> updatedTransform) {
         if (entity == updateEntity) {
-            this->update(updateEntity, updatedTransform);
+            this->update(updateEntity, updatedTransform.lock());
         }
     });
 
-    m_removeTransformCallback = m_registry.onRemove<TransformComponent>([=](unsigned int removeEntity, TransformComponent* removedTransform) {
+    m_removeTransformCallback = m_registry.onRemove<TransformComponent>([=](unsigned int removeEntity, std::weak_ptr<TransformComponent> removedTransform) {
         if (entity == removeEntity) {
             m_viewMatrix.setIdentity();
             m_projectionMatrix.setIdentity();
@@ -65,15 +65,15 @@ void Engine::CameraComponent::setupUpdateCallback(unsigned int entity) {
 }
 
 void Engine::CameraComponent::awaitTransformComponent(unsigned int entity) {
-    m_transformUpdateCallback = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, TransformComponent* addedTransform) {
+    m_transformUpdateCallback = m_registry.onAdded<TransformComponent>([=](unsigned int addEntity, std::weak_ptr<TransformComponent> addedTransform) {
         if (entity == addEntity) {
-            this->update(addEntity, addedTransform); 
+            this->update(addEntity, addedTransform.lock()); 
             this->setupUpdateCallback(addEntity);
         }
     });
 }
 
-void Engine::CameraComponent::update(unsigned int entity, TransformComponent* transform) {
+void Engine::CameraComponent::update(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
     m_viewMatrix = Math::getRotation(-transform->getRotation()) * Math::getTranslation(-transform->getTranslation());
     m_viewMatrixInverse = Math::getTranslation(transform->getTranslation()) * Math::getRotation(transform->getRotation());
     m_registry.updated<CameraComponent>(entity);

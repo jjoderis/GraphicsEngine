@@ -1,26 +1,27 @@
 #include "helpers.h"
 
+bool dragging{1};
+
 template <typename ComponentType>
-void UICreation::createImGuiComponentDragSource(ComponentType* component) {
+void UICreation::createImGuiComponentDragSource() {
     ImGui::Button("Start Drag");
     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
     {
         char dragDropType[256]{};
         sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
     
-        // Set payload to carry the index of our item (could be anything)
-        ImGui::SetDragDropPayload(dragDropType, &component, sizeof(ComponentType*));
+        ImGui::SetDragDropPayload(dragDropType, &dragging, sizeof(bool));
 
         ImGui::Text("Assign Component");
         ImGui::EndDragDropSource();
     }
 }
 
-template void UICreation::createImGuiComponentDragSource<Engine::TransformComponent>(Engine::TransformComponent* component);
-template void UICreation::createImGuiComponentDragSource<Engine::OpenGLRenderComponent>(Engine::OpenGLRenderComponent* component);
-template void UICreation::createImGuiComponentDragSource<Engine::MaterialComponent>(Engine::MaterialComponent* component);
-template void UICreation::createImGuiComponentDragSource<Engine::GeometryComponent>(Engine::GeometryComponent* component);
-template void UICreation::createImGuiComponentDragSource<Engine::CameraComponent>(Engine::CameraComponent* component);
+template void UICreation::createImGuiComponentDragSource<Engine::TransformComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::OpenGLRenderComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::MaterialComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::GeometryComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::CameraComponent>();
 
 template <typename ComponentType>
 void UICreation::createImGuiComponentDropTarget(unsigned int entity, Engine::Registry& registry) {
@@ -32,9 +33,7 @@ void UICreation::createImGuiComponentDropTarget(unsigned int entity, Engine::Reg
 
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragDropType))
         {
-            IM_ASSERT(payload->DataSize == sizeof(ComponentType*));
-            ComponentType* payload_n = *(ComponentType**)payload->Data;
-            registry.addComponent<ComponentType>(entity, payload_n);
+            registry.addComponent<ComponentType>(entity, registry.getComponent<ComponentType>(selectedEntity));
         }
         ImGui::EndDragDropTarget();
     }
@@ -66,7 +65,7 @@ void UICreation::createComponentNodeOutline(const char* componentName, Engine::R
             }
             ImGui::EndPopup();
         }
-        createImGuiComponentDragSource<ComponentType>(component);
+        createImGuiComponentDragSource<ComponentType>();
         if (!removed) {
             drawFunc();
         }

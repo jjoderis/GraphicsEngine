@@ -1,9 +1,9 @@
 #include "transform.h"
 
 void UICreation::drawTransformNode(Engine::Registry &registry) {
-    Engine::TransformComponent* transform = registry.getComponent<Engine::TransformComponent>(selectedEntity);
+    std::shared_ptr<Engine::TransformComponent> transform = registry.getComponent<Engine::TransformComponent>(selectedEntity);
 
-    createComponentNodeOutline<Engine::TransformComponent>("Transform", registry, transform, [&]() {
+    createComponentNodeOutline<Engine::TransformComponent>("Transform", registry, transform.get(), [&]() {
         ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
         if(ImGui::IsItemEdited()) {
             transform->update();

@@ -4,7 +4,7 @@
 using namespace Engine;
 
 TEST(GEOMETRY_TEST, createSphereGeometry_single_latitude) {
-  GeometryComponent* geometry = createSphereGeometry(1.0f, 4, 1);  
+  std::shared_ptr<GeometryComponent> geometry = createSphereGeometry(1.0f, 4, 1);  
 
   std::vector<Math::Vector3>& vertices{geometry->getVertices()};
   std::vector<unsigned int>& faces{geometry->getFaces()};
@@ -38,12 +38,10 @@ TEST(GEOMETRY_TEST, createSphereGeometry_single_latitude) {
   for (int i = 0; i < 6; ++i) {
     MathLib::allClose(vertices[i], expectedVertices[i]);
   }
-
-  delete geometry;
 }
 
 TEST(GEOMETRY_TEST, createSphereGeometry_multi_latitude) {
-  GeometryComponent* geometry = createSphereGeometry(1.0f, 4, 2);  
+  std::shared_ptr<GeometryComponent> geometry = createSphereGeometry(1.0f, 4, 2);  
 
   std::vector<Math::Vector3>& vertices{geometry->getVertices()};
   std::vector<unsigned int>& faces{geometry->getFaces()};
@@ -90,8 +88,6 @@ TEST(GEOMETRY_TEST, createSphereGeometry_multi_latitude) {
   for (int i = 0; i < 10; ++i) {
     MathLib::allClose(vertices[i], expectedVertices[i]);
   }
-
-  delete geometry;
 }
 
 TEST(GEOMETRY_TEST, calculate_normals_triangle) {

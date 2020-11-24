@@ -14,9 +14,9 @@ void Engine::OpenGLRenderer::render() {
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_activeCameraUBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 3, m_lightsInfoUBO);
 
-    const std::vector<std::unique_ptr<Engine::OpenGLRenderComponent>> &renderComponents = m_registry.getComponents<Engine::OpenGLRenderComponent>();
+    std::vector<std::shared_ptr<Engine::OpenGLRenderComponent>> renderComponents = m_registry.getComponents<Engine::OpenGLRenderComponent>();
 
-    for( const std::unique_ptr<Engine::OpenGLRenderComponent>& renderComponent: renderComponents ) {
-        renderComponent.get()->render();
+    for( const std::shared_ptr<Engine::OpenGLRenderComponent>& renderComponent: renderComponents ) {
+        renderComponent->render();
     }
 }

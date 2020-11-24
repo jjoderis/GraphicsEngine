@@ -10,11 +10,11 @@ namespace Engine {
     class CameraComponent {
     private:
         // waits for the component to be added to an entity to then set up callbacks to react to changes in the Transform of that entity
-        std::shared_ptr<std::function<void(unsigned int, CameraComponent*)>> m_associateCallback;
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<CameraComponent>)>> m_associateCallback;
         // update view Matrix based on the changes in the Transform of the entity
-        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>> m_transformUpdateCallback;
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>> m_transformUpdateCallback;
         // reset view matrix when the camera is removed from the related entity
-        std::shared_ptr<std::function<void(unsigned int, TransformComponent*)>> m_removeTransformCallback;
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>> m_removeTransformCallback;
 
         Math::Matrix4 m_viewMatrix{};
         Math::Matrix4 m_viewMatrixInverse{};
@@ -36,7 +36,7 @@ namespace Engine {
         void registerEntity(unsigned int entity);
         void setupUpdateCallback(unsigned int entity);
         void awaitTransformComponent(unsigned int entity);
-        void update(unsigned int entity, TransformComponent* transform);
+        void update(unsigned int entity, const std::shared_ptr<TransformComponent>& transform);
     public:
         CameraComponent() = delete;
         CameraComponent(Registry& registry);

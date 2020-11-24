@@ -32,11 +32,11 @@ void UI::init(Engine::Registry& registry) {
     glfwGetFramebufferSize(window, &width, &height);
 
     mainCamera = registry.addEntity();
-    registry.addComponent<Engine::TagComponent>(mainCamera, new Engine::TagComponent{"Modeler Camera"});
-    Engine::TransformComponent* transform = registry.addComponent<Engine::TransformComponent>(mainCamera, new Engine::TransformComponent{});
+    registry.addComponent<Engine::TagComponent>(mainCamera, std::make_shared<Engine::TagComponent>("Modeler Camera"));
+    std::shared_ptr<Engine::TransformComponent> transform = registry.addComponent<Engine::TransformComponent>(mainCamera, std::make_shared<Engine::TransformComponent>());
     transform->setRotation(Engine::Math::Vector3{0.0, M_PI,0.0});
     transform->update();
-    Engine::CameraComponent* camera = registry.addComponent<Engine::CameraComponent>(mainCamera, new Engine::CameraComponent{registry});
+    std::shared_ptr<Engine::CameraComponent> camera = registry.addComponent<Engine::CameraComponent>(mainCamera, std::make_shared<Engine::CameraComponent>(registry));
     camera->updateAspect((float)width/(float)height);
     registry.updated<Engine::CameraComponent>(mainCamera);
 }
@@ -117,9 +117,9 @@ void UI::render(Engine::Registry &registry) {
                 if(ImGui::Button("+")) {
                     unsigned int newEntity = registry.addEntity();
                     if (!std::strlen(name)) {
-                        registry.addComponent<Engine::TagComponent>(newEntity, new Engine::TagComponent{"Unnamed Entity"});
+                        registry.addComponent<Engine::TagComponent>(newEntity, std::make_shared<Engine::TagComponent>("Unnamed Entity"));
                     } else {
-                        registry.addComponent<Engine::TagComponent>(newEntity, new Engine::TagComponent{name});
+                        registry.addComponent<Engine::TagComponent>(newEntity, std::make_shared<Engine::TagComponent>(name));
                     }
                     name[0] = '\0';
                     ImGui::CloseCurrentPopup();
@@ -177,21 +177,21 @@ void UI::render(Engine::Registry &registry) {
                 ImGui::SameLine();
                 if (ImGui::Button("+")) {
                     if (!strcmp(possibleComponents[possible_component_current], "Material")) {
-                        registry.addComponent<Engine::MaterialComponent>(selectedEntity, new Engine::MaterialComponent{});
+                        registry.addComponent<Engine::MaterialComponent>(selectedEntity, std::make_shared<Engine::MaterialComponent>());
                     } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
                         ImGui::OpenPopup("Select Geometry Type");
                     } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
-                        registry.addComponent<Engine::TransformComponent>(selectedEntity, new Engine::TransformComponent{});
+                        registry.addComponent<Engine::TransformComponent>(selectedEntity, std::make_shared<Engine::TransformComponent>());
                     } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
-                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, new Engine::OpenGLRenderComponent{
+                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, std::make_shared<Engine::OpenGLRenderComponent>(
                             registry,
-                            {
+                            std::initializer_list<Engine::OpenGLShader>{
                                 Engine::OpenGLShader{GL_VERTEX_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.vert").c_str()},
                                 Engine::OpenGLShader{GL_FRAGMENT_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.frag").c_str()},
                             }
-                        });
+                        ));
                     } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
-                        Engine::CameraComponent* camera = registry.addComponent<Engine::CameraComponent>(selectedEntity, new Engine::CameraComponent{registry});
+                        std::shared_ptr<Engine::CameraComponent> camera = registry.addComponent<Engine::CameraComponent>(selectedEntity, std::make_shared<Engine::CameraComponent>(registry));
                         int width, height;
                         GLFWwindow* window = Window::getWindow();
                         glfwGetFramebufferSize(window, &width, &height);
@@ -202,19 +202,19 @@ void UI::render(Engine::Registry &registry) {
                 if (ImGui::BeginPopup("Select Geometry Type"))
                 {
                     if(ImGui::Button("Blank")) {
-                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, new Engine::GeometryComponent{});
+                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
                     }
                     if (ImGui::Button("Triangle")) {
-                        Engine::GeometryComponent* geometry = new Engine::GeometryComponent{
-                            {
+                        std::shared_ptr<Engine::GeometryComponent> geometry = std::make_shared<Engine::GeometryComponent>(
+                            std::initializer_list<Engine::Math::Vector3>{
                                 Engine::Math::Vector3{  0.5, -0.5, 0.0 },
                                 Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
                                 Engine::Math::Vector3{  0.0,  0.5, 0.0 }
                             },
-                            {
+                            std::initializer_list<unsigned int>{
                                 0, 1, 2
                             }
-                        };
+                        );
                         geometry->calculateNormals();
                         registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
                     }
