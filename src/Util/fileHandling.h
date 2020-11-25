@@ -15,7 +15,8 @@ namespace Util {
     // source: http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
     std::string readTextFile(const char* filePath);
 
-    std::vector<Path> getFilePaths(const char* directoryPaths);
+    std::vector<Path> getFilePaths(const char* directoryPath);
+    std::vector<Path> getDirectories(const char* directoryPath);
 }
 
 #endif

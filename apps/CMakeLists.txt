@@ -9,6 +9,7 @@ set(IMGUI_SOURCES
     "${EXTERN_DIR}/imgui/imgui_widgets.cpp"
     "${EXTERN_DIR}/imgui/backends/imgui_impl_opengl3.cpp"
     "${EXTERN_DIR}/imgui/backends/imgui_impl_glfw.cpp"
+    "${EXTERN_DIR}/imgui/misc/cpp/imgui_stdlib.cpp"
 )
 
 set(IMGUI_INCLUDE_DIR "${EXTERN_DIR}/imgui")
@@ -17,6 +18,7 @@ add_library(modelerLib
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
+    modeler/imgui/Nodes/Entity/entity.cpp
     modeler/imgui/Nodes/helpers.cpp
     modeler/imgui/Nodes/Camera/camera.cpp
     modeler/imgui/Nodes/Geometry/geometry.cpp

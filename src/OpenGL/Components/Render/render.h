@@ -56,6 +56,7 @@ namespace Engine {
         void addVertices(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry);
         void updateVertices(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry);
         void removeVertices(unsigned int entity);
+        void setupVertexUpdateCallback(unsigned int entity);
 
         void addFaces(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry);
         void updateFaces(unsigned int entity, const std::shared_ptr<GeometryComponent>& geometry);
@@ -92,6 +93,7 @@ namespace Engine {
         void updateTransform(unsigned int entity, Math::Matrix4& modelMatrix);
 
         void updateShaders(std::vector<OpenGLShader>& newShaders);
+        std::vector<OpenGLShader> getShaders();
 
         void render();
     };

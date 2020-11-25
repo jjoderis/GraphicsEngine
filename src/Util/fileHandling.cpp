@@ -26,3 +26,15 @@ std::vector<Util::Path> Util::getFilePaths(const char* directoryPath) {
 
   return filePaths;
 }
+
+std::vector<Util::Path> Util::getDirectories(const char* directoryPath) {
+  std::vector<Path> directoryPaths{};
+
+  for(const auto& entry: std::filesystem::directory_iterator(directoryPath)) {
+        if (entry.is_directory()) {
+          directoryPaths.push_back(entry.path());
+        }
+  }
+
+  return directoryPaths;
+}

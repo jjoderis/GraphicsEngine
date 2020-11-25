@@ -7,13 +7,13 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <Core/Math/math.h>
 #include <Core/ECS/util.h>
-#include <Core/Components/Tag/tag.h>
 #include <Util/fileHandling.h>
 #include "Nodes/Camera/camera.h"
 #include "Nodes/Geometry/geometry.h"
 #include "Nodes/Material/material.h"
 #include "Nodes/Render/render.h"
 #include "Nodes/Transform/transform.h"
+#include "Nodes/Entity/entity.h"
 
 #include "../glfw/window.h"
 

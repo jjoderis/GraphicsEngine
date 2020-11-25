@@ -68,6 +68,10 @@ void Engine::OpenGLRenderComponent::updateShaders(std::vector<OpenGLShader>& new
     }
 }
 
+std::vector<Engine::OpenGLShader> Engine::OpenGLRenderComponent::getShaders() {
+    return m_program.getShaders();
+}
+
 void Engine::OpenGLRenderComponent::setupUniforms() {
     int blockIndex = m_program.getBlockIndex("Materials");
     if (blockIndex >= 0) {
@@ -596,31 +600,7 @@ void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, const std::
     updateFaces(entity, geometry);
     calculatePrimitiveCount();
 
-
-    // subscribe for updates on the geometry to update the buffer data accordingly
-    std::get<6>(m_entityData.at(entity)) = m_registry.onUpdate<GeometryComponent>(entity, [=](unsigned int updateEntity, std::weak_ptr<GeometryComponent> updatedGeometry) {
-        unsigned int numVertices{std::get<1>(this->m_entityData.at(updateEntity)) - std::get<0>(this->m_entityData.at(updateEntity))};
-        std::shared_ptr<GeometryComponent> updated{updatedGeometry.lock()};
-
-
-        if (numVertices != updated->getVertices().size()) {
-            removeVertices(updateEntity);
-            addVertices(updateEntity, updated);
-            updateMaterialIndices(entity);
-            updateTransformIndices(entity);
-        }  
-
-        unsigned int numFaces{std::get<3>(this->m_entityData.at(updateEntity)) - std::get<2>(this->m_entityData.at(updateEntity))};
-
-        if (numFaces != updated->getFaces().size()) {
-            removeFaces(updateEntity);
-            addFaces(updateEntity, updated);
-        }  
-
-        updateVertices(updateEntity, updated);
-        updateFaces(updateEntity, updated);
-        calculatePrimitiveCount();
-    });
+    setupVertexUpdateCallback(entity);
 
     std::shared_ptr<MaterialComponent> material = m_registry.getComponent<Engine::MaterialComponent>(entity);
     if (material) {
@@ -663,10 +643,37 @@ void Engine::OpenGLRenderComponent::setupEntity(unsigned int entity, const std::
                     calculatePrimitiveCount();
                     updateMaterialIndices(addEntity);
                     updateTransformIndices(addEntity);
+                    this->setupVertexUpdateCallback(addEntity);
                 }
             });
         }
     }); 
+}
+
+void Engine::OpenGLRenderComponent::setupVertexUpdateCallback(unsigned int entity) {
+    // subscribe for updates on the geometry to update the buffer data accordingly
+    std::get<6>(m_entityData.at(entity)) = m_registry.onUpdate<GeometryComponent>(entity, [=](unsigned int updateEntity, std::weak_ptr<GeometryComponent> updatedGeometry) {
+        unsigned int numVertices{std::get<1>(this->m_entityData.at(updateEntity)) - std::get<0>(this->m_entityData.at(updateEntity))};
+        std::shared_ptr<GeometryComponent> updated{updatedGeometry.lock()};
+
+        if (numVertices != updated->getVertices().size()) {
+            removeVertices(updateEntity);
+            addVertices(updateEntity, updated);
+            updateMaterialIndices(entity);
+            updateTransformIndices(entity);
+        }  
+
+        unsigned int numFaces{std::get<3>(this->m_entityData.at(updateEntity)) - std::get<2>(this->m_entityData.at(updateEntity))};
+
+        if (numFaces != updated->getFaces().size()) {
+            removeFaces(updateEntity);
+            addFaces(updateEntity, updated);
+        }  
+
+        updateVertices(updateEntity, updated);
+        updateFaces(updateEntity, updated);
+        calculatePrimitiveCount();
+    });
 }
 
 void Engine::OpenGLRenderComponent::teardownEntity(unsigned int entity) {

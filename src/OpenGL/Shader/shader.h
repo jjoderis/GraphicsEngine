@@ -24,10 +24,10 @@ namespace Engine {
         OpenGLShader() = delete;
         OpenGLShader(GLenum type, const char* source);
         OpenGLShader(const OpenGLShader& other);
-    private:
-        GLuint m_id{0};
         GLenum m_type{};
         std::string m_source{};
+    private:
+        GLuint m_id{0};
         void compileShader();
         friend class OpenGLProgram;
     };
@@ -46,6 +46,8 @@ namespace Engine {
         void use();
         GLuint getBlockIndex(const char* blockName);
         GLuint getProgram();
+
+        std::vector<OpenGLShader> getShaders();
 
         void updateProgram(std::vector<OpenGLShader> newShaders);
     };

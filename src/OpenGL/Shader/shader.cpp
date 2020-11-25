@@ -130,6 +130,8 @@ void Engine::OpenGLProgram::rollback() {
     for (auto& entry: m_shaders) {
         glAttachShader(m_program, entry.second.m_id);
     }
+
+    glLinkProgram(m_program);
 }
 
 void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders) {
@@ -218,6 +220,16 @@ std::vector<Engine::OpenGLShader> Engine::loadShaders(const char* directoryPaths
 
     for(auto& filePath: Util::getFilePaths(directoryPaths)) {
         shaders.push_back(loadShader(filePath));
+    }
+
+    return shaders;
+}
+
+std::vector<Engine::OpenGLShader> Engine::OpenGLProgram::getShaders() {
+    std::vector<OpenGLShader> shaders{};
+
+    for (auto& entry: m_shaders) {
+        shaders.push_back(OpenGLShader{entry.first, entry.second.m_source.c_str()});
     }
 
     return shaders;

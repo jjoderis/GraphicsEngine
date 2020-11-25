@@ -5,6 +5,7 @@ unsigned int mainCamera{0};
 
 using namespace UICreation;
 int selectedEntity = -1;
+int possible_component_current = 0;
 
 void UI::init(Engine::Registry& registry) {
     //setup imgui context
@@ -48,211 +49,161 @@ void UI::preRender() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-
-
-bool drawEntityNode(unsigned int entity, Engine::Registry &registry) {
-    bool removed{ false };
-    const std::string& name = registry.getComponent<Engine::TagComponent>(entity)->get();
-    bool isOpen = ImGui::TreeNode(name.c_str());
-    if (ImGui::IsItemClicked(2)) {
-        selectedEntity = entity;
-    }
-    createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
-    createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
-    createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
-    createImGuiComponentDropTarget<Engine::OpenGLRenderComponent>(entity, registry);
-
-    ImGui::SameLine();
-    std::string id{"x##"};
-    id.append(std::to_string(entity));
-    if (ImGui::Button(id.c_str())) {
-        removed = true;
-    }
-    
-    if (isOpen)
+void drawGeometryTypeSelection(Engine::Registry& registry) {
+    if (ImGui::BeginPopup("Select Geometry Type"))
     {
-        ImGui::TreePop();
+        if(ImGui::Button("Blank")) {
+            selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
+        }
+        if (ImGui::Button("Triangle")) {
+            std::shared_ptr<Engine::GeometryComponent> geometry = std::make_shared<Engine::GeometryComponent>(
+                std::initializer_list<Engine::Math::Vector3>{
+                    Engine::Math::Vector3{  0.5, -0.5, 0.0 },
+                    Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
+                    Engine::Math::Vector3{  0.0,  0.5, 0.0 }
+                },
+                std::initializer_list<unsigned int>{
+                    0, 1, 2
+                }
+            );
+            geometry->calculateNormals();
+            selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
+        }
+        if (ImGui::Button("Sphere")) {
+            ImGui::OpenPopup("Sphere Parameters");
+            
+        }
+        static float sphereRadius{1.0f};
+        static int horizontalPoints{10};
+        static int verticalPoints{10};
+        if (ImGui::BeginPopup("Sphere Parameters"))
+        {
+            ImGui::InputFloat("Radius", &sphereRadius, 0.0f);
+            ImGui::SameLine();
+            ImGui::InputInt("Horizontal", &horizontalPoints);
+            ImGui::SameLine();
+            ImGui::InputInt("Vertical", &verticalPoints);
+            ImGui::SameLine();
+            if (ImGui::Button("+##add_sphere_geometry")) {
+                selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::createSphereGeometry(sphereRadius, horizontalPoints, verticalPoints));
+                sphereRadius = 1.0f;
+                horizontalPoints = 10;
+                verticalPoints = 10;
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::EndPopup();
     }
-
-    return removed;  
 }
 
-char name[64];
+std::vector<Util::Path> shaderDirectoryPaths;
+std::vector<std::string> shaderDirectoryNames;
+
+std::string errorMessage = {};
+
+void drawShaderTypeSelection(Engine::Registry& registry) {
+    if (ImGui::BeginPopup("Select Shader")) {
+        for (int i{0}; i < shaderDirectoryPaths.size(); ++i) {
+            if (ImGui::Button(shaderDirectoryNames[i].c_str())) {
+                try {
+                    selectedRender = registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, std::make_shared<Engine::OpenGLRenderComponent>(
+                        registry,
+                        Engine::loadShaders(shaderDirectoryPaths[i].c_str())
+                    ));
+                } catch (Engine::ShaderException& err) {
+                    errorMessage = err.what();
+                }
+
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+
+    if (errorMessage.size()) {
+        ImGui::OpenPopup("Error Info"); 
+        UICreation::drawErrorModal(errorMessage);
+    }
+}
 
 void UI::render(Engine::Registry &registry) {
     if (showDemoWindow) {
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
-    std::list<unsigned int> removals{};
-
     {
         ImGui::Begin("Hello World!");
 
         ImGui::Checkbox("Show Demo Window", &showDemoWindow);
 
-        const std::list<unsigned int> &entities{ registry.getEntities() };
+        UICreation::drawEntitiesNode(registry);
 
         if (selectedEntity > -1) {
-            const char* name = registry.getComponent<Engine::TagComponent>(selectedEntity)->get().c_str();
-            ImGui::Text("Selection: %s", name);
-        } else {
-            ImGui::Text("Selection: None selected!");
-        }
-        
-        if (ImGui::CollapsingHeader("Entities"))
-        { 
-            for (unsigned int entity: entities) {
-                if (drawEntityNode(entity, registry)) {
-                    removals.push_back(entity);
-                }
-            } 
-            if (ImGui::Button("Add Entity")) {
-                ImGui::OpenPopup("entity_add_popup");
-            }
-            if (ImGui::BeginPopup("entity_add_popup"))
+            const char* possibleComponents[]{"", "Material", "Geometry", "Transform", "Render", "Camera"};
+            if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
-                ImGui::InputTextWithHint("##name_input", "Enter a name", name, IM_ARRAYSIZE(name));
-                ImGui::SameLine();
-                if(ImGui::Button("+")) {
-                    unsigned int newEntity = registry.addEntity();
-                    if (!std::strlen(name)) {
-                        registry.addComponent<Engine::TagComponent>(newEntity, std::make_shared<Engine::TagComponent>("Unnamed Entity"));
-                    } else {
-                        registry.addComponent<Engine::TagComponent>(newEntity, std::make_shared<Engine::TagComponent>(name));
-                    }
-                    name[0] = '\0';
-                    ImGui::CloseCurrentPopup();
+                if (!selectedMaterial.lock() && ImGui::Selectable(possibleComponents[1], possible_component_current == 1)) {
+                    possible_component_current = 1;
                 }
-                ImGui::SameLine();
-                if(ImGui::Button("x")) {
-                    ImGui::CloseCurrentPopup();
+                if (!selectedGeometry.lock() && ImGui::Selectable(possibleComponents[2], possible_component_current == 2)) {
+                    possible_component_current = 2;
                 }
-                ImGui::EndPopup();
-            } 
-        }
-
-        if (selectedEntity > -1) {
-            std::vector<const char*> possibleComponents{"Material", "Geometry", "Transform", "Render", "Camera"};
-
-            if (registry.hasComponent<Engine::MaterialComponent>(selectedEntity)) {
-                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
-                    return !strcmp(compName, "Material");
-                }), possibleComponents.end());
-
-                drawMaterialNode(registry);
+                if (!selectedTransform.lock() && ImGui::Selectable(possibleComponents[3], possible_component_current == 3)) {
+                    possible_component_current = 3;
+                }
+                if (!selectedRender.lock() && ImGui::Selectable(possibleComponents[4], possible_component_current == 4)) {
+                    possible_component_current = 4;
+                }
+                if (!selectedCamera.lock() && ImGui::Selectable(possibleComponents[5], possible_component_current == 5)) {
+                    possible_component_current = 5;
+                }
+                ImGui::EndCombo();
             }
-            if (registry.hasComponent<Engine::GeometryComponent>(selectedEntity)) {
-                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
-                    return !strcmp(compName, "Geometry");
-                }), possibleComponents.end());
-
-                drawGeometryNode(registry);
-            }
-            if (registry.hasComponent<Engine::TransformComponent>(selectedEntity)) {
-                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
-                    return !strcmp(compName, "Transform");
-                }), possibleComponents.end());
-
-                drawTransformNode(registry);
-            }
-            if (registry.hasComponent<Engine::OpenGLRenderComponent>(selectedEntity)) {
-                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
-                    return !strcmp(compName, "Render");
-                }), possibleComponents.end());
-
-                drawRenderNode(registry);
-            }
-            if (registry.hasComponent<Engine::CameraComponent>(selectedEntity)) {
-                possibleComponents.erase(std::remove_if(possibleComponents.begin(), possibleComponents.end(), [](const char* compName) {
-                    return !strcmp(compName, "Camera");
-                }), possibleComponents.end());
-
-                drawCameraNode(registry);
-            }
-
-            if (possibleComponents.size()) {
-                static int possible_component_current = 0;
-                ImGui::Combo("##Available Components", &possible_component_current, possibleComponents.data(), possibleComponents.size());
-                ImGui::SameLine();
-                if (ImGui::Button("+")) {
-                    if (!strcmp(possibleComponents[possible_component_current], "Material")) {
-                        registry.addComponent<Engine::MaterialComponent>(selectedEntity, std::make_shared<Engine::MaterialComponent>());
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
-                        ImGui::OpenPopup("Select Geometry Type");
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
-                        registry.addComponent<Engine::TransformComponent>(selectedEntity, std::make_shared<Engine::TransformComponent>());
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
-                        registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, std::make_shared<Engine::OpenGLRenderComponent>(
-                            registry,
-                            std::initializer_list<Engine::OpenGLShader>{
-                                Engine::OpenGLShader{GL_VERTEX_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.vert").c_str()},
-                                Engine::OpenGLShader{GL_FRAGMENT_SHADER, Util::readTextFile("../../data/shaders/Basic_Shading_Shader/basic_shading.frag").c_str()},
+            ImGui::SameLine();
+            if (ImGui::Button("+") && possible_component_current) {
+                if (!strcmp(possibleComponents[possible_component_current], "Material")) {
+                    selectedMaterial = registry.addComponent<Engine::MaterialComponent>(selectedEntity, std::make_shared<Engine::MaterialComponent>());
+                } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
+                    ImGui::OpenPopup("Select Geometry Type");
+                } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
+                    selectedTransform = registry.addComponent<Engine::TransformComponent>(selectedEntity, std::make_shared<Engine::TransformComponent>());
+                } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
+                    ImGui::OpenPopup("Select Shader");
+                    shaderDirectoryPaths = Util::getDirectories("../../data/shaders");
+                    shaderDirectoryNames.resize(shaderDirectoryPaths.size());
+                    for (int i{0}; i < shaderDirectoryPaths.size(); ++i) {
+                        shaderDirectoryNames[i] = shaderDirectoryPaths[i].stem().string();
+                        for(int j{0}; j < shaderDirectoryNames[i].size(); ++j) {
+                            if (shaderDirectoryNames[i].at(j) == '_') {
+                                shaderDirectoryNames[i].at(j) = ' ';
                             }
-                        ));
-                    } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
-                        std::shared_ptr<Engine::CameraComponent> camera = registry.addComponent<Engine::CameraComponent>(selectedEntity, std::make_shared<Engine::CameraComponent>(registry));
-                        int width, height;
-                        GLFWwindow* window = Window::getWindow();
-                        glfwGetFramebufferSize(window, &width, &height);
-                        camera->updateAspect((float)width/(float)height);
-                        registry.updated<Engine::CameraComponent>(mainCamera);
-                    }
-                }
-                if (ImGui::BeginPopup("Select Geometry Type"))
-                {
-                    if(ImGui::Button("Blank")) {
-                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
-                    }
-                    if (ImGui::Button("Triangle")) {
-                        std::shared_ptr<Engine::GeometryComponent> geometry = std::make_shared<Engine::GeometryComponent>(
-                            std::initializer_list<Engine::Math::Vector3>{
-                                Engine::Math::Vector3{  0.5, -0.5, 0.0 },
-                                Engine::Math::Vector3{ -0.5, -0.5, 0.0 },
-                                Engine::Math::Vector3{  0.0,  0.5, 0.0 }
-                            },
-                            std::initializer_list<unsigned int>{
-                                0, 1, 2
-                            }
-                        );
-                        geometry->calculateNormals();
-                        registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
-                    }
-                    if (ImGui::Button("Sphere")) {
-                        ImGui::OpenPopup("Sphere Parameters");
-                        
-                    }
-                    static float sphereRadius{1.0f};
-                    static int horizontalPoints{10};
-                    static int verticalPoints{10};
-                    if (ImGui::BeginPopup("Sphere Parameters"))
-                    {
-                        ImGui::InputFloat("Radius", &sphereRadius, 0.0f);
-                        ImGui::SameLine();
-                        ImGui::InputInt("Horizontal", &horizontalPoints);
-                        ImGui::SameLine();
-                        ImGui::InputInt("Vertical", &verticalPoints);
-                        ImGui::SameLine();
-                        if (ImGui::Button("+##add_sphere_geometry")) {
-                            registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::createSphereGeometry(sphereRadius, horizontalPoints, verticalPoints));
-                            sphereRadius = 1.0f;
-                            horizontalPoints = 10;
-                            verticalPoints = 10;
                         }
-                        ImGui::EndPopup();
                     }
-                    ImGui::EndPopup();
+                } else if (!strcmp(possibleComponents[possible_component_current], "Camera")) {
+                    std::shared_ptr<Engine::CameraComponent> camera = registry.addComponent<Engine::CameraComponent>(selectedEntity, std::make_shared<Engine::CameraComponent>(registry));
+                    int width, height;
+                    GLFWwindow* window = Window::getWindow();
+                    glfwGetFramebufferSize(window, &width, &height);
+                    camera->updateAspect((float)width/(float)height);
+                    registry.updated<Engine::CameraComponent>(mainCamera);
+                    selectedCamera = camera;
                 }
+                possible_component_current = 0;
             }
+            drawGeometryTypeSelection(registry);
+            drawShaderTypeSelection(registry);
+
+            drawMaterialNode(registry);
+            drawGeometryNode(registry);
+            drawTransformNode(registry);
+            drawRenderNode(registry);
+            drawCameraNode(registry);
         }
 
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
-    }
-
-    for (unsigned int entity: removals) {
-        registry.removeEntity(entity);
     }
 
     ImGui::Render();
