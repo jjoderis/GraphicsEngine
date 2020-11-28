@@ -47,7 +47,7 @@ template void UICreation::createImGuiComponentDropTarget<Engine::CameraComponent
 
 template <typename ComponentType>
 void UICreation::createComponentNodeOutline(const char* componentName, Engine::Registry& registry, ComponentType* component, std::function<void(void)> drawFunc) {
-    if (ImGui::CollapsingHeader(componentName)) {
+    if (ImGui::Begin(componentName)) {
         char buff[64]{'\0'};
         sprintf(buff, "%s_remove_popup", componentName);
         if(ImGui::IsItemClicked(1)) {
@@ -65,6 +65,7 @@ void UICreation::createComponentNodeOutline(const char* componentName, Engine::R
         createImGuiComponentDragSource<ComponentType>();
         drawFunc();
     }
+    ImGui::End();
 }
 
 template void UICreation::createComponentNodeOutline<Engine::TransformComponent>(const char* componentName, Engine::Registry& registry, Engine::TransformComponent* component, std::function<void(void)> drawFunc);
@@ -72,18 +73,3 @@ template void UICreation::createComponentNodeOutline<Engine::OpenGLRenderCompone
 template void UICreation::createComponentNodeOutline<Engine::MaterialComponent>(const char* componentName, Engine::Registry& registry, Engine::MaterialComponent* component, std::function<void(void)> drawFunc);
 template void UICreation::createComponentNodeOutline<Engine::GeometryComponent>(const char* componentName, Engine::Registry& registry, Engine::GeometryComponent* component, std::function<void(void)> drawFunc);
 template void UICreation::createComponentNodeOutline<Engine::CameraComponent>(const char* componentName, Engine::Registry& registry, Engine::CameraComponent* component, std::function<void(void)> drawFunc);
-
-void UICreation::drawErrorModal(std::string& errorMessage) {
-    if (ImGui::BeginPopupModal("Error Info", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text(errorMessage.c_str());
-        ImGui::Separator();
-
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
-            errorMessage.clear();
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SetItemDefaultFocus();
-        ImGui::EndPopup();
-    }
-}

@@ -52,8 +52,14 @@ namespace Engine {
         void updateProgram(std::vector<OpenGLShader> newShaders);
     };
 
-    OpenGLShader loadShader(const Util::Path& filePath);
+    GLenum shaderPathToType(const fs::path& filePath);
+    std::string shaderTypeToExtension(GLenum type);
+
+    OpenGLShader loadShader(const fs::path& filePath);
     std::vector<OpenGLShader> loadShaders(const char* directoryPaths);
+
+    void saveShader(const fs::path& path, const OpenGLShader& shader);
+    void saveShaders(const fs::path& directoryPath, const std::vector<OpenGLShader>& shaders);
 }
 
 

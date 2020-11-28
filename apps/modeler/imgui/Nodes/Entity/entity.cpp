@@ -1,12 +1,5 @@
 #include "entity.h"
 
-std::weak_ptr<Engine::TagComponent> selectedTag{};
-std::weak_ptr<Engine::TransformComponent> selectedTransform{};
-std::weak_ptr<Engine::OpenGLRenderComponent> selectedRender{};
-std::weak_ptr<Engine::MaterialComponent> selectedMaterial{};
-std::weak_ptr<Engine::GeometryComponent> selectedGeometry{};
-std::weak_ptr<Engine::CameraComponent> selectedCamera{};
-
 void drawEntityNode(unsigned int entity, Engine::Registry &registry) {
     if (std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity)) {
         bool isOpen = ImGui::TreeNode(tag->get().c_str());
@@ -14,12 +7,6 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry) {
         if (ImGui::IsItemClicked(2)) {
             selectedEntity = entity;
             possible_component_current = 0;
-            selectedTag = registry.getComponent<Engine::TagComponent>(entity);
-            selectedTransform = registry.getComponent<Engine::TransformComponent>(entity);
-            selectedMaterial = registry.getComponent<Engine::MaterialComponent>(entity);
-            selectedGeometry = registry.getComponent<Engine::GeometryComponent>(entity);
-            selectedRender = registry.getComponent<Engine::OpenGLRenderComponent>(entity);
-            selectedCamera = registry.getComponent<Engine::CameraComponent>(entity);
         }
         UICreation::createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
@@ -34,12 +21,6 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry) {
 
             if (entity == selectedEntity) {
                 selectedEntity = -1;
-                selectedTag.reset();
-                selectedTransform.reset();
-                selectedRender.reset();
-                selectedMaterial.reset();
-                selectedGeometry.reset();
-                selectedCamera.reset();
             }
         }
         

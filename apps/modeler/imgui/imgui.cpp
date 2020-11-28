@@ -53,7 +53,7 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
     if (ImGui::BeginPopup("Select Geometry Type"))
     {
         if(ImGui::Button("Blank")) {
-            selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
+            registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
         }
         if (ImGui::Button("Triangle")) {
             std::shared_ptr<Engine::GeometryComponent> geometry = std::make_shared<Engine::GeometryComponent>(
@@ -67,7 +67,7 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
                 }
             );
             geometry->calculateNormals();
-            selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
+            registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);
         }
         if (ImGui::Button("Sphere")) {
             ImGui::OpenPopup("Sphere Parameters");
@@ -85,7 +85,7 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
             ImGui::InputInt("Vertical", &verticalPoints);
             ImGui::SameLine();
             if (ImGui::Button("+##add_sphere_geometry")) {
-                selectedGeometry = registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::createSphereGeometry(sphereRadius, horizontalPoints, verticalPoints));
+                registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::createSphereGeometry(sphereRadius, horizontalPoints, verticalPoints));
                 sphereRadius = 1.0f;
                 horizontalPoints = 10;
                 verticalPoints = 10;
@@ -96,17 +96,15 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
     }
 }
 
-std::vector<Util::Path> shaderDirectoryPaths;
+std::vector<fs::path> shaderDirectoryPaths;
 std::vector<std::string> shaderDirectoryNames;
-
-std::string errorMessage = {};
 
 void drawShaderTypeSelection(Engine::Registry& registry) {
     if (ImGui::BeginPopup("Select Shader")) {
         for (int i{0}; i < shaderDirectoryPaths.size(); ++i) {
             if (ImGui::Button(shaderDirectoryNames[i].c_str())) {
                 try {
-                    selectedRender = registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, std::make_shared<Engine::OpenGLRenderComponent>(
+                    registry.addComponent<Engine::OpenGLRenderComponent>(selectedEntity, std::make_shared<Engine::OpenGLRenderComponent>(
                         registry,
                         Engine::loadShaders(shaderDirectoryPaths[i].c_str())
                     ));
@@ -118,12 +116,12 @@ void drawShaderTypeSelection(Engine::Registry& registry) {
             }
         }
 
-        ImGui::EndPopup();
-    }
+        if (errorMessage.size()) {
+            ImGui::OpenPopup("Error Info"); 
+            UIUtil::drawErrorModal(errorMessage);
+        }
 
-    if (errorMessage.size()) {
-        ImGui::OpenPopup("Error Info"); 
-        UICreation::drawErrorModal(errorMessage);
+        ImGui::EndPopup();
     }
 }
 
@@ -143,19 +141,19 @@ void UI::render(Engine::Registry &registry) {
             const char* possibleComponents[]{"", "Material", "Geometry", "Transform", "Render", "Camera"};
             if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
-                if (!selectedMaterial.lock() && ImGui::Selectable(possibleComponents[1], possible_component_current == 1)) {
+                if (!registry.hasComponent<Engine::MaterialComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[1], possible_component_current == 1)) {
                     possible_component_current = 1;
                 }
-                if (!selectedGeometry.lock() && ImGui::Selectable(possibleComponents[2], possible_component_current == 2)) {
+                if (!registry.hasComponent<Engine::GeometryComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[2], possible_component_current == 2)) {
                     possible_component_current = 2;
                 }
-                if (!selectedTransform.lock() && ImGui::Selectable(possibleComponents[3], possible_component_current == 3)) {
+                if (!registry.hasComponent<Engine::TransformComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[3], possible_component_current == 3)) {
                     possible_component_current = 3;
                 }
-                if (!selectedRender.lock() && ImGui::Selectable(possibleComponents[4], possible_component_current == 4)) {
+                if (!registry.hasComponent<Engine::OpenGLRenderComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[4], possible_component_current == 4)) {
                     possible_component_current = 4;
                 }
-                if (!selectedCamera.lock() && ImGui::Selectable(possibleComponents[5], possible_component_current == 5)) {
+                if (!registry.hasComponent<Engine::CameraComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[5], possible_component_current == 5)) {
                     possible_component_current = 5;
                 }
                 ImGui::EndCombo();
@@ -163,11 +161,11 @@ void UI::render(Engine::Registry &registry) {
             ImGui::SameLine();
             if (ImGui::Button("+") && possible_component_current) {
                 if (!strcmp(possibleComponents[possible_component_current], "Material")) {
-                    selectedMaterial = registry.addComponent<Engine::MaterialComponent>(selectedEntity, std::make_shared<Engine::MaterialComponent>());
+                    registry.addComponent<Engine::MaterialComponent>(selectedEntity, std::make_shared<Engine::MaterialComponent>());
                 } else if (!strcmp(possibleComponents[possible_component_current], "Geometry")) {
                     ImGui::OpenPopup("Select Geometry Type");
                 } else if (!strcmp(possibleComponents[possible_component_current], "Transform")) {
-                    selectedTransform = registry.addComponent<Engine::TransformComponent>(selectedEntity, std::make_shared<Engine::TransformComponent>());
+                    registry.addComponent<Engine::TransformComponent>(selectedEntity, std::make_shared<Engine::TransformComponent>());
                 } else if (!strcmp(possibleComponents[possible_component_current], "Render")) {
                     ImGui::OpenPopup("Select Shader");
                     shaderDirectoryPaths = Util::getDirectories("../../data/shaders");
@@ -187,7 +185,6 @@ void UI::render(Engine::Registry &registry) {
                     glfwGetFramebufferSize(window, &width, &height);
                     camera->updateAspect((float)width/(float)height);
                     registry.updated<Engine::CameraComponent>(mainCamera);
-                    selectedCamera = camera;
                 }
                 possible_component_current = 0;
             }
@@ -221,4 +218,7 @@ void UI::postRender() {
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backup_current_context);
     }
+
+    // reset the erroModal so it can be rendered again in the next frame
+    errorModalRendered = false;
 }

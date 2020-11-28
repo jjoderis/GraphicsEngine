@@ -15,8 +15,18 @@ std::string Util::readTextFile(const char* filePath){
   throw(errno);
 }
 
-std::vector<Util::Path> Util::getFilePaths(const char* directoryPath) {
-  std::vector<Path> filePaths{};
+void Util::writeTextToFile(const char* filePath, const std::string& data) {
+  std::ofstream out{filePath, std::ios::out | std::ios::binary };
+  if (out) {
+    out << data;
+    out.close();
+  } else {
+    throw(errno);
+  }
+}
+
+std::vector<fs::path> Util::getFilePaths(const char* directoryPath) {
+  std::vector<fs::path> filePaths{};
 
   for(const auto& entry: std::filesystem::directory_iterator(directoryPath)) {
         if (entry.is_regular_file()) {
@@ -27,8 +37,8 @@ std::vector<Util::Path> Util::getFilePaths(const char* directoryPath) {
   return filePaths;
 }
 
-std::vector<Util::Path> Util::getDirectories(const char* directoryPath) {
-  std::vector<Path> directoryPaths{};
+std::vector<fs::path> Util::getDirectories(const char* directoryPath) {
+  std::vector<fs::path> directoryPaths{};
 
   for(const auto& entry: std::filesystem::directory_iterator(directoryPath)) {
         if (entry.is_directory()) {

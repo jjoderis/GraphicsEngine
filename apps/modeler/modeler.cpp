@@ -61,7 +61,7 @@ int main()
     std::weak_ptr<Engine::GeometryComponent> geometry{ registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20)) };
     registry.addComponent<Engine::OpenGLRenderComponent>(object1, std::make_shared<Engine::OpenGLRenderComponent>(
         registry,
-        Engine::loadShaders("../../data/shaders/Basic_Shader")
+        Engine::loadShaders("../../data/shaders/Basic_Shading_Shader")
     ));
 
     while (!glfwWindowShouldClose(window))

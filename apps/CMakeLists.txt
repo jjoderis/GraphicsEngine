@@ -18,6 +18,8 @@ add_library(modelerLib
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
+    modeler/imgui/Util/fileBrowser.cpp
+    modeler/imgui/Util/errorModal.cpp
     modeler/imgui/Nodes/Entity/entity.cpp
     modeler/imgui/Nodes/helpers.cpp
     modeler/imgui/Nodes/Camera/camera.cpp

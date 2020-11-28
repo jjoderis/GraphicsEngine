@@ -189,26 +189,56 @@ void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders) 
     }
 }
 
-Engine::OpenGLShader Engine::loadShader(const Util::Path& filePath) {
-    GLenum type{};
-
-    std::string extension{filePath.extension().string()};
+GLenum Engine::shaderPathToType(const fs::path& filePath) {
+    fs::path extension{filePath.extension()};
 
     if (extension == ".vert") {
-        type = GL_VERTEX_SHADER;
+        return GL_VERTEX_SHADER;
     } else if (extension == ".frag") {
-        type = GL_FRAGMENT_SHADER;
+        return GL_FRAGMENT_SHADER;
     } else if (extension == ".geom") {
-        type = GL_GEOMETRY_SHADER;
+        return GL_GEOMETRY_SHADER;
     } else if (extension == ".teval") {
-        type = GL_TESS_EVALUATION_SHADER;
+        return GL_TESS_EVALUATION_SHADER;
     } else if (extension == ".tcont") {
-        type = GL_TESS_CONTROL_SHADER;
+        return GL_TESS_CONTROL_SHADER;
     } else if (extension == ".comp") {
-        type = GL_COMPUTE_SHADER;
+        return GL_COMPUTE_SHADER;
     } else {
         throw ShaderException{"Unknown file extension for shader loading."};
     }
+}
+
+std::string Engine::shaderTypeToExtension(GLenum type) {
+    switch (type) {
+        case GL_VERTEX_SHADER:
+            return ".vert";
+            break;
+        case GL_FRAGMENT_SHADER:
+            return ".frag";
+            break;
+        case GL_GEOMETRY_SHADER:
+            return ".geom";
+            break;
+        case GL_TESS_EVALUATION_SHADER:
+            return ".teval";
+            break;
+        case GL_TESS_CONTROL_SHADER:
+            return ".tcont";
+            break;
+        case GL_COMPUTE_SHADER:
+            return ".comp";
+            break;
+        default:
+            throw ShaderException{"Unknown shader type for extension deduction."};
+            break;
+    }
+}
+
+Engine::OpenGLShader Engine::loadShader(const fs::path& filePath) {
+    GLenum type{ shaderPathToType(filePath) };
+
+    std::string extension{filePath.extension().string()};
 
     std::string shaderSource{Util::readTextFile(filePath.c_str())};
 
@@ -233,6 +263,40 @@ std::vector<Engine::OpenGLShader> Engine::OpenGLProgram::getShaders() {
     }
 
     return shaders;
+}
+
+void Engine::saveShader(const fs::path& path ,const OpenGLShader& shader) {
+    fs::path filePath{path};
+    bool savingAllowed{false};
+    std::string expectedExtension{shaderTypeToExtension(shader.m_type)};
+
+    // check if the path has a file extension
+    if (path.has_extension()) {
+        // check if the given extension is correct for the current shader type
+        savingAllowed = expectedExtension == path.extension();
+    } else {
+        // add correct extension to path
+        filePath += expectedExtension;
+        savingAllowed = true;
+    }
+
+    if (savingAllowed) {
+        Util::writeTextToFile(filePath.c_str(), shader.m_source);
+    } else {
+        throw ShaderException("Wrong file extension for a shader of the given type. Didn't write to file system!");
+    }
+}
+
+void Engine::saveShaders(const fs::path& directoryPath, const std::vector<OpenGLShader>& shaders) {
+    if (!fs::is_directory(directoryPath)) {
+        throw ShaderException("Given path is not a directory. Didn't write to file system!");
+    }
+
+    std::string directoryName{directoryPath.stem().string()};
+
+    for (const OpenGLShader& shader: shaders) {
+        saveShader(fs::path{directoryPath / directoryName}, shader);
+    }
 }
 
 

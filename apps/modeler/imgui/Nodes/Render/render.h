@@ -3,6 +3,9 @@
 
 #include "../helpers.h"
 #include <misc/cpp/imgui_stdlib.h>
+#include <algorithm>
+#include "../../Util/fileBrowser.h"
+#include "../../Util/errorModal.h"
 
 namespace UICreation {
 

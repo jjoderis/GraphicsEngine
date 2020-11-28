@@ -9,14 +9,16 @@
 #include <vector>
 #include <iostream>
 
+namespace fs = std::filesystem;
+
 namespace Util {
-    using Path = std::filesystem::path;
 
     // source: http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
     std::string readTextFile(const char* filePath);
+    void writeTextToFile(const char* filePath, const std::string& data);
 
-    std::vector<Path> getFilePaths(const char* directoryPath);
-    std::vector<Path> getDirectories(const char* directoryPath);
+    std::vector<fs::path> getFilePaths(const char* directoryPath);
+    std::vector<fs::path> getDirectories(const char* directoryPath);
 }
 
 #endif
