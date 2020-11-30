@@ -1,6 +1,7 @@
 #include "lightsTracker.h"
 
-Engine::Systems::OpenGLLightsTracker::OpenGLLightsTracker(unsigned int& lightsUBO, Registry& registry) 
+template <typename LightType>
+Engine::Systems::OpenGLLightsTracker<LightType>::OpenGLLightsTracker(unsigned int& lightsUBO, Registry& registry) 
     : m_lightsUBO{lightsUBO}, m_registry{registry}
 {
     glGenBuffers(1, &m_lightsUBO);
@@ -9,25 +10,52 @@ Engine::Systems::OpenGLLightsTracker::OpenGLLightsTracker(unsigned int& lightsUB
     glBufferData(GL_UNIFORM_BUFFER, 4 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(int), &m_numLights);
 
-    m_AddLightCB = m_registry.onAdded<LightComponent>([this](unsigned int entity, std::weak_ptr<LightComponent> light) {
+    m_AddLightCB = m_registry.onAdded<LightType>([this](unsigned int entity, std::weak_ptr<LightType> light) {
         // if the entity wasn't associated with this component before
         if (m_entityData.find(entity) == m_entityData.end()) {
             m_entityData.emplace(entity, meta_data{
                 0,
-                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightComponent>)>>{},
-                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightComponent>)>>{},
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightType>)>>{},
+                std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<LightType>)>>{},
                 std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{},
                 std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>{}
             });
 
             addLight(entity, light.lock());
+            resetTransformInfo(entity);
+            awaitTransform(entity);
         }
     });
 }
 
-const size_t lightInfoSize{3 * sizeof(float)};
+template <typename LightType>
+size_t Engine::Systems::OpenGLLightsTracker<LightType>::getLightInfoSize() {
+    // we need actual specialization for the specific light types
+    return 0;
+}
 
-void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, const std::shared_ptr<LightComponent>& light) {
+template<>
+size_t Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::getLightInfoSize() {
+    // we have direction (3 * size of float) + color (3 * size of float), buffer layout padds to size of 4 floats
+    return 8 * sizeof(float);
+}
+
+template<>
+size_t Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::getLightInfoSize() {
+    // we have intensity (1 * size of float) + position (3 * size of float) + color (3 * size of float), buffer layout padds to size of 4 floats
+    return 12 * sizeof(float);
+}
+
+template<>
+size_t Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::getLightInfoSize() {
+    // we have intensity (1 * size of float) + cutoff angle (1 * size of float) + penumbra angle (1 * size of float) + position (3 * size of float) + direction (3 * size of float) + color (3 * size of float), buffer layout padds to size of 4 floats
+    return 16 * sizeof(float);
+}
+
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::addLight(unsigned int entity, const std::shared_ptr<LightType>& light) {
+    size_t lightInfoSize{getLightInfoSize()};
+
     size_t offset{4 * sizeof(int) + m_numLights * lightInfoSize};
 
     unsigned int newUBO{};
@@ -43,10 +71,6 @@ void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, const s
 
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(int), &m_numLights);
 
-    // initialize light info with base transform
-    float baseTransform[3]{0.0f, 0.0f, 0.0f};
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(baseTransform), baseTransform);
-
     glDeleteBuffers(1, &m_lightsUBO);
     m_lightsUBO = newUBO;
 
@@ -55,19 +79,74 @@ void Engine::Systems::OpenGLLightsTracker::addLight(unsigned int entity, const s
     std::get<0>(entityData) = offset;
     
     // setup callbacks for changes in entity light
-    std::get<1>(entityData) = m_registry.onUpdate<LightComponent>(entity, [this](unsigned int updateEntity, std::weak_ptr<LightComponent> updatedlight) {
-        // TODO: update light info in buffer
+    std::get<1>(entityData) = m_registry.onUpdate<LightType>(entity, [this, entity](unsigned int updateEntity, std::weak_ptr<LightType> updatedLight) {
+        this->updateLightInfo(entity, updatedLight.lock());
     });
-    std::get<2>(entityData) = m_registry.onRemove<LightComponent>([this, entity](unsigned int removeEntity, std::weak_ptr<LightComponent> light) {
+    std::get<2>(entityData) = m_registry.onRemove<LightType>([this, entity](unsigned int removeEntity, std::weak_ptr<LightType> light) {
         if (removeEntity == entity) {
             this->removeLight(entity);
         }
     });
 
-    awaitTransform(entity);
+    updateLightInfo(entity, light);
 }
 
-void Engine::Systems::OpenGLLightsTracker::removeLight(unsigned int entity) {
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::updateLightInfo(unsigned int entity, const std::shared_ptr<LightType>& light) {
+    // actual implementation will have to be done as specalization for each of the light types
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::updateLightInfo(unsigned int entity, const std::shared_ptr<DirectionalLightComponent>& light) {
+    size_t offset{ std::get<0>(m_entityData.at(entity)) };
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
+    // add direction
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getDirection().raw());
+    // add color (vec3s are padded to the size of vec4 leading to the offset)
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::updateLightInfo(unsigned int entity, const std::shared_ptr<PointLightComponent>& light) {
+    size_t offset{ std::get<0>(m_entityData.at(entity)) };
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
+    // add intensity
+    float intensity{light->getIntensity()};
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 1 * sizeof(float), &intensity);
+    // add position
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().raw());
+    // add color (vec3s are padded to the size of vec4 leading to the offset)
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateLightInfo(unsigned int entity, const std::shared_ptr<SpotLightComponent>& light) {
+    size_t offset{ std::get<0>(m_entityData.at(entity)) };
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
+    // add intensity
+    float intensity{light->getIntensity()};
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 1 * sizeof(float), &intensity);
+    // add cutoff angle
+    float cutoff{light->getCutoff()};
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + sizeof(float), 1 * sizeof(float), &cutoff);
+    // add penumbra angle
+    float penumbra{light->getPenumbra()};
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 2 * sizeof(float), 1 * sizeof(float), &penumbra);
+    // add position
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().raw());
+    // add direction
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getDirection().raw());
+    // add color (vec3s are padded to the size of vec4 leading to the offset)
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 12 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+}
+
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::removeLight(unsigned int entity) {
+    size_t lightInfoSize{getLightInfoSize()};
+
     size_t objectStart{std::get<0>(m_entityData.at(entity))};
     size_t objectEnd{objectStart + lightInfoSize};
 
@@ -103,7 +182,8 @@ void Engine::Systems::OpenGLLightsTracker::removeLight(unsigned int entity) {
     --m_numLights;
 }
 
-void Engine::Systems::OpenGLLightsTracker::awaitTransform(unsigned int entity) {
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::awaitTransform(unsigned int entity) {
     std::shared_ptr<TransformComponent> transform{ m_registry.getComponent<TransformComponent>(entity) };
 
     if(transform) {
@@ -131,18 +211,87 @@ void Engine::Systems::OpenGLLightsTracker::awaitTransform(unsigned int entity) {
     }
 }
 
-void Engine::Systems::OpenGLLightsTracker::resetTransformInfo(unsigned int entity) {
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::resetTransformInfo(unsigned int entity) {
     size_t offset{ std::get<0>(m_entityData.at(entity)) };
 
-    const float origin[3]{ 1.0f, 0.0f, 0.0f };
+    const float origin[3]{ 0.0f, 0.0f, 0.0f };
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), origin);
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(origin), origin);
 }
 
-void Engine::Systems::OpenGLLightsTracker::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::resetTransformInfo(unsigned int entity) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<DirectionalLightComponent> light{ m_registry.getComponent<DirectionalLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setDirection(Math::Vector3{ 0.0, 0.0, 1.0 });
+    m_registry.updated<DirectionalLightComponent>(entity);
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::resetTransformInfo(unsigned int entity) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<PointLightComponent> light{ m_registry.getComponent<PointLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setPosition(Math::Vector3{ 0.0, 0.0, 0.0 });
+    m_registry.updated<PointLightComponent>(entity);
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::resetTransformInfo(unsigned int entity) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<SpotLightComponent> light{ m_registry.getComponent<SpotLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setPosition(Math::Vector3{ 0.0, 0.0, 0.0 });
+
+    light->setDirection(Math::Vector3{ 0.0, 0.0, 1.0 });
+    m_registry.updated<SpotLightComponent>(entity);
+}
+
+template <typename LightType>
+void Engine::Systems::OpenGLLightsTracker<LightType>::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
     size_t offset{ std::get<0>(m_entityData.at(entity)) };
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), transform->getTranslation().raw());
 }
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<DirectionalLightComponent> light{ m_registry.getComponent<DirectionalLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setDirection(transform->getModelMatrix() * Math::Vector4{ 0.0, 0.0, 1.0, 0.0 });
+    m_registry.updated<DirectionalLightComponent>(entity);
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<PointLightComponent> light{ m_registry.getComponent<PointLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setPosition(transform->getTranslation());
+    m_registry.updated<PointLightComponent>(entity);
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateTransformInfo(unsigned int entity, const std::shared_ptr<TransformComponent>& transform) {
+    // we expect this component to exist since we only should be tracking existing lights
+    std::shared_ptr<SpotLightComponent> light{ m_registry.getComponent<SpotLightComponent>(entity) };
+
+    // let the updateLightInfo function take care of this
+    light->setPosition(transform->getTranslation());
+    light->setDirection(transform->getModelMatrix() * Math::Vector4{ 0.0, 0.0, 1.0, 0.0 });
+    m_registry.updated<SpotLightComponent>(entity);
+}
+
+template class Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>;
+template class Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>;
+template class Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>;

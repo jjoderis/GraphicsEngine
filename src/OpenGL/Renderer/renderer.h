@@ -10,11 +10,15 @@
 namespace Engine {
     class OpenGLRenderer {
     private:
-        unsigned int m_lightsInfoUBO{0};
+        unsigned int m_directionalLightsInfoUBO{0};
+        unsigned int m_pointLightsInfoUBO{0};
+        unsigned int m_spotLightsInfoUBO{0};
         unsigned int m_activeCameraUBO{0};
 
         Systems::OpenGLCameraTracker m_cameraTracker;
-        Systems::OpenGLLightsTracker m_lightsTracker;
+        Systems::DirectionalLightsTracker m_directionalLightsTracker;
+        Systems::PointLightsTracker m_pointLightsTracker;
+        Systems::SpotLightsTracker m_spotLightsTracker;
 
         Registry& m_registry;
     public:

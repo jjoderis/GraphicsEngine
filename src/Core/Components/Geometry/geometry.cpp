@@ -18,6 +18,8 @@ std::vector<Engine::Math::Vector3>& Engine::GeometryComponent::getNormals() {
 
 void Engine::GeometryComponent::addVertex(Math::Vector3 && newVertex) {
     m_vertices.emplace_back(newVertex);
+    // to prevent errors with expected normals atm
+    m_normals.emplace_back(Math::Vector3{0.0, 0.0, -1.0});
 }
 
 void Engine::GeometryComponent::addFace(unsigned int a, unsigned int b, unsigned int c) {

@@ -27,6 +27,7 @@ add_library(modelerLib
     modeler/imgui/Nodes/Material/material.cpp
     modeler/imgui/Nodes/Render/render.cpp
     modeler/imgui/Nodes/Transform/transform.cpp
+    modeler/imgui/Nodes/Light/light.cpp
 )
 
 target_link_libraries(modelerLib glfw glad engineCore engineOpenGL)

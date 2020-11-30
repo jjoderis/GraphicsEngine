@@ -14,6 +14,7 @@
 #include "Nodes/Render/render.h"
 #include "Nodes/Transform/transform.h"
 #include "Nodes/Entity/entity.h"
+#include "Nodes/Light/light.h"
 #include "Util/errorModal.h"
 
 #include "../glfw/window.h"

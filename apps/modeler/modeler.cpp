@@ -47,7 +47,7 @@ int main()
 
     unsigned int light1{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(light1, std::make_shared<Engine::TagComponent>("Light 1"));
-    registry.addComponent<Engine::LightComponent>(light1, std::make_shared<Engine::LightComponent>());
+    registry.addComponent<Engine::DirectionalLightComponent>(light1, std::make_shared<Engine::DirectionalLightComponent>());
     registry.addComponent<Engine::TransformComponent>(light1, std::make_shared<Engine::TransformComponent>());
     registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
     registry.addComponent<Engine::MaterialComponent>(light1, std::make_shared<Engine::MaterialComponent>(1.0, 1.0, 1.0, 1.0));

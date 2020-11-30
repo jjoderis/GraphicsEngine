@@ -88,9 +88,19 @@ void Engine::OpenGLRenderComponent::setupUniforms() {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 2);
     }
 
-    blockIndex = m_program.getBlockIndex("Lights");
+    blockIndex = m_program.getBlockIndex("DirectionalLights");
     if (blockIndex >= 0) {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 3);
+    }
+
+    blockIndex = m_program.getBlockIndex("PointLights");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 4);
+    }
+
+    blockIndex = m_program.getBlockIndex("SpotLights");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 5);
     }
 }
 

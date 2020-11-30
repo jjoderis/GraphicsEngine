@@ -138,7 +138,7 @@ void UI::render(Engine::Registry &registry) {
         UICreation::drawEntitiesNode(registry);
 
         if (selectedEntity > -1) {
-            const char* possibleComponents[]{"", "Material", "Geometry", "Transform", "Render", "Camera"};
+            const char* possibleComponents[]{"", "Material", "Geometry", "Transform", "Render", "Camera", "Directional Light", "Point Light", "Spot Light"};
             if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
                 if (!registry.hasComponent<Engine::MaterialComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[1], possible_component_current == 1)) {
@@ -155,6 +155,15 @@ void UI::render(Engine::Registry &registry) {
                 }
                 if (!registry.hasComponent<Engine::CameraComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[5], possible_component_current == 5)) {
                     possible_component_current = 5;
+                }
+                if (!registry.hasComponent<Engine::DirectionalLightComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[6], possible_component_current == 6)) {
+                    possible_component_current = 6;
+                }
+                if (!registry.hasComponent<Engine::PointLightComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[7], possible_component_current == 7)) {
+                    possible_component_current = 7;
+                }
+                if (!registry.hasComponent<Engine::SpotLightComponent>(selectedEntity) && ImGui::Selectable(possibleComponents[8], possible_component_current == 8)) {
+                    possible_component_current = 8;
                 }
                 ImGui::EndCombo();
             }
@@ -185,6 +194,12 @@ void UI::render(Engine::Registry &registry) {
                     glfwGetFramebufferSize(window, &width, &height);
                     camera->updateAspect((float)width/(float)height);
                     registry.updated<Engine::CameraComponent>(mainCamera);
+                } else if (!strcmp(possibleComponents[possible_component_current], "Directional Light")) {
+                    registry.addComponent<Engine::DirectionalLightComponent>(selectedEntity, std::make_shared<Engine::DirectionalLightComponent>());
+                } else if (!strcmp(possibleComponents[possible_component_current], "Point Light")) {
+                    registry.addComponent<Engine::PointLightComponent>(selectedEntity, std::make_shared<Engine::PointLightComponent>());
+                } else if (!strcmp(possibleComponents[possible_component_current], "Spot Light")) {
+                    registry.addComponent<Engine::SpotLightComponent>(selectedEntity, std::make_shared<Engine::SpotLightComponent>());
                 }
                 possible_component_current = 0;
             }
@@ -196,6 +211,7 @@ void UI::render(Engine::Registry &registry) {
             drawTransformNode(registry);
             drawRenderNode(registry);
             drawCameraNode(registry);
+            drawLightNodes(registry);
         }
 
 

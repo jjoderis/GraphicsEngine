@@ -23,13 +23,11 @@ uniform Camera{
 flat out int matIndex;
 out vec3 position;
 out vec3 normal;
-out vec3 cameraPosition;
 flat out vec3 objPosition;
 void main()
 {
     matIndex = int(vMatIndex);
     position = (transforms[int(vTransIndex)].modelMatrix * vec4(vPosition, 1.0)).xyz;
     normal = normalize((transforms[int(vTransIndex)].normalMatrix * vec4(vNormal, 1.0)).xyz);
-    cameraPosition = (viewMatrixInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
 }

@@ -22,6 +22,9 @@ template void UICreation::createImGuiComponentDragSource<Engine::OpenGLRenderCom
 template void UICreation::createImGuiComponentDragSource<Engine::MaterialComponent>();
 template void UICreation::createImGuiComponentDragSource<Engine::GeometryComponent>();
 template void UICreation::createImGuiComponentDragSource<Engine::CameraComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::DirectionalLightComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::PointLightComponent>();
+template void UICreation::createImGuiComponentDragSource<Engine::SpotLightComponent>();
 
 template <typename ComponentType>
 void UICreation::createImGuiComponentDropTarget(unsigned int entity, Engine::Registry& registry) {
@@ -44,6 +47,9 @@ template void UICreation::createImGuiComponentDropTarget<Engine::OpenGLRenderCom
 template void UICreation::createImGuiComponentDropTarget<Engine::MaterialComponent>(unsigned int entity, Engine::Registry& registry);
 template void UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(unsigned int entity, Engine::Registry& registry);
 template void UICreation::createImGuiComponentDropTarget<Engine::CameraComponent>(unsigned int entity, Engine::Registry& registry);
+template void UICreation::createImGuiComponentDropTarget<Engine::DirectionalLightComponent>(unsigned int entity, Engine::Registry& registry);
+template void UICreation::createImGuiComponentDropTarget<Engine::PointLightComponent>(unsigned int entity, Engine::Registry& registry);
+template void UICreation::createImGuiComponentDropTarget<Engine::SpotLightComponent>(unsigned int entity, Engine::Registry& registry);
 
 template <typename ComponentType>
 void UICreation::createComponentNodeOutline(const char* componentName, Engine::Registry& registry, ComponentType* component, std::function<void(void)> drawFunc) {
@@ -73,3 +79,6 @@ template void UICreation::createComponentNodeOutline<Engine::OpenGLRenderCompone
 template void UICreation::createComponentNodeOutline<Engine::MaterialComponent>(const char* componentName, Engine::Registry& registry, Engine::MaterialComponent* component, std::function<void(void)> drawFunc);
 template void UICreation::createComponentNodeOutline<Engine::GeometryComponent>(const char* componentName, Engine::Registry& registry, Engine::GeometryComponent* component, std::function<void(void)> drawFunc);
 template void UICreation::createComponentNodeOutline<Engine::CameraComponent>(const char* componentName, Engine::Registry& registry, Engine::CameraComponent* component, std::function<void(void)> drawFunc);
+template void UICreation::createComponentNodeOutline<Engine::DirectionalLightComponent>(const char* componentName, Engine::Registry& registry, Engine::DirectionalLightComponent* component, std::function<void(void)> drawFunc);
+template void UICreation::createComponentNodeOutline<Engine::PointLightComponent>(const char* componentName, Engine::Registry& registry, Engine::PointLightComponent* component, std::function<void(void)> drawFunc);
+template void UICreation::createComponentNodeOutline<Engine::SpotLightComponent>(const char* componentName, Engine::Registry& registry, Engine::SpotLightComponent* component, std::function<void(void)> drawFunc);

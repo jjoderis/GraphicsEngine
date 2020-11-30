@@ -9,6 +9,7 @@
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Tag/tag.h>
+#include <Core/Components/Light/light.h>
 
 extern int selectedEntity;
 extern int possible_component_current;
