@@ -3,6 +3,8 @@
 Engine::GeometryComponent::GeometryComponent() : m_vertices{}, m_faces{} {}
 Engine::GeometryComponent::GeometryComponent(std::initializer_list<Math::Vector3> vertices, std::initializer_list<unsigned int> faces)
     : m_vertices{ vertices }, m_faces{ faces } {}
+Engine::GeometryComponent::GeometryComponent(std::vector<Math::Vector3> && vertices, std::vector<Math::Vector3> && normals, std::vector<unsigned int> && faces)
+    : m_vertices{ std::move(vertices) }, m_normals{ std::move(normals) }, m_faces{ std::move(faces) } {}
 
 std::vector<Engine::Math::Vector3>& Engine::GeometryComponent::getVertices() {
     return m_vertices;
@@ -136,4 +138,73 @@ std::shared_ptr<Engine::GeometryComponent> Engine::createSphereGeometry(float ra
 
 
     return geometry;
+}
+
+std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const fs::path& filePath) {
+    std::istringstream stream{Util::readTextFile(filePath.c_str())};
+
+
+    std::string line;  
+    std::getline(stream, line); 
+
+    // check if the vertex information contains
+    bool hasNormals{ false };
+    if (line.at(0) == 'N') {
+        hasNormals = true;
+    }
+
+    std::getline(stream, line);
+
+    std::istringstream iss(line);
+    int numVertices, numFaces;
+    iss >> numVertices >> numFaces;
+    std::vector<Math::Vector3> vertices;
+    vertices.reserve(numVertices);
+
+    std::vector<Math::Vector3> normals;
+    if (hasNormals) {
+        normals.reserve(numVertices);
+
+        for (int i{ 0 }; i < numVertices; ++i) {
+            float x, y, z, nx, ny, nz;
+
+            std::getline(stream, line);
+            std::istringstream iss(line);
+
+            iss >> x >> y >> z >> nx >> ny >> nz;
+            vertices.emplace_back(x, y, z);
+            normals.emplace_back(nx, ny, nz);
+        }
+    } else {
+        normals.resize(numVertices, Math::Vector3{ 0.0, 0.0, -1.0 });
+        
+        for (int i{ 0 }; i < numVertices; ++i) {
+            float x, y, z;
+
+            std::getline(stream, line);
+            std::istringstream iss(line);
+
+            iss >> x >> y >> z;
+            vertices.emplace_back(x, y, z);
+        }
+    }
+
+    std::vector<unsigned int> faces;
+    faces.reserve(numFaces * 3);
+
+    for (int i{0}; i < numFaces; ++i) {
+        int tmp, a, b, c;
+
+        
+        std::getline(stream, line);
+        std::istringstream iss(line);
+
+        iss >> tmp >> a >> b >> c;
+
+        faces.emplace_back(a);
+        faces.emplace_back(b);
+        faces.emplace_back(c);
+    }
+
+    return std::make_shared<GeometryComponent>(std::move(vertices), std::move(normals), std::move(faces));
 }

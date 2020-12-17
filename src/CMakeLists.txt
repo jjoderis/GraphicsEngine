@@ -1,5 +1,6 @@
 # engine core library
 set(CORE_HEADERS
+    Util/fileHandling.h
     Core/ECS/componentTable.h
     Core/ECS/registry.h
     Core/ECS/util.h
@@ -10,10 +11,10 @@ set(CORE_HEADERS
     Core/Components/Transform/transform.h
     Core/Components/Camera/camera.h
     Core/Components/Light/light.h
-    Util/fileHandling.h
 )
 
 set(CORE_SOURCES
+    Util/fileHandling.cpp
     Core/Math/math.cpp
     Core/Components/Tag/tag.cpp
     Core/Components/Material/material.cpp
@@ -21,7 +22,6 @@ set(CORE_SOURCES
     Core/Components/Transform/transform.cpp
     Core/Components/Camera/camera.cpp
     Core/Components/Light/light.cpp
-    Util/fileHandling.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
 

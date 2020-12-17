@@ -1,4 +1,4 @@
-#include "geometry.h"
+#include "geometryNode.h"
 
 void UICreation::drawGeometryNode(Engine::Registry &registry) {
     if (std::shared_ptr<Engine::GeometryComponent> geometry = registry.getComponent<Engine::GeometryComponent>(selectedEntity)) {
@@ -61,6 +61,31 @@ void UICreation::drawGeometryNode(Engine::Registry &registry) {
 
                 ImGui::TreePop();
             }
+            if (ImGui::Button("Calculate Normals")) {
+                geometry->calculateNormals();
+                registry.updated<Engine::GeometryComponent>(selectedEntity);
+            }
+            if (ImGui::Button("Invert Normals")) {
+                for (Engine::Math::Vector3 &normal: geometry->getNormals()) {
+                    normal = -normal;
+                }
+                registry.updated<Engine::GeometryComponent>(selectedEntity);
+            }
+
+            if (ImGui::Button("Center on origin")) {
+                Engine::Math::Vector3 avg{0.0, 0.0, 0.0};
+                for (const Engine::Math::Vector3 &vert: geometry->getVertices()) {
+                    avg += vert;
+                }
+                avg /= geometry->getVertices().size();
+
+                for (Engine::Math::Vector3 &vert: geometry->getVertices()) {
+                    vert -= avg;
+                }
+                registry.updated<Engine::GeometryComponent>(selectedEntity);
+            }
+
+            
         });
     }
 }

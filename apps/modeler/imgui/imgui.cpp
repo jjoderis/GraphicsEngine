@@ -52,6 +52,21 @@ void UI::preRender() {
 void drawGeometryTypeSelection(Engine::Registry& registry) {
     if (ImGui::BeginPopup("Select Geometry Type"))
     {
+        if (ImGui::Button("Import##Geometry")) {
+            UIUtil::can_open_function = [](const fs::path& path) -> bool {
+                // we can import the file if it has an .off extension
+                GLenum fileType;
+
+                return (fs::is_regular_file(path) && path.extension().string() == ".off");
+            };
+            UIUtil::open_function = [&registry](const fs::path& path, const std::string& fileName) {
+                registry.addComponent<Engine::GeometryComponent>(
+                    selectedEntity,
+                    Engine::loadOffFile(path)
+                );
+            };
+            ImGui::OpenPopup("File Browser");
+        }
         if(ImGui::Button("Blank")) {
             registry.addComponent<Engine::GeometryComponent>(selectedEntity, std::make_shared<Engine::GeometryComponent>());
         }
@@ -71,8 +86,8 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
         }
         if (ImGui::Button("Sphere")) {
             ImGui::OpenPopup("Sphere Parameters");
-            
         }
+
         static float sphereRadius{1.0f};
         static int horizontalPoints{10};
         static int verticalPoints{10};
@@ -92,6 +107,8 @@ void drawGeometryTypeSelection(Engine::Registry& registry) {
             }
             ImGui::EndPopup();
         }
+        
+        UIUtil::drawFileBrowser();
         ImGui::EndPopup();
     }
 }
@@ -213,7 +230,6 @@ void UI::render(Engine::Registry &registry) {
             drawCameraNode(registry);
             drawLightNodes(registry);
         }
-
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();

@@ -10,7 +10,6 @@
 #include <OpenGL/Components/Render/render.h>
 #include <OpenGL/Renderer/renderer.h>
 #include <Core/Components/Light/light.h>
-#include <Util/fileHandling.h>
 
 #include <iostream>
 

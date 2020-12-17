@@ -9,7 +9,7 @@
 #include <Core/ECS/util.h>
 #include <Util/fileHandling.h>
 #include "Nodes/Camera/camera.h"
-#include "Nodes/Geometry/geometry.h"
+#include "Nodes/Geometry/geometryNode.h"
 #include "Nodes/Material/material.h"
 #include "Nodes/Render/render.h"
 #include "Nodes/Transform/transform.h"

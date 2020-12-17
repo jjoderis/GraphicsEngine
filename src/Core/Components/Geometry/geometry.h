@@ -4,7 +4,9 @@
 #include <vector>
 #include <memory>
 #include <initializer_list>
+#include <sstream>
 #include "../../Math/math.h"
+#include "../../../Util/fileHandling.h"
 
 namespace Engine {
     class GeometryComponent {
@@ -15,6 +17,7 @@ namespace Engine {
     public:
         GeometryComponent();
         GeometryComponent(std::initializer_list<Math::Vector3> vertices, std::initializer_list<unsigned int> faces);
+        GeometryComponent(std::vector<Math::Vector3> && vertices, std::vector<Math::Vector3> && normals, std::vector<unsigned int> && faces);
         std::vector<Math::Vector3>& getVertices();
         std::vector<Math::Vector3>& getNormals();
         std::vector<unsigned int>& getFaces();
@@ -36,6 +39,11 @@ namespace Engine {
      *  param vIntersections: the number of points when going from the north to the south pole (excluding the poles)
      **/
     std::shared_ptr<GeometryComponent> createSphereGeometry(float radius, int hIntersections, int vIntersections);
+
+    /**
+     * Creates a geometry component with the information contained in a OFF file
+     **/
+    std::shared_ptr<GeometryComponent> loadOffFile(const fs::path& filePath);
 }
 
 #endif
