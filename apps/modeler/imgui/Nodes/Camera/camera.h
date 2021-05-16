@@ -3,9 +3,10 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
+namespace UICreation
+{
 
-void drawCameraNode(Engine::Registry& registry);
+void drawCameraNode(Engine::Registry &registry);
 
 }
 

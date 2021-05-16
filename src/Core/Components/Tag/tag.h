@@ -3,21 +3,24 @@
 
 #include <string>
 
-namespace Engine {
-    class TagComponent {
-    private:
-        std::string m_tag;
-    public: 
-        TagComponent() = delete;
+namespace Engine
+{
+class TagComponent
+{
+private:
+    std::string m_tag;
 
-        TagComponent(const char* tag);
-        TagComponent(std::string &tag);
+public:
+    TagComponent() = delete;
 
-        const std::string& get();
+    TagComponent(const char *tag);
+    TagComponent(std::string &tag);
 
-        void set(const char* tag);
-        void set(std::string &tag);
-    };
-}
+    const std::string &get();
+
+    void set(const char *tag);
+    void set(std::string &tag);
+};
+} // namespace Engine
 
 #endif

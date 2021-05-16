@@ -3,7 +3,8 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
+namespace UICreation
+{
 
 void drawGeometryNode(Engine::Registry &registry);
 

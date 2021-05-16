@@ -1,13 +1,10 @@
 #include <Core/ECS/registry.h>
 #include <gtest/gtest.h>
 
-#include <string>
 #include <exception>
+#include <string>
 
-TEST(ECS_REGISTRY_TEST, instanciable)
-{
-    Engine::Registry a{};
-}
+TEST(ECS_REGISTRY_TEST, instanciable) { Engine::Registry a{}; }
 
 TEST(ECS_REGISTRY_TEST, addEntity)
 {
@@ -41,7 +38,8 @@ TEST(ECS_REGISTRY_TEST, addComponent)
 
     int entity = a.addEntity();
 
-    std::shared_ptr<std::string> newComp = a.addComponent<std::string>(entity, std::make_shared<std::string>("Hello World"));
+    std::shared_ptr<std::string> newComp =
+        a.addComponent<std::string>(entity, std::make_shared<std::string>("Hello World"));
 
     EXPECT_STREQ(newComp->c_str(), "Hello World");
 
@@ -98,7 +96,7 @@ TEST(ECS_REGISTRY_TEST, getComponent)
     EXPECT_EQ(a.getComponent<std::string>(newEntity), nullptr);
 }
 
-TEST(ECS_REGISTRY_TEST, removeComponent) 
+TEST(ECS_REGISTRY_TEST, removeComponent)
 {
     Engine::Registry a{};
 
@@ -154,7 +152,8 @@ TEST(ECS_REGISTRY_TEST, getGroupedComponents)
     a.addComponent<int>(entityB, int1);
     a.addComponent<int>(entityC, int2);
 
-    std::vector<std::pair<std::shared_ptr<std::string>, std::vector<std::shared_ptr<int>>>> groupStrInt = a.getGroupedComponents<std::string, int>();
+    std::vector<std::pair<std::shared_ptr<std::string>, std::vector<std::shared_ptr<int>>>> groupStrInt =
+        a.getGroupedComponents<std::string, int>();
 
     EXPECT_EQ(groupStrInt.size(), 2);
 

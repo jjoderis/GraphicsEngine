@@ -3,7 +3,8 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
+namespace UICreation
+{
 
 void drawTransformNode(Engine::Registry &registry);
 

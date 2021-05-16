@@ -1,21 +1,18 @@
 #include <Core/ECS/componentTable.h>
 #include <gtest/gtest.h>
 
-TEST(ECS_COMPONENT_TABLE_TEST, instanciable)
-{
-    Engine::ComponentTable<int> a{ 1 };
-}
+TEST(ECS_COMPONENT_TABLE_TEST, instanciable) { Engine::ComponentTable<int> a{1}; }
 
 TEST(ECS_COMPONENT_TABLE_TEST, addComponent)
 {
-    Engine::ComponentTable<int> a{ 4 };
+    Engine::ComponentTable<int> a{4};
 
     std::shared_ptr<int> comp = std::make_shared<int>(5);
 
     std::shared_ptr<int> storedComp = a.addComponent(2, comp);
 
-    std::vector<std::shared_ptr<int>> internalComponents{ a.getComponents() };
-    std::vector<std::list<unsigned int>> internalOwners{ a.getOwners() };
+    std::vector<std::shared_ptr<int>> internalComponents{a.getComponents()};
+    std::vector<std::list<unsigned int>> internalOwners{a.getOwners()};
 
     EXPECT_EQ(storedComp, comp);
     EXPECT_EQ(internalComponents.size(), 1);
@@ -66,7 +63,7 @@ TEST(ECS_COMPONENT_TABLE_TEST, addComponent)
 
 TEST(ECS_COMPONENT_TABLE_TEST, hasComponent)
 {
-    Engine::ComponentTable<int> a{ 1 };
+    Engine::ComponentTable<int> a{1};
 
     EXPECT_FALSE(a.hasComponent(0));
 
@@ -78,7 +75,7 @@ TEST(ECS_COMPONENT_TABLE_TEST, hasComponent)
 
 TEST(ECS_COMPONENT_TABLE_TEST, getComponent)
 {
-    Engine::ComponentTable<int> a{ 1 };
+    Engine::ComponentTable<int> a{1};
 
     std::shared_ptr<int> storedComp = a.getComponent(0);
 
@@ -94,7 +91,7 @@ TEST(ECS_COMPONENT_TABLE_TEST, getComponent)
 
 TEST(ECS_COMPONENT_TABLE_TEST, getOwners_for_component)
 {
-    Engine::ComponentTable<int> a{ 3 };
+    Engine::ComponentTable<int> a{3};
 
     std::shared_ptr<int> componentA = a.addComponent(0, std::make_shared<int>(2));
     std::shared_ptr<int> componentB = a.addComponent(1, std::make_shared<int>(4));
@@ -113,7 +110,7 @@ TEST(ECS_COMPONENT_TABLE_TEST, getOwners_for_component)
 
 TEST(ECS_COMPONENT_TABLE_TEST, onAdded)
 {
-    Engine::ComponentTable<int> a{ 2 };
+    Engine::ComponentTable<int> a{2};
 
     std::shared_ptr<int> componentA = std::make_shared<int>(0);
     std::shared_ptr<int> componentB = std::make_shared<int>(0);
@@ -124,19 +121,26 @@ TEST(ECS_COMPONENT_TABLE_TEST, onAdded)
 
     int invokeCounter{0};
 
-    // The shared_ptr hold the callback alive; if it goes out of scope or isn't even stored the callback will be cleaned up
-    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb1 = a.onAdded([&] (unsigned int entity, std::weak_ptr<int> component) {
-        if (entity == 0) {
-            addedToFirst = component.lock();
-        }
-        invokeCounter++;
-    });
+    // The shared_ptr hold the callback alive; if it goes out of scope or isn't even stored the callback will be cleaned
+    // up
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb1 = a.onAdded(
+        [&](unsigned int entity, std::weak_ptr<int> component)
+        {
+            if (entity == 0)
+            {
+                addedToFirst = component.lock();
+            }
+            invokeCounter++;
+        });
 
-    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb2 = a.onAdded([&] (unsigned int entity, std::weak_ptr<int> component) {
-        if (entity == 1) {
-            addedToSecond = component.lock();
-        }
-    });
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb2 = a.onAdded(
+        [&](unsigned int entity, std::weak_ptr<int> component)
+        {
+            if (entity == 1)
+            {
+                addedToSecond = component.lock();
+            }
+        });
 
     a.addComponent(1, componentA);
     a.addComponent(0, componentB);
@@ -152,8 +156,9 @@ TEST(ECS_COMPONENT_TABLE_TEST, onAdded)
     EXPECT_EQ(invokeCounter, 2);
 }
 
-TEST(ECS_COMPONENT_TABLE_TEST, onRemove) {
-    Engine::ComponentTable<int> a{ 2 };
+TEST(ECS_COMPONENT_TABLE_TEST, onRemove)
+{
+    Engine::ComponentTable<int> a{2};
 
     std::shared_ptr<int> componentA = std::make_shared<int>(0);
     std::shared_ptr<int> componentB = std::make_shared<int>(0);
@@ -164,17 +169,23 @@ TEST(ECS_COMPONENT_TABLE_TEST, onRemove) {
 
     int counter{0};
 
-    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb1 = a.onRemove([&] (unsigned int entity, std::weak_ptr<int> component) {
-        if (entity++ == 0) {
-            removedFirst = component.lock();
-        }
-    });
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb1 = a.onRemove(
+        [&](unsigned int entity, std::weak_ptr<int> component)
+        {
+            if (entity++ == 0)
+            {
+                removedFirst = component.lock();
+            }
+        });
 
-    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb2 = a.onRemove([&] (unsigned int entity, std::weak_ptr<int> component) {
-        if (counter++ == 1) {
-            removedSecond = component.lock();
-        }
-    });
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb2 = a.onRemove(
+        [&](unsigned int entity, std::weak_ptr<int> component)
+        {
+            if (counter++ == 1)
+            {
+                removedSecond = component.lock();
+            }
+        });
 
     a.addComponent(1, componentA);
     a.addComponent(0, componentB);
@@ -188,17 +199,15 @@ TEST(ECS_COMPONENT_TABLE_TEST, onRemove) {
 
 TEST(ECS_COMPONENT_TABLE_TEST, onUpdate)
 {
-    Engine::ComponentTable<int> a{ 2 };
+    Engine::ComponentTable<int> a{2};
 
-    
     std::shared_ptr<int> componentA = a.addComponent(0, std::make_shared<int>(0));
     std::shared_ptr<int> componentB = a.addComponent(1, std::make_shared<int>(0));
 
     int counter{0};
 
-    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb = a.onUpdate(1, [&] (unsigned int entity, std::weak_ptr<int> component) {
-        counter++;
-    });
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<int>)>> cb =
+        a.onUpdate(1, [&](unsigned int entity, std::weak_ptr<int> component) { counter++; });
 
     a.updated(1);
     a.updated(1);

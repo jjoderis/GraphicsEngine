@@ -1,9 +1,10 @@
 #include "errorModal.h"
 
-bool errorModalRendered{ false };
+bool errorModalRendered{false};
 std::string errorMessage{};
 
-void UIUtil::drawErrorModal(std::string& errorMessage) {
+void UIUtil::drawErrorModal(std::string &errorMessage)
+{
     // make sure that the error modal is only rendered once
     if (!errorModalRendered && ImGui::BeginPopupModal("Error Info", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -11,7 +12,8 @@ void UIUtil::drawErrorModal(std::string& errorMessage) {
         ImGui::Text(errorMessage.c_str());
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
             errorMessage.clear();
             ImGui::CloseCurrentPopup();
         }

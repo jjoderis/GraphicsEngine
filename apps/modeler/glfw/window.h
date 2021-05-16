@@ -5,18 +5,19 @@
 #include <cstdlib>
 #include <iostream>
 
-class Window {
+class Window
+{
 public:
     Window() = delete;
 
     static void init();
-    static GLFWwindow* getWindow();
+    static GLFWwindow *getWindow();
     static void preRender();
     static void render();
     static void postRender();
 
 private:
-    static GLFWwindow* m_window;
+    static GLFWwindow *m_window;
 };
 
 #endif

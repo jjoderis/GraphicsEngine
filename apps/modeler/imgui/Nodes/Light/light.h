@@ -3,8 +3,9 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
-    void drawLightNodes(Engine::Registry& registry);
+namespace UICreation
+{
+void drawLightNodes(Engine::Registry &registry);
 }
 
 #endif

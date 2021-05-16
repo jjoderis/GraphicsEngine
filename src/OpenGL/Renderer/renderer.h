@@ -1,33 +1,36 @@
 #ifndef ENGINE_OPENGL_COMPONENTS_RENDERER
 #define ENGINE_OPENGL_COMPONENTS_RENDERER
 
-#include <glad/glad.h>
 #include "../../Core/ECS/registry.h"
 #include "../Components/Render/render.h"
 #include "../Systems/CameraTracker/cameraTracker.h"
 #include "../Systems/LightsTracker/lightsTracker.h"
+#include <glad/glad.h>
 
-namespace Engine {
-    class OpenGLRenderer {
-    private:
-        unsigned int m_directionalLightsInfoUBO{0};
-        unsigned int m_pointLightsInfoUBO{0};
-        unsigned int m_spotLightsInfoUBO{0};
-        unsigned int m_activeCameraUBO{0};
+namespace Engine
+{
+class OpenGLRenderer
+{
+private:
+    unsigned int m_directionalLightsInfoUBO{0};
+    unsigned int m_pointLightsInfoUBO{0};
+    unsigned int m_spotLightsInfoUBO{0};
+    unsigned int m_activeCameraUBO{0};
 
-        Systems::OpenGLCameraTracker m_cameraTracker;
-        Systems::DirectionalLightsTracker m_directionalLightsTracker;
-        Systems::PointLightsTracker m_pointLightsTracker;
-        Systems::SpotLightsTracker m_spotLightsTracker;
+    Systems::OpenGLCameraTracker m_cameraTracker;
+    Systems::DirectionalLightsTracker m_directionalLightsTracker;
+    Systems::PointLightsTracker m_pointLightsTracker;
+    Systems::SpotLightsTracker m_spotLightsTracker;
 
-        Registry& m_registry;
-    public:
-        OpenGLRenderer() = delete;
-        OpenGLRenderer(Registry& registry);
-        ~OpenGLRenderer();
+    Registry &m_registry;
 
-        void render();
-    };
-}
+public:
+    OpenGLRenderer() = delete;
+    OpenGLRenderer(Registry &registry);
+    ~OpenGLRenderer();
+
+    void render();
+};
+} // namespace Engine
 
 #endif

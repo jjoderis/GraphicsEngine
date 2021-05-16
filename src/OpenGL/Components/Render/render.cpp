@@ -1,9 +1,10 @@
 #include "render.h"
 
-struct Material {
+struct Material
+{
     float color[4];
 };
-
+// clang-format off
 float baseTransform[32]{
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
@@ -15,6 +16,7 @@ float baseTransform[32]{
     0.0, 0.0, 1.0, 0.0,
     0.0, 0.0, 0.0, 1.0
 };
+// clang-format off
 
 
 Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry, std::vector<OpenGLShader> shaders)

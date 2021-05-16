@@ -3,17 +3,20 @@
 
 #include "../../Math/math.h"
 
-namespace Engine {
-    class MaterialComponent {
-    private:
-        Math::Vector4 m_color;
-    public:
-        MaterialComponent();
-        MaterialComponent(float r, float g, float b, float a);
-        MaterialComponent(Math::Vector4 &color);
+namespace Engine
+{
+class MaterialComponent
+{
+private:
+    Math::Vector4 m_color;
 
-        Math::Vector4& getColor();
-    };
-}
+public:
+    MaterialComponent();
+    MaterialComponent(float r, float g, float b, float a);
+    MaterialComponent(Math::Vector4 &color);
+
+    Math::Vector4 &getColor();
+};
+} // namespace Engine
 
 #endif

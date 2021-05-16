@@ -3,17 +3,18 @@
 
 #include <filesystem>
 #include <functional>
-#include <vector>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <vector>
 
 namespace fs = std::filesystem;
 
-namespace UIUtil {
-    extern std::function<bool(const fs::path&)> can_open_function;
-    extern std::function<void(const fs::path&, const std::string&)> open_function;
+namespace UIUtil
+{
+extern std::function<bool(const fs::path &)> can_open_function;
+extern std::function<void(const fs::path &, const std::string &)> open_function;
 
-    void drawFileBrowser();
-}
+void drawFileBrowser();
+} // namespace UIUtil
 
 #endif

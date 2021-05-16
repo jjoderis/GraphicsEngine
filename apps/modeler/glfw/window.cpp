@@ -1,11 +1,11 @@
 #include "window.h"
 
-void errorCallback(int error, const char* description)
+void errorCallback(int error, const char *description)
 {
     std::cerr << "GLFW encountered an error:\n" << description << '\n';
 }
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
@@ -13,7 +13,8 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-void Window::init() {
+void Window::init()
+{
     glfwSetErrorCallback(errorCallback);
 
     if (!glfwInit())
@@ -39,16 +40,10 @@ void Window::init() {
     glfwSwapInterval(1);
 }
 
-GLFWwindow* Window::getWindow() {
-    return m_window;
-}
+GLFWwindow *Window::getWindow() { return m_window; }
 
-void Window::preRender() {
-    glfwPollEvents();
-}
+void Window::preRender() { glfwPollEvents(); }
 
 void Window::render() {}
 
-void Window::postRender() {
-    glfwSwapBuffers(m_window);
-}
+void Window::postRender() { glfwSwapBuffers(m_window); }

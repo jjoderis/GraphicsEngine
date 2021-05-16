@@ -3,8 +3,8 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
-
+namespace UICreation
+{
 
 void drawMaterialNode(Engine::Registry &registry);
 

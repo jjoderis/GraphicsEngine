@@ -3,8 +3,9 @@
 
 #include "../helpers.h"
 
-namespace UICreation {
-    void drawEntitiesNode(Engine::Registry& registry);
+namespace UICreation
+{
+void drawEntitiesNode(Engine::Registry &registry);
 }
 
 #endif
