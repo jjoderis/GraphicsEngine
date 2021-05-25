@@ -56,8 +56,10 @@ int main()
 
     unsigned int object1{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(object1, std::make_shared<Engine::TagComponent>("Object 1"));
-    registry.addComponent<Engine::MaterialComponent>(object1,
-                                                     std::make_shared<Engine::MaterialComponent>(1, 0, 0, 1.0));
+    std::weak_ptr<Engine::MaterialComponent> material{registry.addComponent<Engine::MaterialComponent>(
+        object1, std::make_shared<Engine::MaterialComponent>(1, 0, 0, 1.0))};
+    material.lock()->setSpecularColor(Engine::Math::Vector4{1.0, 1.0, 1.0, 1.0});
+
     std::weak_ptr<Engine::TransformComponent> transform{
         registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};
     transform.lock()->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
@@ -66,8 +68,8 @@ int main()
         registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20))};
     registry.addComponent<Engine::OpenGLRenderComponent>(
         object1,
-        std::make_shared<Engine::OpenGLRenderComponent>(
-            registry, Engine::loadShaders("../../data/shaders/Basic_Shading_Shader")));
+        std::make_shared<Engine::OpenGLRenderComponent>(registry,
+                                                        Engine::loadShaders("../../data/shaders/Phong_Shading")));
 
     while (!glfwWindowShouldClose(window))
     {

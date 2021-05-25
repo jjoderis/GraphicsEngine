@@ -2,7 +2,9 @@
 
 struct Material
 {
-    float color[4];
+    float diffuseColor[4];
+    float specularColor[4];
+    float specExpAndPadding[4];
 };
 // clang-format off
 float baseTransform[32]{
@@ -32,7 +34,7 @@ Engine::OpenGLRenderComponent::OpenGLRenderComponent(Engine::Registry &registry,
     // setup material buffer and insert base material
     glGenBuffers(1, &m_materialUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, m_materialUBO);
-    Material baseMat{1.0, 0.01, 0.6, 1.0};
+    Material baseMat{1.0, 0.01, 0.6, 1.0, 1.0, 0.01, 0.6, 1.0, 100.0, 0.0, 0.0, 0.0};
     
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Material), &baseMat, GL_DYNAMIC_DRAW);
     
@@ -90,19 +92,24 @@ void Engine::OpenGLRenderComponent::setupUniforms() {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 2);
     }
 
-    blockIndex = m_program.getBlockIndex("DirectionalLights");
+    blockIndex = m_program.getBlockIndex("AmbientLights");
     if (blockIndex >= 0) {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 3);
     }
 
-    blockIndex = m_program.getBlockIndex("PointLights");
+    blockIndex = m_program.getBlockIndex("DirectionalLights");
     if (blockIndex >= 0) {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 4);
     }
 
-    blockIndex = m_program.getBlockIndex("SpotLights");
+    blockIndex = m_program.getBlockIndex("PointLights");
     if (blockIndex >= 0) {
         glUniformBlockBinding(m_program.getProgram(), blockIndex, 5);
+    }
+
+    blockIndex = m_program.getBlockIndex("SpotLights");
+    if (blockIndex >= 0) {
+        glUniformBlockBinding(m_program.getProgram(), blockIndex, 6);
     }
 }
 
@@ -433,7 +440,9 @@ void Engine::OpenGLRenderComponent::removeMaterial(unsigned int entityId, const 
 
 void Engine::OpenGLRenderComponent::updateMaterial(unsigned int entity, const std::shared_ptr<MaterialComponent>& material) {
     glBindBuffer(GL_UNIFORM_BUFFER, this->m_materialUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material), sizeof(Material), material->getColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material), 4 * sizeof(float), material->getDiffuseColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material) + 4 * sizeof(float), 4 * sizeof(float), material->getSpecularColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, std::get<4>(this->m_entityData.at(entity)) * sizeof(Material) + 8 * sizeof(float), sizeof(float), &material->getSpecularExponent());
 }
 
 void Engine::OpenGLRenderComponent::addTransform(unsigned int entityId, const std::shared_ptr<TransformComponent>& transform) {

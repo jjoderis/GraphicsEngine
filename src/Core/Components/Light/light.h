@@ -16,6 +16,10 @@ protected:
     Math::Vector3 m_color{1.0, 1.0, 1.0};
 };
 
+class AmbientLightComponent : public Light
+{
+};
+
 class DirectionalLightComponent : virtual public Light
 {
 public:

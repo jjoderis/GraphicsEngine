@@ -57,6 +57,7 @@ public:
     OpenGLLightsTracker(unsigned int &lightsUBO, Registry &registry);
 };
 
+using AmbientLightsTracker = OpenGLLightsTracker<AmbientLightComponent>;
 using DirectionalLightsTracker = OpenGLLightsTracker<DirectionalLightComponent>;
 using PointLightsTracker = OpenGLLightsTracker<PointLightComponent>;
 using SpotLightsTracker = OpenGLLightsTracker<SpotLightComponent>;

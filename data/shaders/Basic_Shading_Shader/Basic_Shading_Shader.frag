@@ -1,11 +1,22 @@
 #version 330 core
 struct MaterialProperties {
-    vec4 color;
+    vec4 diffuseColor;
+    vec4 specularColor;
 };
 
 const int maxMaterials = 20;
 uniform Materials{
     MaterialProperties material[maxMaterials];
+};
+
+struct AmbientLightProperties {
+    vec3 color;
+};
+
+const int maxAmbientLights = 20;
+layout (std140) uniform AmbientLights{
+    int numAmbientLights;
+    AmbientLightProperties ambientLights[maxAmbientLights];
 };
 
 struct DirectionalLightProperties {
@@ -52,6 +63,16 @@ in vec3 normal;
 
 out vec4 FragColor;
 
+vec3 calculateAmbientLightColors() {
+    vec3 accColor = vec3(0.0, 0.0, 0.0);
+
+    for (int i = 0; i < numAmbientLights; ++i) {
+        accColor = accColor + ambientLights[i].color * material[matIndex].diffuseColor.xyz;
+    }
+
+    return accColor;
+}
+
 vec3 calculatePointLightColors(vec3 fNormal) {
     vec3 accColor = vec3(0.0, 0.0, 0.0);
 
@@ -67,7 +88,7 @@ vec3 calculatePointLightColors(vec3 fNormal) {
 
         vec3 lightColor = windowing * attenuation * pointLights[i].color;
 
-        accColor = accColor + lightAngle * lightColor * material[matIndex].color.xyz;
+        accColor = accColor + lightAngle * lightColor * material[matIndex].diffuseColor.xyz;
     }
 
     return accColor;
@@ -92,7 +113,7 @@ vec3 calculateSpotLightColors(vec3 fNormal) {
         vec3 lightColor = windowing * attenuation * pow(t, 2.0) * spotLights[i].color;
         float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
 
-        accColor = accColor + lightAngle * lightColor * material[matIndex].color.xyz;
+        accColor = accColor + lightAngle * lightColor * material[matIndex].diffuseColor.xyz;
     }
 
     return accColor;
@@ -103,7 +124,7 @@ vec3 calculateDirectionalLightColors(vec3 fNormal) {
 
     for (int i = 0; i < numDirectionalLights; ++i){
         float lightAngle = clamp(dot(-directionalLights[i].direction, fNormal), 0, 1);
-        accColor = accColor + lightAngle * directionalLights[i].color * material[matIndex].color.xyz;
+        accColor = accColor + lightAngle * directionalLights[i].color * material[matIndex].diffuseColor.xyz;
     }
 
     return accColor;
@@ -112,7 +133,7 @@ vec3 calculateDirectionalLightColors(vec3 fNormal) {
 void main()
 {
     vec3 fNormal = normalize(normal);
-    vec3 accColor = calculateDirectionalLightColors(fNormal) + calculatePointLightColors(fNormal) + calculateSpotLightColors(fNormal);
-
+    vec3 accColor = calculateAmbientLightColors() + calculateDirectionalLightColors(fNormal) + calculatePointLightColors(fNormal) + calculateSpotLightColors(fNormal);
+    
     FragColor = vec4(accColor, 1.0);
 }

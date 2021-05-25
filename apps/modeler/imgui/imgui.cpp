@@ -178,6 +178,7 @@ void UI::render(Engine::Registry &registry)
                                              "Transform",
                                              "Render",
                                              "Camera",
+                                             "Ambient Light",
                                              "Directional Light",
                                              "Point Light",
                                              "Spot Light"};
@@ -208,20 +209,25 @@ void UI::render(Engine::Registry &registry)
                 {
                     possible_component_current = 5;
                 }
-                if (!registry.hasComponent<Engine::DirectionalLightComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::AmbientLightComponent>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[6], possible_component_current == 6))
                 {
                     possible_component_current = 6;
                 }
-                if (!registry.hasComponent<Engine::PointLightComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::DirectionalLightComponent>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[7], possible_component_current == 7))
                 {
                     possible_component_current = 7;
                 }
-                if (!registry.hasComponent<Engine::SpotLightComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::PointLightComponent>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[8], possible_component_current == 8))
                 {
                     possible_component_current = 8;
+                }
+                if (!registry.hasComponent<Engine::SpotLightComponent>(selectedEntity) &&
+                    ImGui::Selectable(possibleComponents[9], possible_component_current == 9))
+                {
+                    possible_component_current = 9;
                 }
                 ImGui::EndCombo();
             }
@@ -268,6 +274,11 @@ void UI::render(Engine::Registry &registry)
                     glfwGetFramebufferSize(window, &width, &height);
                     camera->updateAspect((float)width / (float)height);
                     registry.updated<Engine::CameraComponent>(mainCamera);
+                }
+                else if (!strcmp(possibleComponents[possible_component_current], "Ambient Light"))
+                {
+                    registry.addComponent<Engine::AmbientLightComponent>(
+                        selectedEntity, std::make_shared<Engine::AmbientLightComponent>());
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Directional Light"))
                 {

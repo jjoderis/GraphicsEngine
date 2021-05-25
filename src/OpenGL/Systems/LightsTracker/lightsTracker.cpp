@@ -39,6 +39,13 @@ size_t Engine::Systems::OpenGLLightsTracker<LightType>::getLightInfoSize()
 }
 
 template <>
+size_t Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>::getLightInfoSize()
+{
+    // we have only a light color (3 * size of float), buffer layout pads to size of 4 floats
+    return 4 * sizeof(float);
+}
+
+template <>
 size_t Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::getLightInfoSize()
 {
     // we have direction (3 * size of float) + color (3 * size of float), buffer layout padds to size of 4 floats
@@ -112,6 +119,17 @@ void Engine::Systems::OpenGLLightsTracker<LightType>::updateLightInfo(unsigned i
                                                                       const std::shared_ptr<LightType> &light)
 {
     // actual implementation will have to be done as specalization for each of the light types
+}
+
+template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>::updateLightInfo(
+    unsigned int entity, const std::shared_ptr<AmbientLightComponent> &light)
+{
+    size_t offset{std::get<0>(m_entityData.at(entity))};
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
+    // add color
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getColor().raw());
 }
 
 template <>
@@ -208,6 +226,10 @@ void Engine::Systems::OpenGLLightsTracker<LightType>::removeLight(unsigned int e
     m_entityData.erase(entity);
 
     --m_numLights;
+
+    // update number of lights in buffer
+    glBindBuffer(GL_UNIFORM_BUFFER, newUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(int), &m_numLights);
 }
 
 template <typename LightType>
@@ -265,6 +287,12 @@ void Engine::Systems::OpenGLLightsTracker<LightType>::resetTransformInfo(unsigne
 }
 
 template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>::resetTransformInfo(unsigned int entity)
+{
+    // ambient light is not affected by transformation
+}
+
+template <>
 void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::resetTransformInfo(unsigned int entity)
 {
     // we expect this component to exist since we only should be tracking existing lights
@@ -310,6 +338,13 @@ void Engine::Systems::OpenGLLightsTracker<LightType>::updateTransformInfo(
 }
 
 template <>
+void Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>::updateTransformInfo(
+    unsigned int entity, const std::shared_ptr<TransformComponent> &transform)
+{
+    // ambient light is not affected by transformation
+}
+
+template <>
 void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::updateTransformInfo(
     unsigned int entity, const std::shared_ptr<TransformComponent> &transform)
 {
@@ -346,6 +381,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateTra
     m_registry.updated<SpotLightComponent>(entity);
 }
 
+template class Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>;
 template class Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>;
 template class Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>;
 template class Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>;

@@ -1,5 +1,25 @@
 #include "light.h"
 
+void drawAmbientLightNode(Engine::Registry &registry)
+{
+    if (std::shared_ptr<Engine::AmbientLightComponent> light =
+            registry.getComponent<Engine::AmbientLightComponent>(selectedEntity))
+    {
+        UICreation::createComponentNodeOutline<Engine::AmbientLightComponent>(
+            "Ambient Light",
+            registry,
+            light.get(),
+            [&]()
+            {
+                ImGui::DragFloat3("Color", light->getColor().raw(), 0.01, 0.0, 1.0);
+                if (ImGui::IsItemEdited())
+                {
+                    registry.updated<Engine::AmbientLightComponent>(selectedEntity);
+                }
+            });
+    }
+}
+
 void drawDirectionalLightNode(Engine::Registry &registry)
 {
     if (std::shared_ptr<Engine::DirectionalLightComponent> light =
@@ -94,6 +114,7 @@ void drawSpotLightNode(Engine::Registry &registry)
 
 void UICreation::drawLightNodes(Engine::Registry &registry)
 {
+    drawAmbientLightNode(registry);
     drawDirectionalLightNode(registry);
     drawPointLightNode(registry);
     drawSpotLightNode(registry);
