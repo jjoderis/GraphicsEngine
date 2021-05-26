@@ -6,6 +6,7 @@
 #include <Core/Components/Light/light.h>
 #include <Core/Components/Material/material.h>
 #include <Core/Components/Transform/transform.h>
+#include <Core/Systems/HierarchyTracker/hierarchyTracker.h>
 #include <ECS/registry.h>
 #include <Math/math.h>
 #include <OpenGL/Components/Render/render.h>
@@ -37,6 +38,7 @@ int main()
     OpenGL::init();
 
     Engine::OpenGLRenderer *renderer = new Engine::OpenGLRenderer{registry};
+    Engine::Systems::HierarchyTracker hierarchyTracker{registry};
 
     // we have to delete the renderer before we tear down the OpenGL Context => we have to be able to delete the
     // renderer before this function ends
@@ -70,6 +72,13 @@ int main()
         object1,
         std::make_shared<Engine::OpenGLRenderComponent>(registry,
                                                         Engine::loadShaders("../../data/shaders/Phong_Shading")));
+
+    unsigned int object2{registry.addEntity()};
+    registry.addComponent<Engine::TagComponent>(object2, std::make_shared<Engine::TagComponent>("Object 2"));
+    std::shared_ptr<Engine::HierarchyComponent> hierarchy =
+        registry.addComponent<Engine::HierarchyComponent>(object2, std::make_shared<Engine::HierarchyComponent>());
+    hierarchy->setParent(object1);
+    registry.updated<Engine::HierarchyComponent>(object2);
 
     while (!glfwWindowShouldClose(window))
     {

@@ -11,6 +11,8 @@ set(CORE_HEADERS
     Core/Components/Transform/transform.h
     Core/Components/Camera/camera.h
     Core/Components/Light/light.h
+    Core/Components/Hierarchy/hierarchy.h
+    Core/Systems/HierarchyTracker/hierarchyTracker.h
 )
 
 set(CORE_SOURCES
@@ -22,6 +24,8 @@ set(CORE_SOURCES
     Core/Components/Transform/transform.cpp
     Core/Components/Camera/camera.cpp
     Core/Components/Light/light.cpp
+    Core/Components/Hierarchy/hierarchy.cpp
+    Core/Systems/HierarchyTracker/hierarchyTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
 

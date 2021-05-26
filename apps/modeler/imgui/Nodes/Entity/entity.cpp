@@ -1,5 +1,44 @@
 #include "entity.h"
 
+void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry)
+{
+    // create logic for when an entity is started to be dragged
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    {
+        // carry the entity id as payload
+        ImGui::SetDragDropPayload("hierarchy_drag", &entity, sizeof(unsigned int));
+
+        std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity);
+
+        ImGui::Text("Assign %s to new parent!", tag->get().c_str());
+
+        ImGui::EndDragDropSource();
+    }
+    // create logic for when an entity is dropped onto a new parent
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("hierarchy_drag"))
+        {
+            IM_ASSERT(payload->DataSize == sizeof(unsigned int));
+            unsigned int dropEntity = *(const unsigned int *)payload->Data;
+            std::shared_ptr<Engine::HierarchyComponent> hierarchy =
+                registry.getComponent<Engine::HierarchyComponent>(dropEntity);
+            if (!hierarchy)
+            {
+                hierarchy = registry.addComponent<Engine::HierarchyComponent>(
+                    dropEntity, std::make_shared<Engine::HierarchyComponent>());
+            }
+            // see if we assigned a new parent and change hierarchy component if we did
+            if (entity != hierarchy->getParent())
+            {
+                hierarchy->setParent(entity);
+                registry.updated<Engine::HierarchyComponent>(dropEntity);
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+}
+
 void drawEntityNode(unsigned int entity, Engine::Registry &registry)
 {
     if (std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -11,6 +50,7 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             selectedEntity = entity;
             possible_component_current = 0;
         }
+        createHierarchyDragAndDrop(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
@@ -26,6 +66,16 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             if (entity == selectedEntity)
             {
                 selectedEntity = -1;
+            }
+        }
+
+        std::shared_ptr<Engine::HierarchyComponent> hierarchy =
+            registry.getComponent<Engine::HierarchyComponent>(entity);
+        if (isOpen && hierarchy)
+        {
+            for (unsigned int child : hierarchy->getChildren())
+            {
+                drawEntityNode(child, registry);
             }
         }
 
@@ -56,7 +106,13 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
     {
         for (unsigned int entity : entities)
         {
-            drawEntityNode(entity, registry);
+            std::shared_ptr<Engine::HierarchyComponent> hierarchy =
+                registry.getComponent<Engine::HierarchyComponent>(entity);
+            // only show top level entities in root of tree
+            if (!hierarchy || hierarchy->getParent() < 0)
+            {
+                drawEntityNode(entity, registry);
+            }
         }
         if (ImGui::Button("Add Entity"))
         {
