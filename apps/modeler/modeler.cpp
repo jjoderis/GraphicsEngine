@@ -5,11 +5,12 @@
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Light/light.h>
 #include <Core/Components/Material/material.h>
+#include <Core/Components/Render/render.h>
 #include <Core/Components/Transform/transform.h>
 #include <Core/Systems/HierarchyTracker/hierarchyTracker.h>
 #include <ECS/registry.h>
 #include <Math/math.h>
-#include <OpenGL/Components/Render/render.h>
+#include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Renderer/renderer.h>
 
 #include <iostream>
@@ -53,14 +54,20 @@ int main()
     registry.addComponent<Engine::PointLightComponent>(light1, std::make_shared<Engine::PointLightComponent>());
     registry.addComponent<Engine::TransformComponent>(light1, std::make_shared<Engine::TransformComponent>());
     registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
-    registry.addComponent<Engine::MaterialComponent>(light1,
-                                                     std::make_shared<Engine::MaterialComponent>(1.0, 1.0, 1.0, 1.0));
 
     unsigned int object1{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(object1, std::make_shared<Engine::TagComponent>("Object 1"));
-    std::weak_ptr<Engine::MaterialComponent> material{registry.addComponent<Engine::MaterialComponent>(
-        object1, std::make_shared<Engine::MaterialComponent>(1, 0, 0, 1.0))};
-    material.lock()->setSpecularColor(Engine::Math::Vector4{1.0, 1.0, 1.0, 1.0});
+    std::shared_ptr<Engine::MaterialComponent> material{
+        registry.addComponent<Engine::MaterialComponent>(object1, std::make_shared<Engine::MaterialComponent>())};
+    // TODO: nicer way to set data
+    material->setMaterialData(
+        Engine::ShaderMaterialData{48,
+                                   std::vector<Engine::MaterialUniformData>{{"diffuseColor", GL_FLOAT_VEC4, 0},
+                                                                            {"specularColor", GL_FLOAT_VEC4, 16},
+                                                                            {"specularExponent", GL_FLOAT, 32}}});
+    float defaultData[48]{1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 100.0, 0.0, 0.0, 0.0};
+    float *properties{material->getProperty<float>(0)};
+    std::memcpy(properties, defaultData, 9 * sizeof(float));
 
     std::weak_ptr<Engine::TransformComponent> transform{
         registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};
@@ -68,10 +75,10 @@ int main()
     transform.lock()->update();
     std::weak_ptr<Engine::GeometryComponent> geometry{
         registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20))};
-    registry.addComponent<Engine::OpenGLRenderComponent>(
+    registry.addComponent<Engine::OpenGLShaderComponent>(
         object1,
-        std::make_shared<Engine::OpenGLRenderComponent>(registry,
-                                                        Engine::loadShaders("../../data/shaders/Phong_Shading")));
+        std::make_shared<Engine::OpenGLShaderComponent>(Engine::loadShaders("../../data/shaders/Phong_Shading")));
+    registry.addComponent<Engine::RenderComponent>(object1, std::make_shared<Engine::RenderComponent>());
 
     unsigned int object2{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(object2, std::make_shared<Engine::TagComponent>("Object 2"));

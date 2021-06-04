@@ -132,10 +132,10 @@ void drawShaderTypeSelection(Engine::Registry &registry)
             {
                 try
                 {
-                    registry.addComponent<Engine::OpenGLRenderComponent>(
+                    registry.addComponent<Engine::OpenGLShaderComponent>(
                         selectedEntity,
-                        std::make_shared<Engine::OpenGLRenderComponent>(
-                            registry, Engine::loadShaders(shaderDirectoryPaths[i].c_str())));
+                        std::make_shared<Engine::OpenGLShaderComponent>(
+                            Engine::loadShaders(shaderDirectoryPaths[i].c_str())));
                 }
                 catch (Engine::ShaderException &err)
                 {
@@ -199,7 +199,7 @@ void UI::render(Engine::Registry &registry)
                 {
                     possible_component_current = 3;
                 }
-                if (!registry.hasComponent<Engine::OpenGLRenderComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::OpenGLShaderComponent>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[4], possible_component_current == 4))
                 {
                     possible_component_current = 4;
@@ -303,7 +303,7 @@ void UI::render(Engine::Registry &registry)
             drawMaterialNode(registry);
             drawGeometryNode(registry);
             drawTransformNode(registry);
-            drawRenderNode(registry);
+            drawShaderNode(registry);
             drawCameraNode(registry);
             drawLightNodes(registry);
         }

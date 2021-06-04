@@ -11,22 +11,38 @@ void UICreation::drawMaterialNode(Engine::Registry &registry)
             material.get(),
             [&]()
             {
-                ImGui::ColorEdit4("Diffuse Color", material->getDiffuseColor().raw());
-                if (ImGui::IsItemEdited())
-                {
-                    registry.updated<Engine::MaterialComponent>(selectedEntity);
-                }
+                std::vector<Engine::MaterialUniformData> &materialsData{std::get<1>(material->getMaterialData())};
 
-                ImGui::ColorEdit4("Specular Color", material->getSpecularColor().raw());
-                if (ImGui::IsItemEdited())
+                for (Engine::MaterialUniformData &materialData : materialsData)
                 {
-                    registry.updated<Engine::MaterialComponent>(selectedEntity);
-                }
+                    const char *name{std::get<0>(materialData).c_str()};
+                    unsigned int type{std::get<1>(materialData)};
+                    int offset{std::get<2>(materialData)};
 
-                ImGui::DragFloat("Specular Exponent", &material->getSpecularExponent());
-                if (ImGui::IsItemEdited())
-                {
-                    registry.updated<Engine::MaterialComponent>(selectedEntity);
+                    switch (type)
+                    {
+                    case GL_FLOAT:
+                        ImGui::DragFloat(name, material->getProperty<float>(offset));
+                        if (ImGui::IsItemEdited())
+                        {
+                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                        }
+                        break;
+                    case GL_FLOAT_VEC4:
+                        ImGui::ColorEdit4(name, material->getProperty<float>(offset));
+                        if (ImGui::IsItemEdited())
+                        {
+                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                        }
+                        break;
+                    case GL_FLOAT_VEC3:
+                        ImGui::ColorEdit3(name, material->getProperty<float>(offset));
+                        if (ImGui::IsItemEdited())
+                        {
+                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                        }
+                        break;
+                    }
                 }
             });
     }

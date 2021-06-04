@@ -2,30 +2,36 @@
 #define CORE_COMPONENTS_MATERIAL
 
 #include "../../Math/math.h"
+#include <tuple>
+#include <vector>
 
 namespace Engine
 {
+// contains information about which material properties exist and how to access them
+// name, type, offset
+using MaterialUniformData = std::tuple<std::string, unsigned int, int>;
+// contains information about the size of the material information and the informations about material properties
+// size, materialUniformData (vector)
+using ShaderMaterialData = std::tuple<int, std::vector<MaterialUniformData>>;
 class MaterialComponent
 {
 private:
-    Math::Vector4 m_diffuseColor;
-    Math::Vector4 m_specularColor;
-    float m_specularExponent{100};
+    ShaderMaterialData m_dataInfo{0, std::vector<MaterialUniformData>{}};
+    std::vector<char> m_data;
 
 public:
-    MaterialComponent();
-    MaterialComponent(float r, float g, float b, float a);
-    MaterialComponent(Math::Vector4 &color);
+    MaterialComponent() {}
 
-    Math::Vector4 &getDiffuseColor();
-    void setDiffuseColor(const Math::Vector4 &color);
+    void setMaterialData(const ShaderMaterialData &materialData);
+    ShaderMaterialData &getMaterialData();
 
-    Math::Vector4 &getSpecularColor();
-    void setSpecularColor(const Math::Vector4 &color);
+    template <typename T>
+    T *getProperty(int offset)
+    {
+        return (T *)(m_data.data() + offset);
+    }
 
-    float getSpecularExponent() const;
-    float &getSpecularExponent();
-    void setSpecularExponent(float exp);
+    std::vector<char> &getData();
 };
 } // namespace Engine
 

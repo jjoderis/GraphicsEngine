@@ -1,10 +1,11 @@
 #include "renderer.h"
 
 Engine::OpenGLRenderer::OpenGLRenderer(Registry &registry)
-    : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry},
-      m_ambientLightsTracker{m_ambientLightsInfoUBO, registry}, m_directionalLightsTracker{m_directionalLightsInfoUBO,
-                                                                                           registry},
-      m_pointLightsTracker{m_pointLightsInfoUBO, registry}, m_spotLightsTracker{m_spotLightsInfoUBO, registry}
+    : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry}, m_ambientLightsTracker{m_ambientLightsInfoUBO,
+                                                                                                 registry},
+      m_directionalLightsTracker{m_directionalLightsInfoUBO, registry}, m_pointLightsTracker{m_pointLightsInfoUBO,
+                                                                                             registry},
+      m_spotLightsTracker{m_spotLightsInfoUBO, registry}, m_renderTracker{registry}
 {
 }
 
@@ -25,11 +26,5 @@ void Engine::OpenGLRenderer::render()
     glBindBufferBase(GL_UNIFORM_BUFFER, 5, m_pointLightsInfoUBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 6, m_spotLightsInfoUBO);
 
-    std::vector<std::shared_ptr<Engine::OpenGLRenderComponent>> renderComponents =
-        m_registry.getComponents<Engine::OpenGLRenderComponent>();
-
-    for (const std::shared_ptr<Engine::OpenGLRenderComponent> &renderComponent : renderComponents)
-    {
-        renderComponent->render();
-    }
+    m_renderTracker.render();
 }

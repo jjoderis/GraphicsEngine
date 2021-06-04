@@ -1,13 +1,8 @@
 #version 330 core
-struct MaterialProperties {
+uniform Material{
     vec4 diffuseColor;
     vec4 specularColor;
     float specularExponent;
-};
-
-const int maxMaterials = 20;
-uniform Materials{
-    MaterialProperties material[maxMaterials];
 };
 
 struct AmbientLightProperties {
@@ -58,7 +53,6 @@ layout (std140) uniform SpotLights{
     SpotLightProperties spotLights[maxSpotLights];
 };
 
-flat in int matIndex;
 in vec3 position;
 in vec3 normal;
 in vec3 cameraPosition;
@@ -162,9 +156,9 @@ void main()
     vec3 fNormal = normalize(normal);
     vec3 viewDirection = normalize(cameraPosition - position);
 
-    vec3 diffuse = material[matIndex].diffuseColor.xyz;
-    vec3 specular = material[matIndex].specularColor.xyz;
-    float specularExp = material[matIndex].specularExponent;
+    vec3 diffuse = diffuseColor.xyz;
+    vec3 specular = specularColor.xyz;
+    float specularExp = specularExponent;
 
     vec3 accColor = calculateAmbientLightColors(diffuse) + calculateDirectionalLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculatePointLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculateSpotLightColors(fNormal, viewDirection, diffuse, specular, specularExp);
     

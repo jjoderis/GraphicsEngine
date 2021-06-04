@@ -2,9 +2,9 @@
 #define ENGINE_OPENGL_COMPONENTS_RENDERER
 
 #include "../../Core/ECS/registry.h"
-#include "../Components/Render/render.h"
 #include "../Systems/CameraTracker/cameraTracker.h"
 #include "../Systems/LightsTracker/lightsTracker.h"
+#include "../Systems/RenderTracker/renderTracker.h"
 #include <glad/glad.h>
 
 namespace Engine
@@ -23,6 +23,7 @@ private:
     Systems::DirectionalLightsTracker m_directionalLightsTracker;
     Systems::PointLightsTracker m_pointLightsTracker;
     Systems::SpotLightsTracker m_spotLightsTracker;
+    Systems::OpenGLRenderTracker m_renderTracker;
 
     Registry &m_registry;
 

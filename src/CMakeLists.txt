@@ -12,6 +12,7 @@ set(CORE_HEADERS
     Core/Components/Camera/camera.h
     Core/Components/Light/light.h
     Core/Components/Hierarchy/hierarchy.h
+    Core/Components/Render/render.h
     Core/Systems/HierarchyTracker/hierarchyTracker.h
 )
 
@@ -25,6 +26,7 @@ set(CORE_SOURCES
     Core/Components/Camera/camera.cpp
     Core/Components/Light/light.cpp
     Core/Components/Hierarchy/hierarchy.cpp
+    Core/Components/Render/render.cpp
     Core/Systems/HierarchyTracker/hierarchyTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
@@ -38,19 +40,21 @@ target_include_directories(engineCore INTERFACE Core/)
 # engine OpengGL specific library
 
 set(OPENGL_HEADERS
-    OpenGL/Components/Render/render.h
+    OpenGL/Components/Shader/shader.h
     OpenGL/Shader/shader.h
     OpenGL/Renderer/renderer.h
     OpenGL/Systems/CameraTracker/cameraTracker.h
     OpenGL/Systems/LightsTracker/lightsTracker.h
+    OpenGL/Systems/RenderTracker/renderTracker.h
 )
 
 set(OPENGL_SOURCES
-    OpenGL/Components/Render/render.cpp
+    OpenGL/Components/Shader/shader.cpp
     OpenGL/Shader/shader.cpp
     OpenGL/Renderer/renderer.cpp
     OpenGL/Systems/CameraTracker/cameraTracker.cpp
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
+    OpenGL/Systems/RenderTracker/renderTracker.cpp
 )
 
 add_library(engineOpenGL ${OPENGL_SOURCES} ${OPENGL_HEADERS})

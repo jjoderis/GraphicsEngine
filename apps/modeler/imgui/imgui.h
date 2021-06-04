@@ -6,7 +6,7 @@
 #include "Nodes/Geometry/geometryNode.h"
 #include "Nodes/Light/light.h"
 #include "Nodes/Material/material.h"
-#include "Nodes/Render/render.h"
+#include "Nodes/OpenGLShader/openGLShader.h"
 #include "Nodes/Transform/transform.h"
 #include "Util/errorModal.h"
 #include <Core/ECS/util.h>

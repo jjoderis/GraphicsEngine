@@ -25,7 +25,7 @@ add_library(modelerLib
     modeler/imgui/Nodes/Camera/camera.cpp
     modeler/imgui/Nodes/Geometry/geometryNode.cpp
     modeler/imgui/Nodes/Material/material.cpp
-    modeler/imgui/Nodes/Render/render.cpp
+    modeler/imgui/Nodes/OpenGLShader/openGLShader.cpp
     modeler/imgui/Nodes/Transform/transform.cpp
     modeler/imgui/Nodes/Light/light.cpp
 )

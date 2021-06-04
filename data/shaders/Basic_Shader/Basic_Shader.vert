@@ -13,12 +13,7 @@ uniform Camera{
     mat4 projectionMatrix;
 };
 
-out vec3 position;
-out vec3 normal;
-flat out vec3 objPosition;
 void main()
 {
-    position = (modelMatrix * vec4(vPosition, 1.0)).xyz;
-    normal = (normalMatrix * vec4(vNormal, 1.0)).xyz;
-    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vPosition, 1.0); 
 }

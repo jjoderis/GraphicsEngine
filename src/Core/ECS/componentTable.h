@@ -28,17 +28,18 @@ private:
     std::vector<std::list<std::weak_ptr<component_table_callback>>> m_updateCallbacks{};
 
     //  Add component only if it does not exit: return index
-    int ensureComponent(std::weak_ptr<ComponentType> component)
+    int ensureComponent(std::weak_ptr<ComponentType> weakComponent)
     {
+        std::shared_ptr<ComponentType> component{weakComponent.lock()};
         for (unsigned int i = 0; i < m_components.size(); ++i)
         {
-            if (m_components[i] == component.lock())
+            if (m_components[i] == component)
             {
                 return i;
             }
         }
 
-        m_components.push_back(component.lock());
+        m_components.push_back(component);
         m_owners.push_back(std::list<unsigned int>{});
         m_updateCallbacks.push_back(std::list<std::weak_ptr<component_table_callback>>{});
         return m_components.size() - 1;
@@ -79,6 +80,8 @@ public:
         ensureEntity(entityId);
         int componentIndex = ensureComponent(component);
 
+        bool override = false;
+
         // entity has a component
         if (m_sparse[entityId] != -1)
         {
@@ -88,19 +91,27 @@ public:
                 return m_components[m_sparse[entityId]];
             }
 
+            override = true;
             // if the entity points to another component
-            removeComponent(entityId);
+            removeComponent(entityId, override);
         }
 
         m_sparse[entityId] = componentIndex;
         m_owners[componentIndex].push_back(entityId);
 
-        invokeAndCleanup(m_addCallbacks, entityId, m_components[componentIndex]);
+        if (override)
+        {
+            updated(entityId);
+        }
+        else
+        {
+            invokeAndCleanup(m_addCallbacks, entityId, m_components[componentIndex]);
+        }
 
         return m_components[m_sparse[entityId]];
     }
 
-    void removeComponent(unsigned int entityId)
+    void removeComponent(unsigned int entityId, bool silent = false)
     {
         ensureEntity(entityId);
         // entity has no component of this type
@@ -111,7 +122,10 @@ public:
 
         unsigned int componentIndex = m_sparse[entityId];
 
-        invokeAndCleanup(m_removeCallbacks, entityId, m_components[componentIndex]);
+        if (!silent)
+        {
+            invokeAndCleanup(m_removeCallbacks, entityId, m_components[componentIndex]);
+        }
 
         // remove entity from owner list
         std::list<unsigned int> &allOwners = m_owners[componentIndex];

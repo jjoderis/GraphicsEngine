@@ -54,7 +54,7 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
         UICreation::createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::OpenGLRenderComponent>(entity, registry);
+        UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>(entity, registry);
 
         ImGui::SameLine();
         std::string id{"x##"};

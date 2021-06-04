@@ -1,11 +1,18 @@
 #version 330 core
-struct MaterialProperties {
-    vec4 color;
+uniform Material{
+    vec4 diffuseColor;
+    vec4 specularColor;
+    float specularExponent;
 };
 
-const int maxMaterials = 20;
-uniform Materials{
-    MaterialProperties material[maxMaterials];
+struct AmbientLightProperties {
+    vec3 color;
+};
+
+const int maxAmbientLights = 20;
+layout (std140) uniform AmbientLights{
+    int numAmbientLights;
+    AmbientLightProperties ambientLights[maxAmbientLights];
 };
 
 struct DirectionalLightProperties {
@@ -46,31 +53,39 @@ layout (std140) uniform SpotLights{
     SpotLightProperties spotLights[maxSpotLights];
 };
 
-flat in int matIndex;
 in vec3 position;
 in vec3 normal;
 in vec3 cameraPosition;
+
+void getLightStats(vec3 lightPosition, float intensity, out float lightDist, out vec3 lightDirection, out float windowing, out float attenuation) {
+	vec3 lightVec = lightPosition - position;
+	lightDist = sqrt(dot(lightVec, lightVec));
+	lightDirection = lightVec / lightDist;
+	
+	// make light intensity go to zero at distance 1000
+	windowing = pow(max(0, 1 - pow(( lightDist / 1000.0), 4.0)), 2.0);
+	
+	// make light intensity fall off at a distance
+	attenuation = (8 * intensity)/(pow(lightDist, 2.0) + 0.01);
+}
 
 vec3 calculatePointLightColors(vec3 fNormal, vec3 viewDirection, vec3 warm, vec3 highlight) {
     vec3 accColor = vec3(0, 0, 0);
 
     for (int i = 0; i < numPointLights; ++i){
-        vec3 lightVec = pointLights[i].position - position;
-        float lightDist = sqrt(dot(lightVec, lightVec));
-        vec3 lightDirection = lightVec / lightDist;
-        // make light intensity go to zero at distance 1000
-        float windowing = pow(max(0, 1 - pow(( lightDist / 1000.0), 4.0)), 2.0);
-        // make light intensity fall off at a distance
-        float attenuation = (8 * pointLights[i].intensity)/(pow(lightDist, 2.0) + 0.01);
+    	vec3 lightVec, lightDirection;
+        float lightDist, windowing, attenuation;
+        
+        getLightStats(pointLights[i].position, pointLights[i].intensity, lightDist, lightDirection, windowing, attenuation);
+        
+        vec3 lightColor = windowing * attenuation * pointLights[i].color;
+        
+        float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
 
         vec3 r = 2 * dot(fNormal, lightDirection) * fNormal - lightDirection;
         float s = clamp(100 * dot(r, viewDirection) - 97, 0, 1);
 
-        vec3 lightColor = windowing * attenuation * pointLights[i].color;
-
-        float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
-
-        accColor = accColor + lightAngle * lightColor * (s * highlight + (1 - s) * warm);
+        accColor += lightAngle * lightColor * (s * highlight + (1 - s) * warm);
     }
 
     return accColor;
@@ -80,25 +95,23 @@ vec3 calculateSpotLightColors(vec3 fNormal, vec3 viewDirection, vec3 warm, vec3 
     vec3 accColor = vec3(0, 0, 0);
 
     for (int i = 0; i < numSpotLights; ++i){
-        vec3 lightVec = spotLights[i].position - position;
-        float lightDist = sqrt(dot(lightVec, lightVec));
-        vec3 lightDirection = lightVec / lightDist;
-        // make light intensity go to zero at distance 1000
-        float windowing = pow(max(0, 1 - pow(( lightDist / 1000.0), 4.0)), 2.0);
-        // make light intensity fall off at a distance
-        float attenuation = (8 * spotLights[i].intensity)/(pow(lightDist, 2.0) + 0.01);
-
-        vec3 r = 2 * dot(fNormal, lightDirection) * fNormal - lightDirection;
-        float s = clamp(100 * dot(r, viewDirection) - 97, 0, 1);
+    	vec3 lightVec, lightDirection;
+        float lightDist, windowing, attenuation;
+        
+        getLightStats(spotLights[i].position, spotLights[i].intensity, lightDist, lightDirection, windowing, attenuation);
 
         float lightDot = dot(spotLights[i].direction, - lightDirection);
         float cosCutoff = cos(spotLights[i].cutoffAngle);
         float t = clamp((lightDot - cosCutoff)/(cos(spotLights[i].penumbraAngle) - cosCutoff), 0, 1);
+        
         vec3 lightColor = windowing * attenuation * pow(t, 2.0) * spotLights[i].color;
 
         float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
+        
+        vec3 r = 2 * dot(fNormal, lightDirection) * fNormal - lightDirection;
+        float s = clamp(100 * dot(r, viewDirection) - 97, 0, 1);
 
-        accColor = accColor + lightAngle * lightColor * (s * highlight + (1 - s) * warm);
+        accColor += lightAngle * lightColor * (s * highlight + (1 - s) * warm);
     }
 
     return accColor;
@@ -113,7 +126,7 @@ vec3 calculateDirectionalLightColors(vec3 fNormal, vec3 viewDirection, vec3 warm
         vec3 r = 2 * dot(fNormal, -directionalLights[i].direction) * fNormal + directionalLights[i].direction;
         float s = clamp(100 * dot(r, viewDirection) - 97, 0, 1);
 
-        accColor = accColor + lightAngle * directionalLights[i].color * (s * highlight + (1 - s) * warm);
+        accColor += lightAngle * directionalLights[i].color * (s * highlight + (1 - s) * warm);
     }
 
     return accColor;
@@ -125,9 +138,10 @@ void main()
     vec3 fNormal = normalize(normal);
     vec3 viewDirection = normalize(cameraPosition - position);
 
-    vec3 cool = vec3(0.0, 0.0, 0.55) + 0.25 * material[matIndex].color.xyz;
-    vec3 warm = vec3(0.3, 0.3, 0.0) + 0.25 * material[matIndex].color.xyz;
-    vec3 highlight = vec3(2, 2, 2);
+    vec3 cool = vec3(0.0, 0.0, 0.55) + 0.25 * diffuseColor.xyz;
+    vec3 warm = vec3(0.3, 0.3, 0.0) + 0.25 * diffuseColor.xyz;
+    vec3 highlight = specularColor.xyz;
+    float specularExp = specularExponent;
 
     vec3 accColor = calculateDirectionalLightColors(fNormal, viewDirection, warm, highlight) + calculatePointLightColors(fNormal, viewDirection, warm, highlight) + calculateSpotLightColors(fNormal, viewDirection, warm, highlight);
     

@@ -1,4 +1,4 @@
-#include "render.h"
+#include "openGLShader.h"
 
 std::vector<const char *> g_shaderTypes;
 std::vector<Engine::OpenGLShader> g_shaders;
@@ -57,7 +57,9 @@ void loadShaders(const std::vector<Engine::OpenGLShader> &shaders)
     }
 }
 
-void drawShaderEditModal(const std::shared_ptr<Engine::OpenGLRenderComponent> &render)
+void drawShaderEditModal(unsigned int entity,
+                         Engine::Registry &registry,
+                         const std::shared_ptr<Engine::OpenGLShaderComponent> &shader)
 {
     ImGui::SetNextWindowSize(ImVec2(520, 600));
 
@@ -118,7 +120,8 @@ void drawShaderEditModal(const std::shared_ptr<Engine::OpenGLRenderComponent> &r
         {
             try
             {
-                render->updateShaders(g_shaders);
+                shader->updateShaders(g_shaders);
+                registry.updated<Engine::OpenGLShaderComponent>(entity);
             }
             catch (Engine::ShaderException &err)
             {
@@ -135,38 +138,55 @@ void drawShaderEditModal(const std::shared_ptr<Engine::OpenGLRenderComponent> &r
     }
 }
 
-void UICreation::drawRenderNode(Engine::Registry &registry)
+void UICreation::drawShaderNode(Engine::Registry &registry)
 {
-    if (std::shared_ptr<Engine::OpenGLRenderComponent> render =
-            registry.getComponent<Engine::OpenGLRenderComponent>(selectedEntity))
+    if (std::shared_ptr<Engine::OpenGLShaderComponent> shader =
+            registry.getComponent<Engine::OpenGLShaderComponent>(selectedEntity))
     {
-        createComponentNodeOutline<Engine::OpenGLRenderComponent>(
-            "Render",
+        createComponentNodeOutline<Engine::OpenGLShaderComponent>(
+            "Shader",
             registry,
-            render.get(),
+            shader.get(),
             [&]()
             {
                 if (ImGui::Button("Edit Shaders"))
                 {
-                    loadShaders(render->getShaders());
+                    loadShaders(shader->getShaders());
                     ImGui::OpenPopup("Shader Editor");
                 }
-                drawShaderEditModal(render);
+                drawShaderEditModal(selectedEntity, registry, shader);
                 const char *types[2]{"Points\0", "Triangles\0"};
                 static int primitive_type_current = 1;
                 const char *comboLabel = types[primitive_type_current];
                 static int primitive_type = GL_TRIANGLES;
-                if (ImGui::RadioButton("Points", primitive_type == GL_POINTS))
+
+                bool isRendered = registry.hasComponent<Engine::RenderComponent>(selectedEntity);
+                ImGui::Checkbox("Render", &isRendered);
+                if (ImGui::IsItemEdited())
                 {
-                    primitive_type = GL_POINTS;
-                    render->updatePrimitiveType(primitive_type);
+                    if (!isRendered)
+                    {
+                        registry.removeComponent<Engine::RenderComponent>(selectedEntity);
+                    }
+                    else
+                    {
+                        registry.addComponent<Engine::RenderComponent>(selectedEntity,
+                                                                       std::make_shared<Engine::RenderComponent>());
+                    }
                 }
-                ImGui::SameLine();
-                if (ImGui::RadioButton("Triangles", primitive_type == GL_TRIANGLES))
-                {
-                    primitive_type = GL_TRIANGLES;
-                    render->updatePrimitiveType(primitive_type);
-                }
+                // if (ImGui::RadioButton("Points", primitive_type
+                // == GL_POINTS))
+                // {
+                //     primitive_type = GL_POINTS;
+                //     render->updatePrimitiveType(primitive_type);
+                // }
+                // ImGui::SameLine();
+                // if (ImGui::RadioButton("Triangles",
+                // primitive_type == GL_TRIANGLES))
+                // {
+                //     primitive_type = GL_TRIANGLES;
+                //     render->updatePrimitiveType(primitive_type);
+                // }
             });
     }
 }

@@ -9,7 +9,7 @@
 #include <Core/Components/Tag/tag.h>
 #include <Core/Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
-#include <OpenGL/Components/Render/render.h>
+#include <OpenGL/Components/Shader/shader.h>
 #include <imgui.h>
 
 extern int selectedEntity;
