@@ -184,7 +184,7 @@ void UI::render(Engine::Registry &registry)
                                              "Spot Light"};
             if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
-                if (!registry.hasComponent<Engine::MaterialComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::OpenGLMaterialComponent>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[1], possible_component_current == 1))
                 {
                     possible_component_current = 1;
@@ -236,8 +236,8 @@ void UI::render(Engine::Registry &registry)
             {
                 if (!strcmp(possibleComponents[possible_component_current], "Material"))
                 {
-                    registry.addComponent<Engine::MaterialComponent>(selectedEntity,
-                                                                     std::make_shared<Engine::MaterialComponent>());
+                    registry.addComponent<Engine::OpenGLMaterialComponent>(
+                        selectedEntity, std::make_shared<Engine::OpenGLMaterialComponent>());
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Geometry"))
                 {

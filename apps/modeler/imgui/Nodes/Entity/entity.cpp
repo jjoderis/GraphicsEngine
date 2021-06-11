@@ -51,7 +51,7 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             possible_component_current = 0;
         }
         createHierarchyDragAndDrop(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::MaterialComponent>(entity, registry);
+        UICreation::createImGuiComponentDropTarget<Engine::OpenGLMaterialComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>(entity, registry);

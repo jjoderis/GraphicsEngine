@@ -2,10 +2,10 @@
 #define ENGINE_OPENGL_SYSTEM_RENDERTRACKER
 
 #include "../../../Core/Components/Geometry/geometry.h"
-#include "../../../Core/Components/Material/material.h"
 #include "../../../Core/Components/Render/render.h"
 #include "../../../Core/Components/Transform/transform.h"
 #include "../../../Core/ECS/registry.h"
+#include "../../Components/Material/material.h"
 #include "../../Components/Shader/shader.h"
 #include <map>
 
@@ -44,8 +44,8 @@ private:
     std::map<GeometryComponent *, geometryData> m_geometries;
 
     using materialData =
-        std::tuple<componentCallback<MaterialComponent>, unsigned int, int>; // change callback, UBO, size
-    std::map<MaterialComponent *, materialData> m_materials;
+        std::tuple<componentCallback<OpenGLMaterialComponent>, unsigned int, int>; // change callback, UBO, size
+    std::map<OpenGLMaterialComponent *, materialData> m_materials;
 
     using transformData = std::tuple<componentCallback<TransformComponent>, unsigned int>; // change callback, UBO
     std::map<TransformComponent *, transformData> m_transforms;
@@ -55,7 +55,7 @@ private:
     std::map<OpenGLShaderComponent *, shaderData> m_shaders;
 
     using entityData =
-        std::tuple<GeometryComponent *, MaterialComponent *, TransformComponent *, OpenGLShaderComponent *>;
+        std::tuple<GeometryComponent *, OpenGLMaterialComponent *, TransformComponent *, OpenGLShaderComponent *>;
     std::map<unsigned int, entityData> m_entities;
 
     void makeRenderable(unsigned int entityId);
@@ -63,8 +63,8 @@ private:
     void ensureGeometry(unsigned int entity, std::shared_ptr<GeometryComponent> geometry);
     void updateGeometryData(std::shared_ptr<GeometryComponent> geometry);
 
-    void ensureMaterial(unsigned int entity, std::shared_ptr<MaterialComponent> material);
-    void updateMaterialData(std::shared_ptr<MaterialComponent> material);
+    void ensureMaterial(unsigned int entity, std::shared_ptr<OpenGLMaterialComponent> material);
+    void updateMaterialData(std::shared_ptr<OpenGLMaterialComponent> material);
 
     void ensureTransform(unsigned int entity, std::shared_ptr<TransformComponent> transform);
     void updateTransformData(std::shared_ptr<TransformComponent> transform);

@@ -1,8 +1,8 @@
 #ifndef ENGINE_OPENGL_COMPONENTS_SHADER
 #define ENGINE_OPENGL_COMPONENTS_SHADER
 
-#include "../../../Core/Components/Material/material.h"
 #include "../../Shader/shader.h"
+#include "../Material/material.h"
 #include <vector>
 
 namespace Engine

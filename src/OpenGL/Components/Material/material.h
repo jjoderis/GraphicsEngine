@@ -1,7 +1,7 @@
-#ifndef CORE_COMPONENTS_MATERIAL
-#define CORE_COMPONENTS_MATERIAL
+#ifndef ENGINE_OPENGL_COMPONENTS_MATERIAL
+#define ENGINE_OPENGL_COMPONENTS_MATERIAL
 
-#include "../../Math/math.h"
+#include "../../../Core/Math/math.h"
 #include <tuple>
 #include <vector>
 
@@ -13,14 +13,14 @@ using MaterialUniformData = std::tuple<std::string, unsigned int, int>;
 // contains information about the size of the material information and the informations about material properties
 // size, materialUniformData (vector)
 using ShaderMaterialData = std::tuple<int, std::vector<MaterialUniformData>>;
-class MaterialComponent
+class OpenGLMaterialComponent
 {
 private:
     ShaderMaterialData m_dataInfo{0, std::vector<MaterialUniformData>{}};
     std::vector<char> m_data;
 
 public:
-    MaterialComponent() {}
+    OpenGLMaterialComponent() {}
 
     void setMaterialData(const ShaderMaterialData &materialData);
     ShaderMaterialData &getMaterialData();

@@ -2,10 +2,10 @@
 
 void UICreation::drawMaterialNode(Engine::Registry &registry)
 {
-    if (std::shared_ptr<Engine::MaterialComponent> material =
-            registry.getComponent<Engine::MaterialComponent>(selectedEntity))
+    if (std::shared_ptr<Engine::OpenGLMaterialComponent> material =
+            registry.getComponent<Engine::OpenGLMaterialComponent>(selectedEntity))
     {
-        createComponentNodeOutline<Engine::MaterialComponent>(
+        createComponentNodeOutline<Engine::OpenGLMaterialComponent>(
             "Material",
             registry,
             material.get(),
@@ -25,21 +25,21 @@ void UICreation::drawMaterialNode(Engine::Registry &registry)
                         ImGui::DragFloat(name, material->getProperty<float>(offset));
                         if (ImGui::IsItemEdited())
                         {
-                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                            registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
                         }
                         break;
                     case GL_FLOAT_VEC4:
                         ImGui::ColorEdit4(name, material->getProperty<float>(offset));
                         if (ImGui::IsItemEdited())
                         {
-                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                            registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
                         }
                         break;
                     case GL_FLOAT_VEC3:
                         ImGui::ColorEdit3(name, material->getProperty<float>(offset));
                         if (ImGui::IsItemEdited())
                         {
-                            registry.updated<Engine::MaterialComponent>(selectedEntity);
+                            registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
                         }
                         break;
                     }

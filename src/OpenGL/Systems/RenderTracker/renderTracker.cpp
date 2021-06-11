@@ -18,10 +18,11 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
     m_entities.emplace(entity, entityData{nullptr, nullptr, nullptr, nullptr});
 
     // make sure we have every necessary component to render
-    std::shared_ptr<MaterialComponent> material{m_registry.getComponent<MaterialComponent>(entity)};
+    std::shared_ptr<OpenGLMaterialComponent> material{m_registry.getComponent<OpenGLMaterialComponent>(entity)};
     if (!material)
     {
-        material = m_registry.addComponent<MaterialComponent>(entity, std::make_shared<MaterialComponent>());
+        material =
+            m_registry.addComponent<OpenGLMaterialComponent>(entity, std::make_shared<OpenGLMaterialComponent>());
     }
     ensureMaterial(entity, material);
 
@@ -156,21 +157,22 @@ void Engine::Systems::OpenGLRenderTracker::updateGeometryData(std::shared_ptr<Ge
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity,
-                                                          std::shared_ptr<MaterialComponent> material)
+                                                          std::shared_ptr<OpenGLMaterialComponent> material)
 {
     // check if the material is not currently known
     if (m_materials.find(material.get()) == m_materials.end())
     {
-        m_materials.emplace(material.get(),
-                            materialData{m_registry.onUpdate<MaterialComponent>(
-                                             entity,
-                                             [&](unsigned int updateEntity, std::weak_ptr<MaterialComponent> weakMat)
-                                             {
-                                                 // check if same material?
-                                                 updateMaterialData(weakMat.lock());
-                                             }),
-                                         0,
-                                         0});
+        m_materials.emplace(
+            material.get(),
+            materialData{m_registry.onUpdate<OpenGLMaterialComponent>(
+                             entity,
+                             [&](unsigned int updateEntity, std::weak_ptr<OpenGLMaterialComponent> weakMat)
+                             {
+                                 // check if same material?
+                                 updateMaterialData(weakMat.lock());
+                             }),
+                         0,
+                         0});
 
         updateMaterialData(material);
     }
@@ -182,7 +184,7 @@ void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity,
     std::get<1>(m_entities.at(entity)) = material.get();
 }
 
-void Engine::Systems::OpenGLRenderTracker::updateMaterialData(std::shared_ptr<MaterialComponent> material)
+void Engine::Systems::OpenGLRenderTracker::updateMaterialData(std::shared_ptr<OpenGLMaterialComponent> material)
 {
     materialData &matData{m_materials.at(material.get())};
     unsigned int &UBO{std::get<1>(matData)};

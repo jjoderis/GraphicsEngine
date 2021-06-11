@@ -6,7 +6,6 @@ set(CORE_HEADERS
     Core/ECS/util.h
     Core/Math/math.h
     Core/Components/Tag/tag.h
-    Core/Components/Material/material.h
     Core/Components/Geometry/geometry.h
     Core/Components/Transform/transform.h
     Core/Components/Camera/camera.h
@@ -20,7 +19,6 @@ set(CORE_SOURCES
     Util/fileHandling.cpp
     Core/Math/math.cpp
     Core/Components/Tag/tag.cpp
-    Core/Components/Material/material.cpp
     Core/Components/Geometry/geometry.cpp
     Core/Components/Transform/transform.cpp
     Core/Components/Camera/camera.cpp
@@ -42,6 +40,7 @@ target_include_directories(engineCore INTERFACE Core/)
 set(OPENGL_HEADERS
     OpenGL/Components/Shader/shader.h
     OpenGL/Components/Texture/texture.h
+    OpenGL/Components/Material/material.h
     OpenGL/Shader/shader.h
     OpenGL/Renderer/renderer.h
     OpenGL/Systems/CameraTracker/cameraTracker.h
@@ -52,6 +51,7 @@ set(OPENGL_HEADERS
 set(OPENGL_SOURCES
     OpenGL/Components/Shader/shader.cpp
     OpenGL/Components/Texture/texture.cpp
+    OpenGL/Components/Material/material.cpp
     OpenGL/Shader/shader.cpp
     OpenGL/Renderer/renderer.cpp
     OpenGL/Systems/CameraTracker/cameraTracker.cpp

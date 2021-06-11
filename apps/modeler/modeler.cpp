@@ -4,12 +4,12 @@
 
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Light/light.h>
-#include <Core/Components/Material/material.h>
 #include <Core/Components/Render/render.h>
 #include <Core/Components/Transform/transform.h>
 #include <Core/Systems/HierarchyTracker/hierarchyTracker.h>
 #include <ECS/registry.h>
 #include <Math/math.h>
+#include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Renderer/renderer.h>
 
@@ -57,8 +57,8 @@ int main()
 
     unsigned int object1{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(object1, std::make_shared<Engine::TagComponent>("Object 1"));
-    std::shared_ptr<Engine::MaterialComponent> material{
-        registry.addComponent<Engine::MaterialComponent>(object1, std::make_shared<Engine::MaterialComponent>())};
+    std::shared_ptr<Engine::OpenGLMaterialComponent> material{registry.addComponent<Engine::OpenGLMaterialComponent>(
+        object1, std::make_shared<Engine::OpenGLMaterialComponent>())};
     // TODO: nicer way to set data
     material->setMaterialData(
         Engine::ShaderMaterialData{48,
