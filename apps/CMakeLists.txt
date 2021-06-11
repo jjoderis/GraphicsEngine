@@ -22,10 +22,9 @@ add_library(modelerLib
     modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
     modeler/imgui/Nodes/Entity/entity.cpp
-    modeler/imgui/Nodes/helpers.cpp
     modeler/imgui/Nodes/Camera/camera.cpp
     modeler/imgui/Nodes/Geometry/geometryNode.cpp
-    modeler/imgui/Nodes/Material/material.cpp
+    modeler/imgui/Nodes/OpenGLMaterial/openGLMaterial.cpp
     modeler/imgui/Nodes/OpenGLShader/openGLShader.cpp
     modeler/imgui/Nodes/Transform/transform.cpp
     modeler/imgui/Nodes/Light/light.cpp

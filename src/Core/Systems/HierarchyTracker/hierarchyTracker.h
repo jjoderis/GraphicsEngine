@@ -1,14 +1,15 @@
 #ifndef ENGINE_CORE_SYSTEMS_HIERARCHYTRACKER
 #define ENGINE_CORE_SYSTEMS_HIERARCHYTRACKER
 
-#include "../../Components/Hierarchy/hierarchy.h"
-#include "../../Components/Transform/transform.h"
-#include "../../ECS/registry.h"
-
+#include <functional>
 #include <map>
+#include <memory>
 
 namespace Engine
 {
+class Registry;
+class HierarchyComponent;
+class TransformComponent;
 
 namespace Systems
 {
@@ -27,17 +28,18 @@ private:
 
     using meta_data = std::tuple<
         int, // the currently assigned parent node
-        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<HierarchyComponent>)>>, // callback for when the
-                                                                                               // entity has a hierarchy
-                                                                                               // update
-        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<HierarchyComponent>)>>, // callback for when the
-                                                                                               // entity has its
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<HierarchyComponent>)>>, // callback for when
+                                                                                               // the entity has a
+                                                                                               // hierarchy update
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<HierarchyComponent>)>>, // callback for when
+                                                                                               // the entity has its
                                                                                                // hierarchy removed
-        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>, // callback for when the
-                                                                                               // entity has a transform
-                                                                                               // added or updated
-        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>  // callback for when the
-                                                                                               // entity has its
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>, // callback for when
+                                                                                               // the entity has a
+                                                                                               // transform added or
+                                                                                               // updated
+        std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>>  // callback for when
+                                                                                               // the entity has its
                                                                                                // transform removed
         >;
 

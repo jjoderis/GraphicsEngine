@@ -1,5 +1,8 @@
 #include "cameraTracker.h"
 
+#include "../../../Core/Components/Camera/camera.h"
+#include "../../../Core/ECS/registry.h"
+
 const float baseCameraTransforms[48]{
     1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // base viewMatrix (camera at (0, 0, 0))

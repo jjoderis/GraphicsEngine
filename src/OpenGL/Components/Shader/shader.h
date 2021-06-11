@@ -7,6 +7,8 @@
 
 namespace Engine
 {
+class OpenGLShader;
+class OpenGLProgram;
 
 class OpenGLShaderComponent
 {

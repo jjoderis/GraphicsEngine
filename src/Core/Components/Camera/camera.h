@@ -1,12 +1,15 @@
 #ifndef CORE_COMPONENTS_CAMERA
 #define CORE_COMPONENTS_CAMERA
 
-#include "../../ECS/registry.h"
 #include "../../Math/math.h"
-#include "../Transform/transform.h"
+#include <functional>
+#include <memory>
 
 namespace Engine
 {
+class TransformComponent;
+class Registry;
+
 enum class ProjectionType
 {
     Ortographic,

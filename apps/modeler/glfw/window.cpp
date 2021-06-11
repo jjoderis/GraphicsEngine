@@ -1,5 +1,9 @@
 #include "window.h"
 
+#include <GLFW/glfw3.h>
+#include <cstdlib>
+#include <iostream>
+
 void errorCallback(int error, const char *description)
 {
     std::cerr << "GLFW encountered an error:\n" << description << '\n';

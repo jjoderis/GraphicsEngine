@@ -3,10 +3,17 @@
 
 #include "../helpers.h"
 
+namespace Engine
+{
+class CameraComponent;
+class Registry;
+} // namespace Engine
 namespace UICreation
 {
 
-void drawCameraNode(Engine::Registry &registry);
+template <>
+void createComponentNodeMain<Engine::CameraComponent>(std::shared_ptr<Engine::CameraComponent> camera,
+                                                      Engine::Registry &registry);
 
 }
 

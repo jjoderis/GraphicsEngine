@@ -3,10 +3,17 @@
 
 #include "../helpers.h"
 
+namespace Engine
+{
+class GeometryComponent;
+class Registry;
+} // namespace Engine
 namespace UICreation
 {
 
-void drawGeometryNode(Engine::Registry &registry);
+template <>
+void createComponentNodeMain<Engine::GeometryComponent>(std::shared_ptr<Engine::GeometryComponent> geometry,
+                                                        Engine::Registry &registry);
 
 }
 

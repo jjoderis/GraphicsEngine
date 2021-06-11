@@ -1,12 +1,15 @@
 #ifndef ENGINE_OPENGL_SYSTEMS_CAMERATRACKER
 #define ENGINE_OPENGL_SYSTEMS_CAMERATRACKER
 
-#include "../../../Core/Components/Camera/camera.h"
-#include "../../../Core/ECS/registry.h"
+#include <functional>
 #include <glad/glad.h>
+#include <memory>
 
 namespace Engine
 {
+class Registry;
+class CameraComponent;
+class ActiveCameraComponent;
 namespace Systems
 {
 class OpenGLCameraTracker

@@ -1,15 +1,19 @@
 #ifndef ENGINE_OPENGL_SYSTEM_LIGHTSTRACKER
 #define ENGINE_OPENGL_SYSTEM_LIGHTSTRACKER
 
-#include "../../../Core/Components/Light/light.h"
-#include "../../../Core/Components/Transform/transform.h"
-#include "../../../Core/ECS/registry.h"
+#include <functional>
 #include <glad/glad.h>
 #include <map>
+#include <memory>
 #include <tuple>
-
 namespace Engine
 {
+class Registry;
+class TransformComponent;
+class AmbientLightComponent;
+class DirectionalLightComponent;
+class PointLightComponent;
+class SpotLightComponent;
 namespace Systems
 {
 template <typename LightType>

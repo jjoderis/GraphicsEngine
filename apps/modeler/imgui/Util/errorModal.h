@@ -1,7 +1,6 @@
 #ifndef APPS_MODELER_IMGUI_UTIL_ERRORMODAL
 #define APPS_MODELER_IMGUI_UTIL_ERRORMODAL
 
-#include <imgui.h>
 #include <string>
 
 extern std::string errorMessage;

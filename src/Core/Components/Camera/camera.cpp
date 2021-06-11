@@ -1,5 +1,8 @@
 #include "camera.h"
 
+#include "../../ECS/registry.h"
+#include "../Transform/transform.h"
+
 Engine::CameraComponent::CameraComponent(Registry &registry) : m_registry{registry}
 {
     // sets basics; camera at (0,0,0); projection project on x-y plane

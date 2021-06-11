@@ -1,7 +1,6 @@
 #ifndef ENGINE_OPENGL_COMPONENTS_RENDERER
 #define ENGINE_OPENGL_COMPONENTS_RENDERER
 
-#include "../../Core/ECS/registry.h"
 #include "../Systems/CameraTracker/cameraTracker.h"
 #include "../Systems/LightsTracker/lightsTracker.h"
 #include "../Systems/RenderTracker/renderTracker.h"
@@ -9,6 +8,8 @@
 
 namespace Engine
 {
+class Registry;
+
 class OpenGLRenderer
 {
 private:

@@ -1,5 +1,13 @@
 #include "opengl.h"
 
+// clang-format off
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "../glfw/window.h"
+#include <cstdlib>
+#include <iostream>
+// clang-format on
+
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
                                 GLuint id,

@@ -1,5 +1,9 @@
 #include "geometry.h"
 
+#include "../../../Util/fileHandling.h"
+
+namespace filesystem = std::filesystem;
+
 Engine::GeometryComponent::GeometryComponent() : m_vertices{}, m_faces{} {}
 Engine::GeometryComponent::GeometryComponent(std::initializer_list<Math::Vector3> vertices,
                                              std::initializer_list<unsigned int> faces)
@@ -159,12 +163,12 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
     return geometry;
 }
 
-std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const fs::path &filePath)
+std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const filesystem::path &filePath)
 {
     std::istringstream stream{Util::readTextFile(filePath.c_str())};
 
-    std::string line;  
-    std::getline(stream, line); 
+    std::string line;
+    std::getline(stream, line);
 
     // check if the vertex information contains
     bool hasNormals{false};

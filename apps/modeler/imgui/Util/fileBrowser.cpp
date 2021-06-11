@@ -1,5 +1,10 @@
 #include "fileBrowser.h"
 
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
+
+#include <vector>
+
 std::function<bool(const fs::path &)> UIUtil::can_open_function{[](const fs::path &) -> bool { return false; }};
 std::function<void(const fs::path &, const std::string &)> UIUtil::open_function{
     [](const fs::path &, const std::string &) {}};

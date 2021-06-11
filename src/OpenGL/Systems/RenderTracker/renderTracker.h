@@ -1,16 +1,18 @@
 #ifndef ENGINE_OPENGL_SYSTEM_RENDERTRACKER
 #define ENGINE_OPENGL_SYSTEM_RENDERTRACKER
 
-#include "../../../Core/Components/Geometry/geometry.h"
-#include "../../../Core/Components/Render/render.h"
-#include "../../../Core/Components/Transform/transform.h"
-#include "../../../Core/ECS/registry.h"
-#include "../../Components/Material/material.h"
-#include "../../Components/Shader/shader.h"
+#include <functional>
 #include <map>
+#include <memory>
 
 namespace Engine
 {
+class Registry;
+class RenderComponent;
+class GeometryComponent;
+class OpenGLMaterialComponent;
+class OpenGLShaderComponent;
+class TransformComponent;
 
 namespace Systems
 {

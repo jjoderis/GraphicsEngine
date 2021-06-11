@@ -3,10 +3,17 @@
 
 #include "../helpers.h"
 
+namespace Engine
+{
+class TransformComponent;
+class Registry;
+} // namespace Engine
 namespace UICreation
 {
 
-void drawTransformNode(Engine::Registry &registry);
+template <>
+void createComponentNodeMain<Engine::TransformComponent>(std::shared_ptr<Engine::TransformComponent> transform,
+                                                         Engine::Registry &registry);
 
 }
 

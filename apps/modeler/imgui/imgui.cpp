@@ -1,7 +1,35 @@
 #include "imgui.h"
 
+#include "Nodes/Camera/camera.h"
+#include "Nodes/Entity/entity.h"
+#include "Nodes/Geometry/geometryNode.h"
+#include "Nodes/Light/light.h"
+#include "Nodes/OpenGLMaterial/openGLMaterial.h"
+#include "Nodes/OpenGLShader/openGLShader.h"
+#include "Nodes/Transform/transform.h"
+#include "Nodes/helpers.h"
+#include "Util/errorModal.h"
+#include "Util/fileBrowser.h"
+#include <Core/Components/Camera/camera.h>
+#include <Core/Components/Geometry/geometry.h>
+#include <Core/Components/Light/light.h>
+#include <Core/Components/Tag/tag.h>
+#include <Core/Components/Transform/transform.h>
+#include <Core/ECS/util.h>
+#include <Core/Math/math.h>
+#include <OpenGL/Components/Shader/shader.h>
+#include <Util/fileHandling.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <cstring>
+#include <imgui.h>
+
+#include "../glfw/window.h"
+#include <GLFW/glfw3.h>
+
 bool showDemoWindow{false};
 unsigned int mainCamera{0};
+bool dragging{1};
 
 using namespace UICreation;
 int selectedEntity = -1;
@@ -156,6 +184,24 @@ void drawShaderTypeSelection(Engine::Registry &registry)
     }
 }
 
+template <typename ComponentType>
+void drawComponentNode(const char *componentName, Engine::Registry &registry)
+{
+    if (registry.hasComponent<ComponentType>(selectedEntity))
+    {
+        bool isOpen = UICreation::createComponentNodeStart<ComponentType>(componentName);
+        UICreation::createHeaderControls<ComponentType>(componentName, registry);
+
+        if (isOpen)
+        {
+            std::shared_ptr<ComponentType> component = registry.getComponent<ComponentType>(selectedEntity);
+            UICreation::createComponentNodeMain<ComponentType>(component, registry);
+        }
+
+        UICreation::createComponentNodeEnd();
+    }
+}
+
 void UI::render(Engine::Registry &registry)
 {
     if (showDemoWindow)
@@ -300,12 +346,15 @@ void UI::render(Engine::Registry &registry)
             drawGeometryTypeSelection(registry);
             drawShaderTypeSelection(registry);
 
-            drawMaterialNode(registry);
-            drawGeometryNode(registry);
-            drawTransformNode(registry);
-            drawShaderNode(registry);
-            drawCameraNode(registry);
-            drawLightNodes(registry);
+            drawComponentNode<Engine::OpenGLMaterialComponent>("Material", registry);
+            drawComponentNode<Engine::GeometryComponent>("Geometry", registry);
+            drawComponentNode<Engine::TransformComponent>("Transform", registry);
+            drawComponentNode<Engine::OpenGLShaderComponent>("Shader", registry);
+            drawComponentNode<Engine::CameraComponent>("Camera", registry);
+            drawComponentNode<Engine::AmbientLightComponent>("Ambient Light", registry);
+            drawComponentNode<Engine::DirectionalLightComponent>("Directional Light", registry);
+            drawComponentNode<Engine::PointLightComponent>("Point Light", registry);
+            drawComponentNode<Engine::SpotLightComponent>("Spot Light", registry);
         }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",

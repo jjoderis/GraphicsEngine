@@ -1,5 +1,9 @@
 #include "lightsTracker.h"
 
+#include "../../../Core/Components/Light/light.h"
+#include "../../../Core/Components/Transform/transform.h"
+#include "../../../Core/ECS/registry.h"
+
 template <typename LightType>
 Engine::Systems::OpenGLLightsTracker<LightType>::OpenGLLightsTracker(unsigned int &lightsUBO, Registry &registry)
     : m_lightsUBO{lightsUBO}, m_registry{registry}

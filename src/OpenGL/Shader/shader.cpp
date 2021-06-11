@@ -1,5 +1,11 @@
 #include "shader.h"
 
+#include "../../Util/fileHandling.h"
+#include <cstring>
+#include <exception>
+
+namespace filesystem = std::filesystem;
+
 Engine::ShaderException::ShaderException(std::string message) : m_message{message} {}
 
 const char *Engine::ShaderException::what() const throw() { return m_message.c_str(); }
@@ -218,9 +224,9 @@ void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders)
     }
 }
 
-GLenum Engine::shaderPathToType(const fs::path &filePath)
+GLenum Engine::shaderPathToType(const filesystem::path &filePath)
 {
-    fs::path extension{filePath.extension()};
+    filesystem::path extension{filePath.extension()};
 
     if (extension == ".vert")
     {
@@ -280,7 +286,7 @@ std::string Engine::shaderTypeToExtension(GLenum type)
     }
 }
 
-Engine::OpenGLShader Engine::loadShader(const fs::path &filePath)
+Engine::OpenGLShader Engine::loadShader(const filesystem::path &filePath)
 {
     GLenum type{shaderPathToType(filePath)};
 
@@ -315,9 +321,9 @@ std::vector<Engine::OpenGLShader> Engine::OpenGLProgram::getShaders()
     return shaders;
 }
 
-void Engine::saveShader(const fs::path &path, const OpenGLShader &shader)
+void Engine::saveShader(const filesystem::path &path, const OpenGLShader &shader)
 {
-    fs::path filePath{path};
+    filesystem::path filePath{path};
     bool savingAllowed{false};
     std::string expectedExtension{shaderTypeToExtension(shader.m_type)};
 
@@ -344,9 +350,9 @@ void Engine::saveShader(const fs::path &path, const OpenGLShader &shader)
     }
 }
 
-void Engine::saveShaders(const fs::path &directoryPath, const std::vector<OpenGLShader> &shaders)
+void Engine::saveShaders(const filesystem::path &directoryPath, const std::vector<OpenGLShader> &shaders)
 {
-    if (!fs::is_directory(directoryPath))
+    if (!filesystem::is_directory(directoryPath))
     {
         throw ShaderException("Given path is not a directory. Didn't write to file system!");
     }
@@ -355,6 +361,6 @@ void Engine::saveShaders(const fs::path &directoryPath, const std::vector<OpenGL
 
     for (const OpenGLShader &shader : shaders)
     {
-        saveShader(fs::path{directoryPath / directoryName}, shader);
+        saveShader(filesystem::path{directoryPath / directoryName}, shader);
     }
 }

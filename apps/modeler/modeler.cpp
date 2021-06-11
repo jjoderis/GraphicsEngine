@@ -1,10 +1,20 @@
+// clang-format off
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+// clang-format on
+
 #include "glad/opengl.h"
 #include "glfw/window.h"
 #include "imgui/imgui.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
+#include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
+#include <Core/Components/Hierarchy/hierarchy.h>
 #include <Core/Components/Light/light.h>
 #include <Core/Components/Render/render.h>
+#include <Core/Components/Tag/tag.h>
 #include <Core/Components/Transform/transform.h>
 #include <Core/Systems/HierarchyTracker/hierarchyTracker.h>
 #include <ECS/registry.h>
@@ -12,6 +22,7 @@
 #include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Renderer/renderer.h>
+#include <cstring>
 
 #include <iostream>
 

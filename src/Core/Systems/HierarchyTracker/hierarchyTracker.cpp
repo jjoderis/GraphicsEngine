@@ -1,5 +1,9 @@
 #include "hierarchyTracker.h"
 
+#include "../../Components/Hierarchy/hierarchy.h"
+#include "../../Components/Transform/transform.h"
+#include "../../ECS/registry.h"
+
 Engine::Systems::HierarchyTracker::HierarchyTracker(Registry &registry) : m_registry{registry}
 {
     m_AddHierarchyCB = m_registry.onAdded<HierarchyComponent>(

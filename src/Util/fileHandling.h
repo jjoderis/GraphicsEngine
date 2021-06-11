@@ -1,15 +1,9 @@
 #ifndef ENGINE_UTIL_FILEHANDLING
 #define ENGINE_UTIL_FILEHANDLING
 
-#include <cerrno>
-#include <cstring>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
-
-namespace fs = std::filesystem;
 
 namespace Util
 {
@@ -18,8 +12,8 @@ namespace Util
 std::string readTextFile(const char *filePath);
 void writeTextToFile(const char *filePath, const std::string &data);
 
-std::vector<fs::path> getFilePaths(const char *directoryPath);
-std::vector<fs::path> getDirectories(const char *directoryPath);
+std::vector<std::filesystem::path> getFilePaths(const char *directoryPath);
+std::vector<std::filesystem::path> getDirectories(const char *directoryPath);
 } // namespace Util
 
 #endif

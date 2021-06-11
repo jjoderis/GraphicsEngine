@@ -1,8 +1,8 @@
 #ifndef CORE_COMPONENTS_GEOMETRY
 #define CORE_COMPONENTS_GEOMETRY
 
-#include "../../../Util/fileHandling.h"
 #include "../../Math/math.h"
+#include <filesystem>
 #include <initializer_list>
 #include <memory>
 #include <sstream>
@@ -48,7 +48,7 @@ std::shared_ptr<GeometryComponent> createSphereGeometry(float radius, int hInter
 /**
  * Creates a geometry component with the information contained in a OFF file
  **/
-std::shared_ptr<GeometryComponent> loadOffFile(const fs::path &filePath);
+std::shared_ptr<GeometryComponent> loadOffFile(const std::filesystem::path &filePath);
 } // namespace Engine
 
 #endif

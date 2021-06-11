@@ -1,5 +1,7 @@
 #include "errorModal.h"
 
+#include <imgui.h>
+
 bool errorModalRendered{false};
 std::string errorMessage{};
 

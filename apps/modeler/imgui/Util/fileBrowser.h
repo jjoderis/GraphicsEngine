@@ -3,9 +3,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <imgui.h>
-#include <misc/cpp/imgui_stdlib.h>
-#include <vector>
 
 namespace fs = std::filesystem;
 

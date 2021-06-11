@@ -1,10 +1,7 @@
 #ifndef APPS_MODELER_GLFW
 #define APPS_MODELER_GLFW
 
-#include <GLFW/glfw3.h>
-#include <cstdlib>
-#include <iostream>
-
+class GLFWwindow;
 class Window
 {
 public:

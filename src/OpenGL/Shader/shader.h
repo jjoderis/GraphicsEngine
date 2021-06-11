@@ -1,9 +1,7 @@
 #ifndef ENGINE_OPENGL_SHADER
 #define ENGINE_OPENGL_SHADER
 
-#include "../../Util/fileHandling.h"
-#include <cstring>
-#include <exception>
+#include <filesystem>
 #include <glad/glad.h>
 #include <map>
 #include <string>
@@ -58,14 +56,14 @@ public:
     void updateProgram(std::vector<OpenGLShader> newShaders);
 };
 
-GLenum shaderPathToType(const fs::path &filePath);
+GLenum shaderPathToType(const std::filesystem::path &filePath);
 std::string shaderTypeToExtension(GLenum type);
 
-OpenGLShader loadShader(const fs::path &filePath);
+OpenGLShader loadShader(const std::filesystem::path &filePath);
 std::vector<OpenGLShader> loadShaders(const char *directoryPaths);
 
-void saveShader(const fs::path &path, const OpenGLShader &shader);
-void saveShaders(const fs::path &directoryPath, const std::vector<OpenGLShader> &shaders);
+void saveShader(const std::filesystem::path &path, const OpenGLShader &shader);
+void saveShaders(const std::filesystem::path &directoryPath, const std::vector<OpenGLShader> &shaders);
 } // namespace Engine
 
 #endif

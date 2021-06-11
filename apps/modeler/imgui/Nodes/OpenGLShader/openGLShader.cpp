@@ -1,8 +1,17 @@
 #include "openGLShader.h"
 
+#include "../../Util/errorModal.h"
+#include "../../Util/fileBrowser.h"
+#include <Core/Components/Render/render.h>
+#include <OpenGL/Components/Shader/shader.h>
+#include <algorithm>
+#include <misc/cpp/imgui_stdlib.h>
+
 std::vector<const char *> g_shaderTypes;
 std::vector<Engine::OpenGLShader> g_shaders;
 int current_selected_shader = 0;
+
+extern bool dragging;
 
 void loadShader(const Engine::OpenGLShader &shader)
 {
@@ -138,55 +147,47 @@ void drawShaderEditModal(unsigned int entity,
     }
 }
 
-void UICreation::drawShaderNode(Engine::Registry &registry)
+template <>
+void UICreation::createComponentNodeMain<Engine::OpenGLShaderComponent>(
+    std::shared_ptr<Engine::OpenGLShaderComponent> shader, Engine::Registry &registry)
 {
-    if (std::shared_ptr<Engine::OpenGLShaderComponent> shader =
-            registry.getComponent<Engine::OpenGLShaderComponent>(selectedEntity))
-    {
-        createComponentNodeOutline<Engine::OpenGLShaderComponent>(
-            "Shader",
-            registry,
-            shader.get(),
-            [&]()
-            {
-                if (ImGui::Button("Edit Shaders"))
-                {
-                    loadShaders(shader->getShaders());
-                    ImGui::OpenPopup("Shader Editor");
-                }
-                drawShaderEditModal(selectedEntity, registry, shader);
-                const char *types[2]{"Points\0", "Triangles\0"};
-                static int primitive_type_current = 1;
-                const char *comboLabel = types[primitive_type_current];
-                static int primitive_type = GL_TRIANGLES;
+    createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(dragging);
 
-                bool isRendered = registry.hasComponent<Engine::RenderComponent>(selectedEntity);
-                ImGui::Checkbox("Render", &isRendered);
-                if (ImGui::IsItemEdited())
-                {
-                    if (!isRendered)
-                    {
-                        registry.removeComponent<Engine::RenderComponent>(selectedEntity);
-                    }
-                    else
-                    {
-                        registry.addComponent<Engine::RenderComponent>(selectedEntity,
-                                                                       std::make_shared<Engine::RenderComponent>());
-                    }
-                }
-                // if (ImGui::RadioButton("Points", primitive_type
-                // == GL_POINTS))
-                // {
-                //     primitive_type = GL_POINTS;
-                //     render->updatePrimitiveType(primitive_type);
-                // }
-                // ImGui::SameLine();
-                // if (ImGui::RadioButton("Triangles",
-                // primitive_type == GL_TRIANGLES))
-                // {
-                //     primitive_type = GL_TRIANGLES;
-                //     render->updatePrimitiveType(primitive_type);
-                // }
-            });
+    if (ImGui::Button("Edit Shaders"))
+    {
+        loadShaders(shader->getShaders());
+        ImGui::OpenPopup("Shader Editor");
     }
+    drawShaderEditModal(selectedEntity, registry, shader);
+    const char *types[2]{"Points\0", "Triangles\0"};
+    static int primitive_type_current = 1;
+    const char *comboLabel = types[primitive_type_current];
+    static int primitive_type = GL_TRIANGLES;
+
+    bool isRendered = registry.hasComponent<Engine::RenderComponent>(selectedEntity);
+    ImGui::Checkbox("Render", &isRendered);
+    if (ImGui::IsItemEdited())
+    {
+        if (!isRendered)
+        {
+            registry.removeComponent<Engine::RenderComponent>(selectedEntity);
+        }
+        else
+        {
+            registry.addComponent<Engine::RenderComponent>(selectedEntity, std::make_shared<Engine::RenderComponent>());
+        }
+    }
+    // if (ImGui::RadioButton("Points", primitive_type
+    // == GL_POINTS))
+    // {
+    //     primitive_type = GL_POINTS;
+    //     render->updatePrimitiveType(primitive_type);
+    // }
+    // ImGui::SameLine();
+    // if (ImGui::RadioButton("Triangles",
+    // primitive_type == GL_TRIANGLES))
+    // {
+    //     primitive_type = GL_TRIANGLES;
+    //     render->updatePrimitiveType(primitive_type);
+    // }
 }

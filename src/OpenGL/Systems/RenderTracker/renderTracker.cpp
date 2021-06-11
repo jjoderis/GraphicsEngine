@@ -1,5 +1,12 @@
 #include "renderTracker.h"
 
+#include "../../../Core/Components/Geometry/geometry.h"
+#include "../../../Core/Components/Render/render.h"
+#include "../../../Core/Components/Transform/transform.h"
+#include "../../../Core/ECS/registry.h"
+#include "../../Components/Material/material.h"
+#include "../../Components/Shader/shader.h"
+
 Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : m_registry{registry}
 {
     m_associateCallback = m_registry.onAdded<RenderComponent>(

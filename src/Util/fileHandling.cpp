@@ -1,5 +1,12 @@
 #include "fileHandling.h"
 
+#include <cerrno>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+
+namespace filesystem = std::filesystem;
+
 std::string Util::readTextFile(const char *filePath)
 {
     std::ifstream in(filePath, std::ios::in | std::ios::binary);
@@ -14,7 +21,7 @@ std::string Util::readTextFile(const char *filePath)
         return (contents);
     }
     throw(errno);
-}
+} // namespace std::filesystemstd::stringUtil::readTextFile(constchar*filePath)
 
 void Util::writeTextToFile(const char *filePath, const std::string &data)
 {
@@ -30,9 +37,9 @@ void Util::writeTextToFile(const char *filePath, const std::string &data)
     }
 }
 
-std::vector<fs::path> Util::getFilePaths(const char *directoryPath)
+std::vector<filesystem::path> Util::getFilePaths(const char *directoryPath)
 {
-    std::vector<fs::path> filePaths{};
+    std::vector<filesystem::path> filePaths{};
 
     for (const auto &entry : std::filesystem::directory_iterator(directoryPath))
     {
@@ -45,9 +52,9 @@ std::vector<fs::path> Util::getFilePaths(const char *directoryPath)
     return filePaths;
 }
 
-std::vector<fs::path> Util::getDirectories(const char *directoryPath)
+std::vector<filesystem::path> Util::getDirectories(const char *directoryPath)
 {
-    std::vector<fs::path> directoryPaths{};
+    std::vector<filesystem::path> directoryPaths{};
 
     for (const auto &entry : std::filesystem::directory_iterator(directoryPath))
     {

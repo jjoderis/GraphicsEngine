@@ -1,5 +1,7 @@
 #include "renderer.h"
 
+#include "../../Core/ECS/registry.h"
+
 Engine::OpenGLRenderer::OpenGLRenderer(Registry &registry)
     : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry}, m_ambientLightsTracker{m_ambientLightsInfoUBO,
                                                                                                  registry},

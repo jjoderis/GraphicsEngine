@@ -1,5 +1,18 @@
 #include "entity.h"
 
+#include "../helpers.h"
+#include <Core/Components/Camera/camera.h>
+#include <Core/Components/Geometry/geometry.h>
+#include <Core/Components/Hierarchy/hierarchy.h>
+#include <Core/Components/Light/light.h>
+#include <Core/Components/Tag/tag.h>
+#include <Core/Components/Transform/transform.h>
+#include <Core/ECS/registry.h>
+#include <OpenGL/Components/Material/material.h>
+#include <OpenGL/Components/Shader/shader.h>
+#include <cstring>
+#include <imgui.h>
+
 void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry)
 {
     // create logic for when an entity is started to be dragged
