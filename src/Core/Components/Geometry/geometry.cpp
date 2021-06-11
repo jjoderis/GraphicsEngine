@@ -163,8 +163,8 @@ std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const fs::path &f
 {
     std::istringstream stream{Util::readTextFile(filePath.c_str())};
 
-    std::string line;
-    std::getline(stream, line);
+    std::string line;  
+    std::getline(stream, line); 
 
     // check if the vertex information contains
     bool hasNormals{false};

@@ -41,6 +41,7 @@ target_include_directories(engineCore INTERFACE Core/)
 
 set(OPENGL_HEADERS
     OpenGL/Components/Shader/shader.h
+    OpenGL/Components/Texture/texture.h
     OpenGL/Shader/shader.h
     OpenGL/Renderer/renderer.h
     OpenGL/Systems/CameraTracker/cameraTracker.h
@@ -50,15 +51,17 @@ set(OPENGL_HEADERS
 
 set(OPENGL_SOURCES
     OpenGL/Components/Shader/shader.cpp
+    OpenGL/Components/Texture/texture.cpp
     OpenGL/Shader/shader.cpp
     OpenGL/Renderer/renderer.cpp
     OpenGL/Systems/CameraTracker/cameraTracker.cpp
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
     OpenGL/Systems/RenderTracker/renderTracker.cpp
 )
+add_subdirectory("${EXTERN_DIR}/stb" "${BUILD_DIR}/external/stb")
 
 add_library(engineOpenGL ${OPENGL_SOURCES} ${OPENGL_HEADERS})
 
-target_link_libraries(engineOpenGL PUBLIC glad mathlib)
+target_link_libraries(engineOpenGL PUBLIC glad mathlib stb)
 
 target_include_directories(engineOpenGL INTERFACE Core/ OpenGL/)

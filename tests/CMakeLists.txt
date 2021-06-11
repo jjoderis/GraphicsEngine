@@ -10,7 +10,6 @@ set(TEST_FILES
     Core/ECS/registry.test.cpp
     Core/ECS/componentTable.test.cpp
     Core/Components/Geometry/geometry.test.cpp
-    OpenGL/Components/Render/render.test.cpp
 )
 
 # link test files against gtest_main
