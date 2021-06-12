@@ -141,7 +141,7 @@ public:
 
     // returns all owners for all components of a specific type
     template <typename ComponentType>
-    const std::vector<std::list<unsigned int>> getOwners()
+    const std::vector<std::list<unsigned int>> &getOwners()
     {
         ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
 
@@ -149,11 +149,19 @@ public:
     }
 
     template <typename ComponentType>
-    const std::list<unsigned int> getOwners(std::weak_ptr<ComponentType> component)
+    const std::list<unsigned int> &getOwners(std::weak_ptr<ComponentType> component)
     {
         ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
 
         return compTable->getOwners(component);
+    }
+
+    template <typename ComponentType>
+    const std::list<unsigned int> &getOwners(unsigned int entity)
+    {
+        ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
+
+        return compTable->getOwners(entity);
     }
 
     template <typename ComponentType>
@@ -181,6 +189,15 @@ public:
         ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
 
         return compTable->onUpdate(entityId, std::move(cb));
+    }
+
+    template <typename ComponentType>
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ComponentType>)>>
+    onComponentSwap(unsigned int entityId, std::function<void(unsigned int, std::weak_ptr<ComponentType>)> &&cb)
+    {
+        ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
+
+        return compTable->onComponentSwap(entityId, std::move(cb));
     }
 
     template <typename ComponentType>

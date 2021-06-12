@@ -15,10 +15,6 @@ using MaterialUniformData = std::tuple<std::string, unsigned int, int>;
 using ShaderMaterialData = std::tuple<int, std::vector<MaterialUniformData>>;
 class OpenGLMaterialComponent
 {
-private:
-    ShaderMaterialData m_dataInfo{0, std::vector<MaterialUniformData>{}};
-    std::vector<char> m_data;
-
 public:
     OpenGLMaterialComponent() {}
 
@@ -32,6 +28,10 @@ public:
     }
 
     std::vector<char> &getData();
+
+private:
+    ShaderMaterialData m_dataInfo{0, std::vector<MaterialUniformData>{}};
+    std::vector<char> m_data;
 };
 } // namespace Engine
 

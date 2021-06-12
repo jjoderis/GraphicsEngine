@@ -12,6 +12,7 @@ public:
     ~OpenGLTextureComponent();
 
 private:
+    unsigned int m_numTextures{0};
     unsigned int m_texture{0};
 };
 } // namespace Engine

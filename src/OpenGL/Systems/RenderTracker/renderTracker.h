@@ -2,8 +2,14 @@
 #define ENGINE_OPENGL_SYSTEM_RENDERTRACKER
 
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
+
+#include "./GeometryTracker/geometryTracker.h"
+#include "./MaterialTracker/materialTracker.h"
+#include "./ShaderTracker/shaderTracker.h"
+#include "./TransformTracker/transformTracker.h"
 
 namespace Engine
 {
@@ -36,25 +42,13 @@ private:
     // callback that tracks addition of new render components
     componentCallback<RenderComponent> m_associateCallback;
 
-    using geometryData = std::tuple<componentCallback<GeometryComponent>,
-                                    unsigned int,
-                                    unsigned int,
-                                    unsigned int,
-                                    unsigned int,
-                                    unsigned int>; // change callback,
-                                                   // VAO, VBO, EBO, num points, num faces
-    std::map<GeometryComponent *, geometryData> m_geometries;
+    std::map<GeometryComponent *, OpenGLRenderGeometryTracker> m_geometries;
 
-    using materialData =
-        std::tuple<componentCallback<OpenGLMaterialComponent>, unsigned int, int>; // change callback, UBO, size
-    std::map<OpenGLMaterialComponent *, materialData> m_materials;
+    std::map<OpenGLMaterialComponent *, OpenGLRenderMaterialTracker> m_materials;
 
-    using transformData = std::tuple<componentCallback<TransformComponent>, unsigned int>; // change callback, UBO
-    std::map<TransformComponent *, transformData> m_transforms;
+    std::map<TransformComponent *, OpenGLRenderTransformTracker> m_transforms;
 
-    using shaderData =
-        std::tuple<componentCallback<OpenGLShaderComponent>, std::vector<unsigned int>>; // change callback, entities
-    std::map<OpenGLShaderComponent *, shaderData> m_shaders;
+    std::map<OpenGLShaderComponent *, OpenGLRenderShaderTracker> m_shaders;
 
     using entityData =
         std::tuple<GeometryComponent *, OpenGLMaterialComponent *, TransformComponent *, OpenGLShaderComponent *>;
@@ -62,17 +56,13 @@ private:
 
     void makeRenderable(unsigned int entityId);
 
-    void ensureGeometry(unsigned int entity, std::shared_ptr<GeometryComponent> geometry);
-    void updateGeometryData(std::shared_ptr<GeometryComponent> geometry);
+    void ensureGeometry(unsigned int entity);
 
-    void ensureMaterial(unsigned int entity, std::shared_ptr<OpenGLMaterialComponent> material);
-    void updateMaterialData(std::shared_ptr<OpenGLMaterialComponent> material);
+    void ensureMaterial(unsigned int entity);
 
-    void ensureTransform(unsigned int entity, std::shared_ptr<TransformComponent> transform);
-    void updateTransformData(std::shared_ptr<TransformComponent> transform);
+    void ensureTransform(unsigned int entity);
 
-    void ensureShader(unsigned int entity, std::shared_ptr<OpenGLShaderComponent> shader);
-    void updateWithShaderData(std::shared_ptr<OpenGLShaderComponent> shader);
+    void ensureShader(unsigned int entity);
 };
 
 } // namespace Systems

@@ -57,6 +57,10 @@ set(OPENGL_SOURCES
     OpenGL/Systems/CameraTracker/cameraTracker.cpp
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
     OpenGL/Systems/RenderTracker/renderTracker.cpp
+    OpenGL/Systems/RenderTracker/MaterialTracker/materialTracker.cpp
+    OpenGL/Systems/RenderTracker/GeometryTracker/geometryTracker.cpp
+    OpenGL/Systems/RenderTracker/TransformTracker/transformTracker.cpp
+    OpenGL/Systems/RenderTracker/ShaderTracker/shaderTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/stb" "${BUILD_DIR}/external/stb")
 

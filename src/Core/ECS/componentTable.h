@@ -20,12 +20,14 @@ private:
     // the implementation of the callback system is based on this blog post:
     // http://nercury.github.io/c++/interesting/2016/02/22/weak_ptr-and-event-cleanup.html
     using component_table_callback = std::function<void(unsigned int, std::weak_ptr<ComponentType>)>;
-    // callbacks that are called after a component was added to an entity
+    // callbacks that are called after a component was added to any entity
     std::list<std::weak_ptr<component_table_callback>> m_addCallbacks{};
-    // callbacks that are called before a component is removed from an entity
+    // callbacks that are called before a component is removed from any entity
     std::list<std::weak_ptr<component_table_callback>> m_removeCallbacks{};
     // callbacks for the updates of a specific component
     std::vector<std::list<std::weak_ptr<component_table_callback>>> m_updateCallbacks{};
+    // callbacks for when the component on an entity is swapped out with another
+    std::vector<std::list<std::weak_ptr<component_table_callback>>> m_swapCallbacks;
 
     //  Add component only if it does not exit: return index
     int ensureComponent(std::weak_ptr<ComponentType> weakComponent)
@@ -50,6 +52,7 @@ private:
         if (entityId >= m_sparse.size())
         {
             m_sparse.resize(entityId + 1, -1);
+            m_swapCallbacks.resize(entityId + 1, std::list<std::weak_ptr<component_table_callback>>{});
         }
     }
 
@@ -73,7 +76,11 @@ private:
     }
 
 public:
-    ComponentTable(unsigned int numEntities) { m_sparse = std::vector<int>(numEntities, -1); }
+    ComponentTable(unsigned int numEntities)
+    {
+        m_sparse = std::vector<int>(numEntities, -1);
+        m_swapCallbacks = std::vector<std::list<std::weak_ptr<component_table_callback>>>(numEntities);
+    }
 
     std::shared_ptr<ComponentType> addComponent(unsigned int entityId, std::weak_ptr<ComponentType> component)
     {
@@ -82,28 +89,33 @@ public:
 
         bool override = false;
 
+        int currentComponentIndex = m_sparse[entityId];
+
         // entity has a component
-        if (m_sparse[entityId] != -1)
+        if (currentComponentIndex != -1)
         {
             // if the entity already points to the component
-            if (m_components[m_sparse[entityId]] == component.lock())
+            if (m_components[currentComponentIndex] == component.lock())
             {
-                return m_components[m_sparse[entityId]];
+                return m_components[currentComponentIndex];
             }
 
             override = true;
+            invokeAndCleanup(m_swapCallbacks[entityId], entityId, component);
             // if the entity points to another component
-            removeComponent(entityId, override);
+            // remove the other component from the entity
+            bool deleted = removeComponent(entityId, override);
+            // correct the index if needed ()
+            if (deleted && componentIndex > currentComponentIndex)
+            {
+                --componentIndex;
+            }
         }
 
         m_sparse[entityId] = componentIndex;
         m_owners[componentIndex].push_back(entityId);
 
-        if (override)
-        {
-            updated(entityId);
-        }
-        else
+        if (!override)
         {
             invokeAndCleanup(m_addCallbacks, entityId, m_components[componentIndex]);
         }
@@ -111,13 +123,13 @@ public:
         return m_components[m_sparse[entityId]];
     }
 
-    void removeComponent(unsigned int entityId, bool silent = false)
+    bool removeComponent(unsigned int entityId, bool silent = false)
     {
         ensureEntity(entityId);
         // entity has no component of this type
         if (m_sparse[entityId] == -1)
         {
-            return;
+            return false;
         }
 
         unsigned int componentIndex = m_sparse[entityId];
@@ -131,9 +143,12 @@ public:
         std::list<unsigned int> &allOwners = m_owners[componentIndex];
         allOwners.remove(entityId);
 
+        // return value to indicate if the component was deleted
+        bool deleted = false;
         // remove component if there are no owners
         if (allOwners.size() == 0)
         {
+            deleted = true;
             auto it = m_components.begin();
             // decrease the pointed to index of all entities which point to a
             // following component
@@ -149,9 +164,14 @@ public:
             m_components.erase(it + componentIndex);
             m_owners.erase(m_owners.begin() + componentIndex);
             m_updateCallbacks.erase(m_updateCallbacks.begin() + componentIndex);
+            if (!silent)
+            {
+                m_swapCallbacks[entityId].clear();
+            }
         }
 
         m_sparse[entityId] = -1;
+        return deleted;
     }
 
     bool hasComponent(unsigned int entityId)
@@ -174,9 +194,9 @@ public:
 
     std::vector<std::shared_ptr<ComponentType>> getComponents() { return m_components; }
 
-    std::vector<std::list<unsigned int>> getOwners() { return m_owners; }
+    std::vector<std::list<unsigned int>> &getOwners() { return m_owners; }
 
-    std::list<unsigned int> getOwners(std::weak_ptr<ComponentType> component)
+    std::list<unsigned int> &getOwners(std::weak_ptr<ComponentType> component)
     {
         for (unsigned int i{0}; i < m_owners.size(); ++i)
         {
@@ -186,7 +206,17 @@ public:
             }
         }
 
-        return std::list<unsigned int>{};
+        throw "Can't return owners of non-existant component!";
+    }
+
+    std::list<unsigned int> &getOwners(unsigned int entity)
+    {
+        if (m_sparse[entity] == -1)
+        {
+            throw "Can't return owners of non-existant component!";
+        }
+
+        return m_owners.at(m_sparse[entity]);
     }
 
     std::shared_ptr<component_table_callback> onAdded(component_table_callback &&cb)
@@ -209,6 +239,18 @@ public:
         {
             std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
             m_updateCallbacks[m_sparse[entityId]].push_back(shared);
+            return shared;
+        }
+
+        return std::shared_ptr<component_table_callback>{};
+    }
+    std::shared_ptr<component_table_callback> onComponentSwap(unsigned int entity, component_table_callback &&cb)
+    {
+        // only add if the entity actually has a component of this type
+        if (m_sparse[entity] > -1)
+        {
+            std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
+            m_swapCallbacks[entity].push_back(shared);
             return shared;
         }
 
