@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <OpenGL/Util/textureIndex.h>
 #include <iostream>
 #include <vector>
 

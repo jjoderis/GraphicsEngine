@@ -23,12 +23,14 @@
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Components/Texture/texture.h>
 #include <OpenGL/Renderer/renderer.h>
+#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 
 #include <iostream>
 
 GLFWwindow *Window::m_window = nullptr;
 Engine::Registry registry{};
+Engine::Util::OpenGLTextureIndex textureIndex{};
 
 void cameraAspectCallback(GLFWwindow *window, int width, int height)
 {
@@ -82,7 +84,8 @@ int main()
     std::memcpy(properties, defaultData, 9 * sizeof(float));
     std::shared_ptr<Engine::OpenGLTextureComponent> texture = registry.addComponent<Engine::OpenGLTextureComponent>(
         object1, std::make_shared<Engine::OpenGLTextureComponent>());
-    texture->addTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D);
+    texture->addTexture(textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D, texture.get()),
+                        GL_TEXTURE_2D);
 
     std::weak_ptr<Engine::TransformComponent> transform{
         registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};

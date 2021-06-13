@@ -2,7 +2,6 @@
 #define ENGINE_OPENGL_COMPONENTS_TEXTURE
 
 #include <filesystem>
-#include <string>
 #include <vector>
 
 namespace Engine
@@ -13,12 +12,15 @@ public:
     // load texture from file at given path
     OpenGLTextureComponent();
 
-    void addTexture(const std::filesystem::path &path, unsigned int type);
-    void editTexture(int index, const std::filesystem::path &path, unsigned int type);
-
-    using textureData = std::pair<std::filesystem::path, unsigned int>;
+    void addTexture(unsigned int buffer, unsigned int type);
+    void editTexture(int index, unsigned int buffer, unsigned int type);
+    using textureData = std::pair<unsigned int, unsigned int>;
     const std::vector<textureData> &getTextures() const;
+    textureData &getTexture(int index);
     unsigned int getNumTextures() const;
+
+    void bind();
+    void unbind();
 
 private:
     unsigned int m_numTextures{0};

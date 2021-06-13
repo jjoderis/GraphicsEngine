@@ -10,8 +10,6 @@
 
 Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : m_registry{registry}
 {
-    m_textureIndex = std::make_shared<OpenGLTextureIndex>();
-
     m_associateCallback = m_registry.onAdded<RenderComponent>(
         [this](unsigned int entity, std::weak_ptr<RenderComponent> render)
         {
@@ -127,12 +125,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
         texture = m_registry.addComponent<OpenGLTextureComponent>(entity, std::make_shared<OpenGLTextureComponent>());
     }
 
-    // check if the transform is not currently known
-    if (m_textures.find(texture.get()) == m_textures.end())
-    {
-        m_textures.try_emplace(texture.get(), entity, m_registry, m_textureIndex);
-    }
-
     std::get<4>(m_entities.at(entity)) = texture.get();
 }
 
@@ -152,7 +144,7 @@ void Engine::Systems::OpenGLRenderTracker::render()
 
             glBindBufferBase(GL_UNIFORM_BUFFER, 0, materialUBO);
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, transformUBO);
-            m_textures.at(std::get<4>(data)).bindTextures();
+            std::get<4>(data)->bind();
             m_geometries.at(std::get<0>(data)).draw();
         }
     }

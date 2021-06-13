@@ -3,8 +3,11 @@
 #include "../../Util/errorModal.h"
 #include "../../Util/fileBrowser.h"
 #include <OpenGL/Components/Texture/texture.h>
+#include <OpenGL/Util/textureIndex.h>
 #include <glad/glad.h>
 #include <iostream>
+
+extern Engine::Util::OpenGLTextureIndex textureIndex;
 
 extern bool dragging;
 
@@ -26,15 +29,22 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
     int index{0};
     for (auto data : textures)
     {
-        ImGui::Text(data.first.c_str());
+        int size = ImGui::GetWindowContentRegionMin().x + ImGui::GetWindowContentRegionMax().x;
+        size = std::min(128, size);
+        ImGui::Image((void *)data.first, ImVec2{(float)size, (float)size});
         if (ImGui::IsItemClicked(0))
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool
             { return (fs::is_regular_file(path) && isImage(path)); };
             UIUtil::open_function = [&registry, texture, index](const fs::path &path, const std::string &fileName)
             {
-                texture->editTexture(index, path, GL_TEXTURE_2D);
-                registry.updated<Engine::OpenGLTextureComponent>(selectedEntity);
+                unsigned int oldBuffer{texture->getTexture(index).first};
+                if (oldBuffer)
+                {
+                    textureIndex.unneedTexture(oldBuffer, texture.get());
+                }
+                texture->editTexture(
+                    index, textureIndex.needTexture(path, GL_TEXTURE_2D, texture.get()), GL_TEXTURE_2D);
             };
             UIUtil::openFileBrowser();
         }
@@ -45,10 +55,10 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
     {
         UIUtil::can_open_function = [](const fs::path &path) -> bool
         { return (fs::is_regular_file(path) && isImage(path)); };
-        UIUtil::open_function = [&](const fs::path &path, const std::string &fileName)
+        UIUtil::open_function = [texture](const fs::path &path, const std::string &fileName)
         {
-            texture->addTexture(path, GL_TEXTURE_2D);
-            registry.updated<Engine::OpenGLTextureComponent>(selectedEntity);
+            // TODO: texture type
+            texture->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D, texture.get()), GL_TEXTURE_2D);
         };
         UIUtil::openFileBrowser();
     }

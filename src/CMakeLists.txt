@@ -39,6 +39,7 @@ target_include_directories(engineCore INTERFACE Core/)
 
 set(OPENGL_HEADERS
     OpenGL/Util/textureLoader.h
+    OpenGL/Util/textureIndex.h
     OpenGL/Components/Shader/shader.h
     OpenGL/Components/Texture/texture.h
     OpenGL/Components/Material/material.h
@@ -51,6 +52,7 @@ set(OPENGL_HEADERS
 
 set(OPENGL_SOURCES
     OpenGL/Util/textureLoader.cpp
+    OpenGL/Util/textureIndex.cpp
     OpenGL/Components/Shader/shader.cpp
     OpenGL/Components/Texture/texture.cpp
     OpenGL/Components/Material/material.cpp
@@ -63,8 +65,6 @@ set(OPENGL_SOURCES
     OpenGL/Systems/RenderTracker/GeometryTracker/geometryTracker.cpp
     OpenGL/Systems/RenderTracker/TransformTracker/transformTracker.cpp
     OpenGL/Systems/RenderTracker/ShaderTracker/shaderTracker.cpp
-    OpenGL/Systems/RenderTracker/TextureTracker/textureIndex.cpp
-    OpenGL/Systems/RenderTracker/TextureTracker/textureTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/stb" "${BUILD_DIR}/external/stb")
 
