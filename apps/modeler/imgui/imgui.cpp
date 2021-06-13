@@ -6,8 +6,10 @@
 #include "Nodes/Light/light.h"
 #include "Nodes/OpenGLMaterial/openGLMaterial.h"
 #include "Nodes/OpenGLShader/openGLShader.h"
+#include "Nodes/Texture/texture.h"
 #include "Nodes/Transform/transform.h"
 #include "Nodes/helpers.h"
+#include "OpenGL/Components/Texture/texture.h"
 #include "Util/errorModal.h"
 #include "Util/fileBrowser.h"
 #include <Core/Components/Camera/camera.h>
@@ -355,6 +357,7 @@ void UI::render(Engine::Registry &registry)
             drawComponentNode<Engine::DirectionalLightComponent>("Directional Light", registry);
             drawComponentNode<Engine::PointLightComponent>("Point Light", registry);
             drawComponentNode<Engine::SpotLightComponent>("Spot Light", registry);
+            drawComponentNode<Engine::OpenGLTextureComponent>("Texture", registry);
         }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",

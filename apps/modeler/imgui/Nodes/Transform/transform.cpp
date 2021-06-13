@@ -31,19 +31,3 @@ void UICreation::createComponentNodeMain<Engine::TransformComponent>(
         registry.updated<Engine::TransformComponent>(selectedEntity);
     }
 }
-
-// void UICreation::drawTransformNode(Engine::Registry &registry)
-// {
-//     if (std::shared_ptr<Engine::TransformComponent> transform =
-//             registry.getComponent<Engine::TransformComponent>(selectedEntity))
-//     {
-//         createComponentNodeOutline<Engine::TransformComponent>(
-//             "Transform",
-//             registry,
-//             transform.get(),
-//             [&]()
-//             {
-//
-//             });
-//     }
-// }

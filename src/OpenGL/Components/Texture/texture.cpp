@@ -1,42 +1,18 @@
 #include "texture.h"
 
-#include "../../../Util/fileHandling.h"
-#include <glad/glad.h>
-#include <stb_image.h>
+namespace fs = std::filesystem;
 
-namespace filesystem = std::filesystem;
+Engine::OpenGLTextureComponent::OpenGLTextureComponent() {}
 
-Engine::OpenGLTextureComponent::OpenGLTextureComponent(const filesystem::path &path)
+void Engine::OpenGLTextureComponent::addTexture(const fs::path &path, unsigned int type)
 {
-    int width, height, n;
-    unsigned char *data = stbi_load(path.c_str(), &width, &height, &n, 0);
-
-    if (data != NULL)
-    {
-        throw "Couldn't load texture";
-    }
-
-    GLenum type;
-
-    switch (n)
-    {
-    case 3:
-        type = GL_RGB;
-        break;
-    case 4:
-        type = GL_RGBA;
-        break;
-    default:
-        throw "Unknown texture type";
-        break;
-    }
-
-    glGenTextures(1, &m_texture);
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, type, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    stbi_image_free(data);
+    ++m_numTextures;
+    m_textures.emplace_back(textureData{path, type});
 }
 
-Engine::OpenGLTextureComponent::~OpenGLTextureComponent() { glDeleteTextures(1, &m_texture); }
+const std::vector<Engine::OpenGLTextureComponent::textureData> &Engine::OpenGLTextureComponent::getTextures() const
+{
+    return m_textures;
+};
+
+unsigned int Engine::OpenGLTextureComponent::getNumTextures() const { return m_numTextures; }

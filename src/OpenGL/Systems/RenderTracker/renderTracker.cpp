@@ -6,9 +6,12 @@
 #include "../../../Core/ECS/registry.h"
 #include "../../Components/Material/material.h"
 #include "../../Components/Shader/shader.h"
+#include "../../Components/Texture/texture.h"
 
 Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : m_registry{registry}
 {
+    m_textureIndex = std::make_shared<OpenGLTextureIndex>();
+
     m_associateCallback = m_registry.onAdded<RenderComponent>(
         [this](unsigned int entity, std::weak_ptr<RenderComponent> render)
         {
@@ -22,13 +25,16 @@ Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : 
 
 void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
 {
-    m_entities.emplace(entity, entityData{nullptr, nullptr, nullptr, nullptr});
+    m_entities.emplace(entity, entityData{nullptr, nullptr, nullptr, nullptr, nullptr});
 
     ensureMaterial(entity);
 
     ensureGeometry(entity);
 
     ensureTransform(entity);
+
+    // TODO: texture not necessary
+    ensureTexture(entity);
 
     ensureShader(entity);
     /**
@@ -113,6 +119,23 @@ void Engine::Systems::OpenGLRenderTracker::ensureShader(unsigned int entity)
     std::get<3>(m_entities.at(entity)) = shader.get();
 }
 
+void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
+{
+    std::shared_ptr<OpenGLTextureComponent> texture{m_registry.getComponent<OpenGLTextureComponent>(entity)};
+    if (!texture)
+    {
+        texture = m_registry.addComponent<OpenGLTextureComponent>(entity, std::make_shared<OpenGLTextureComponent>());
+    }
+
+    // check if the transform is not currently known
+    if (m_textures.find(texture.get()) == m_textures.end())
+    {
+        m_textures.try_emplace(texture.get(), entity, m_registry, m_textureIndex);
+    }
+
+    std::get<4>(m_entities.at(entity)) = texture.get();
+}
+
 void Engine::Systems::OpenGLRenderTracker::render()
 {
     for (auto const &shaderMapEntry : m_shaders)
@@ -129,6 +152,7 @@ void Engine::Systems::OpenGLRenderTracker::render()
 
             glBindBufferBase(GL_UNIFORM_BUFFER, 0, materialUBO);
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, transformUBO);
+            m_textures.at(std::get<4>(data)).bindTextures();
             m_geometries.at(std::get<0>(data)).draw();
         }
     }

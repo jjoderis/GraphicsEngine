@@ -10,6 +10,7 @@
 #include <Core/ECS/registry.h>
 #include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
+#include <OpenGL/Components/Texture/texture.h>
 #include <cstring>
 #include <imgui.h>
 
@@ -68,6 +69,7 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
         UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
         UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>(entity, registry);
+        UICreation::createImGuiComponentDropTarget<Engine::OpenGLTextureComponent>(entity, registry);
 
         ImGui::SameLine();
         std::string id{"x##"};

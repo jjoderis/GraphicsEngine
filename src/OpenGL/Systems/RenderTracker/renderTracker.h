@@ -9,6 +9,8 @@
 #include "./GeometryTracker/geometryTracker.h"
 #include "./MaterialTracker/materialTracker.h"
 #include "./ShaderTracker/shaderTracker.h"
+#include "./TextureTracker/textureIndex.h"
+#include "./TextureTracker/textureTracker.h"
 #include "./TransformTracker/transformTracker.h"
 
 namespace Engine
@@ -50,8 +52,15 @@ private:
 
     std::map<OpenGLShaderComponent *, OpenGLRenderShaderTracker> m_shaders;
 
-    using entityData =
-        std::tuple<GeometryComponent *, OpenGLMaterialComponent *, TransformComponent *, OpenGLShaderComponent *>;
+    std::shared_ptr<OpenGLTextureIndex> m_textureIndex;
+
+    std::map<OpenGLTextureComponent *, OpenGLRenderTextureTracker> m_textures;
+
+    using entityData = std::tuple<GeometryComponent *,
+                                  OpenGLMaterialComponent *,
+                                  TransformComponent *,
+                                  OpenGLShaderComponent *,
+                                  OpenGLTextureComponent *>;
     std::map<unsigned int, entityData> m_entities;
 
     void makeRenderable(unsigned int entityId);
@@ -63,6 +72,8 @@ private:
     void ensureTransform(unsigned int entity);
 
     void ensureShader(unsigned int entity);
+
+    void ensureTexture(unsigned int entity);
 };
 
 } // namespace Systems

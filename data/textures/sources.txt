@@ -1,1 +1,3 @@
 container.jpg: https://learnopengl.com/img/textures/container.jpg
+earth.jpg: https://imgur.com/gallery/FSnkaa8/comment/61939767
+cube.jpg: http://paulbourke.net/panorama/cubemaps/

@@ -21,6 +21,7 @@
 #include <Math/math.h>
 #include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
+#include <OpenGL/Components/Texture/texture.h>
 #include <OpenGL/Renderer/renderer.h>
 #include <cstring>
 
@@ -76,9 +77,12 @@ int main()
                                    std::vector<Engine::MaterialUniformData>{{"diffuseColor", GL_FLOAT_VEC4, 0},
                                                                             {"specularColor", GL_FLOAT_VEC4, 16},
                                                                             {"specularExponent", GL_FLOAT, 32}}});
-    float defaultData[48]{1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 100.0, 0.0, 0.0, 0.0};
+    float defaultData[48]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0};
     float *properties{material->getProperty<float>(0)};
     std::memcpy(properties, defaultData, 9 * sizeof(float));
+    std::shared_ptr<Engine::OpenGLTextureComponent> texture = registry.addComponent<Engine::OpenGLTextureComponent>(
+        object1, std::make_shared<Engine::OpenGLTextureComponent>());
+    texture->addTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D);
 
     std::weak_ptr<Engine::TransformComponent> transform{
         registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};
@@ -88,7 +92,8 @@ int main()
         registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20))};
     registry.addComponent<Engine::OpenGLShaderComponent>(
         object1,
-        std::make_shared<Engine::OpenGLShaderComponent>(Engine::loadShaders("../../data/shaders/Phong_Shading")));
+        std::make_shared<Engine::OpenGLShaderComponent>(
+            Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture")));
     registry.addComponent<Engine::RenderComponent>(object1, std::make_shared<Engine::RenderComponent>());
 
     unsigned int object2{registry.addEntity()};
