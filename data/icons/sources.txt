@@ -1,0 +1,4 @@
+directory-icon.png: https://freeiconshop.com/icon/folder-open-icon-outline/
+file-icon.png: https://freeiconshop.com/icon/document-icon-outline/
+jpg-icon.png: https://freeiconshop.com/icon/jpg-icon-outline/
+png-icon.png: https://freeiconshop.com/icon/png-icon-outline/

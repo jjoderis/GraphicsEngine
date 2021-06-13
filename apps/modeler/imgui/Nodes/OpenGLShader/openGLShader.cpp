@@ -13,6 +13,8 @@ int current_selected_shader = 0;
 
 extern bool dragging;
 
+bool shaderModalOpen{0};
+
 void loadShader(const Engine::OpenGLShader &shader)
 {
     const char *shaderType{};
@@ -70,9 +72,12 @@ void drawShaderEditModal(unsigned int entity,
                          Engine::Registry &registry,
                          const std::shared_ptr<Engine::OpenGLShaderComponent> &shader)
 {
-    ImGui::SetNextWindowSize(ImVec2(520, 600));
+    if (!shaderModalOpen)
+    {
+        return;
+    }
 
-    if (ImGui::BeginPopupModal("Shader Editor", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("Shader Editor", &shaderModalOpen))
     {
         ImGui::Combo("##shader_type", &current_selected_shader, g_shaderTypes.data(), g_shaderTypes.size());
 
@@ -98,15 +103,18 @@ void drawShaderEditModal(unsigned int entity,
             };
             UIUtil::open_function = [](const fs::path &path, const std::string &fileName)
             { loadShader(Engine::loadShader(path)); };
-            ImGui::OpenPopup("File Browser");
+            UIUtil::openFileBrowser();
         }
 
-        ImGui::InputTextMultiline(
-            "##shader_source_input", &g_shaders[current_selected_shader].m_source, ImVec2(500, 599));
+        ImVec2 pos{ImGui::GetWindowContentRegionMin()};
+        ImVec2 end{ImGui::GetWindowContentRegionMax()};
+        ImVec2 textSize{pos.x + end.x, pos.y + end.y - 100};
+
+        ImGui::InputTextMultiline("##shader_source_input", &g_shaders[current_selected_shader].m_source, textSize);
 
         if (ImGui::Button("Close", ImVec2(120, 0)))
         {
-            ImGui::CloseCurrentPopup();
+            shaderModalOpen = 0;
         }
         ImGui::SameLine();
         if (ImGui::Button("Import##multi_shader", ImVec2(120, 0)))
@@ -114,7 +122,7 @@ void drawShaderEditModal(unsigned int entity,
             UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
             UIUtil::open_function = [](const fs::path &path, const std::string &fileName)
             { loadShaders(Engine::loadShaders(path.c_str())); };
-            ImGui::OpenPopup("File Browser");
+            UIUtil::openFileBrowser();
         }
         ImGui::SameLine();
         if (ImGui::Button("Export##mulit_shader", ImVec2(120, 0)))
@@ -122,7 +130,7 @@ void drawShaderEditModal(unsigned int entity,
             UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
             UIUtil::open_function = [](const fs::path &path, const std::string &fileName)
             { Engine::saveShaders(path, g_shaders); };
-            ImGui::OpenPopup("File Browser");
+            UIUtil::openFileBrowser();
         }
         ImGui::SameLine();
         if (ImGui::Button("Use", ImVec2(120, 0)))
@@ -139,11 +147,9 @@ void drawShaderEditModal(unsigned int entity,
             }
         }
 
-        UIUtil::drawFileBrowser();
-
         UIUtil::drawErrorModal(errorMessage);
 
-        ImGui::EndPopup();
+        ImGui::End();
     }
 }
 
@@ -156,7 +162,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLShaderComponent>(
     if (ImGui::Button("Edit Shaders"))
     {
         loadShaders(shader->getShaders());
-        ImGui::OpenPopup("Shader Editor");
+        shaderModalOpen = 1;
     }
     drawShaderEditModal(selectedEntity, registry, shader);
     const char *types[2]{"Points\0", "Triangles\0"};

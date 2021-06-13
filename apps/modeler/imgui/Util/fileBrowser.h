@@ -8,9 +8,12 @@ namespace fs = std::filesystem;
 
 namespace UIUtil
 {
+void initFileBrowserIcons();
+
 extern std::function<bool(const fs::path &)> can_open_function;
 extern std::function<void(const fs::path &, const std::string &)> open_function;
 
+void openFileBrowser();
 void drawFileBrowser();
 } // namespace UIUtil
 

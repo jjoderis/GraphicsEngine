@@ -1,9 +1,24 @@
 #include "fileBrowser.h"
 
+#include <glad/glad.h>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <iostream>
 #include <vector>
+
+#include <OpenGL/Util/textureLoader.h>
+
+using imageData = Engine::Util::textureInfo;
+
+imageData directoryIcon;
+imageData fileIcon;
+
+void UIUtil::initFileBrowserIcons()
+{
+    directoryIcon = Engine::Util::loadTexture("../../data/icons/directory-icon.png", GL_TEXTURE_2D, GL_RGBA);
+    fileIcon = Engine::Util::loadTexture("../../data/icons/file-icon.png", GL_TEXTURE_2D, GL_RGBA);
+}
 
 std::function<bool(const fs::path &)> UIUtil::can_open_function{[](const fs::path &) -> bool { return false; }};
 std::function<void(const fs::path &, const std::string &)> UIUtil::open_function{
@@ -14,6 +29,8 @@ std::string fileName{};
 std::vector<fs::path> currentDirectoryContent;
 bool initialized{false};
 int currentSelection{-1};
+
+bool visible{0};
 
 void changeDirectory(const fs::path path)
 {
@@ -27,7 +44,11 @@ void changeDirectory(const fs::path path)
         {
             if (entry.is_directory() || entry.is_regular_file())
             {
-                currentDirectoryContent.push_back(entry.path());
+                // don't show hidden files
+                if (entry.path().filename().c_str()[0] != '.')
+                {
+                    currentDirectoryContent.push_back(entry.path());
+                }
             }
         }
     }
@@ -48,6 +69,68 @@ void resetFileFunctions()
     UIUtil::open_function = [](const fs::path &, const std::string &) {};
 }
 
+unsigned int getIcon(const fs::path &path)
+{
+    if (fs::is_directory(path))
+    {
+        return directoryIcon.buffer;
+    }
+
+    return fileIcon.buffer;
+}
+
+void drawDirectoryEntries()
+{
+    ImVec2 iconSize{64.0, 64.0};
+    ImGuiStyle &style{ImGui::GetStyle()};
+    int entryCount{currentDirectoryContent.size()};
+    float window_visible_x2{ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x};
+
+    for (int i{0}; i < entryCount; ++i)
+    {
+        const fs::path &entry = currentDirectoryContent[i];
+
+        unsigned int buffer{getIcon(entry)};
+
+        ImGui::PushID(i);
+
+        ImGui::BeginGroup();
+        ImGui::ImageButton(((void *)buffer), iconSize);
+        ImGui::Text(entry.filename().c_str());
+        ImGui::EndGroup();
+
+        if (ImGui::IsItemClicked(0))
+        {
+            currentSelection = i;
+        }
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+        {
+            if (fs::is_directory(entry))
+            {
+                ImGui::PopID();
+                changeDirectory(entry);
+                return;
+            }
+            else if (UIUtil::can_open_function(entry))
+            {
+                UIUtil::open_function(entry, fileName);
+            }
+        }
+
+        float lastButtonX2{ImGui::GetItemRectMax().x};
+        float nextButtonX2{lastButtonX2 + style.ItemSpacing.x + iconSize.x};
+
+        if (i + 1 < entryCount && nextButtonX2 < window_visible_x2)
+        {
+            ImGui::SameLine();
+        }
+
+        ImGui::PopID();
+    }
+}
+
+void UIUtil::openFileBrowser() { visible = 1; }
+
 void UIUtil::drawFileBrowser()
 {
     if (!initialized)
@@ -56,10 +139,22 @@ void UIUtil::drawFileBrowser()
         initialized = true;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(550, 680));
-
-    if (ImGui::BeginPopupModal("File Browser", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (!visible)
     {
+        return;
+    }
+
+    if (ImGui::Begin("File Browser", &visible))
+    {
+        ImGui::Text(currentDirectory.c_str());
+
+        if (ImGui::Button("..##goto_parent_directory"))
+        {
+            currentSelection = -1;
+
+            changeDirectory(currentDirectory.parent_path());
+        }
+        ImGui::SameLine();
         ImGui::InputText("##file_name", &fileName);
         // Allow adding of new directory if there is some input and it doesn't contain a dot
         if (fileName.size() && (fileName.find('.') == std::string::npos))
@@ -71,41 +166,11 @@ void UIUtil::drawFileBrowser()
             }
         }
 
-        for (int i{0}; i < currentDirectoryContent.size(); ++i)
-        {
-            const fs::path &entry = currentDirectoryContent[i];
+        drawDirectoryEntries();
 
-            // doesn't work for some reason
-            if (ImGui::Selectable(entry.c_str(),
-                                  i == currentSelection,
-                                  ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowDoubleClick))
-            {
-                currentSelection = i;
-                if (ImGui::IsMouseDoubleClicked(0))
-                {
-                    if (fs::is_directory(entry))
-                    {
-                        changeDirectory(entry);
-                    }
-                    else if (can_open_function(entry))
-                    {
-                        open_function(entry, fileName);
-                    }
-                }
-            }
-        }
-        if (ImGui::Selectable(
-                "..", false, ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowDoubleClick))
-        {
-            currentSelection = -1;
-            if (ImGui::IsMouseDoubleClicked(0))
-            {
-                changeDirectory(currentDirectory.parent_path());
-            }
-        }
         if (ImGui::Button("Close", ImVec2(120, 0)))
         {
-            ImGui::CloseCurrentPopup();
+            visible = 0;
         }
         bool openable{false};
 
@@ -137,7 +202,7 @@ void UIUtil::drawFileBrowser()
                 }
                 currentSelection = -1;
                 resetFileFunctions();
-                ImGui::CloseCurrentPopup();
+                visible = 0;
             }
         }
 
@@ -146,6 +211,6 @@ void UIUtil::drawFileBrowser()
             ImGui::PopStyleVar();
         }
 
-        ImGui::EndPopup();
+        ImGui::End();
     }
 }

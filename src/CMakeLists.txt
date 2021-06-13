@@ -38,6 +38,7 @@ target_include_directories(engineCore INTERFACE Core/)
 # engine OpengGL specific library
 
 set(OPENGL_HEADERS
+    OpenGL/Util/textureLoader.h
     OpenGL/Components/Shader/shader.h
     OpenGL/Components/Texture/texture.h
     OpenGL/Components/Material/material.h
@@ -49,6 +50,7 @@ set(OPENGL_HEADERS
 )
 
 set(OPENGL_SOURCES
+    OpenGL/Util/textureLoader.cpp
     OpenGL/Components/Shader/shader.cpp
     OpenGL/Components/Texture/texture.cpp
     OpenGL/Components/Material/material.cpp

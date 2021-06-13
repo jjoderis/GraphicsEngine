@@ -31,12 +31,12 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool
             { return (fs::is_regular_file(path) && isImage(path)); };
-            UIUtil::open_function = [&, index](const fs::path &path, const std::string &fileName)
+            UIUtil::open_function = [&registry, texture, index](const fs::path &path, const std::string &fileName)
             {
                 texture->editTexture(index, path, GL_TEXTURE_2D);
                 registry.updated<Engine::OpenGLTextureComponent>(selectedEntity);
             };
-            ImGui::OpenPopup("File Browser");
+            UIUtil::openFileBrowser();
         }
         ++index;
     }
@@ -50,8 +50,6 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
             texture->addTexture(path, GL_TEXTURE_2D);
             registry.updated<Engine::OpenGLTextureComponent>(selectedEntity);
         };
-        ImGui::OpenPopup("File Browser");
+        UIUtil::openFileBrowser();
     }
-
-    UIUtil::drawFileBrowser();
 }

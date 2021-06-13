@@ -75,6 +75,8 @@ void UI::init(Engine::Registry &registry)
         registry.addComponent<Engine::CameraComponent>(mainCamera, std::make_shared<Engine::CameraComponent>(registry));
     camera->updateAspect((float)width / (float)height);
     registry.updated<Engine::CameraComponent>(mainCamera);
+
+    UIUtil::initFileBrowserIcons();
 }
 
 void UI::preRender()
@@ -100,7 +102,7 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
             };
             UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
             { registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::loadOffFile(path)); };
-            ImGui::OpenPopup("File Browser");
+            UIUtil::openFileBrowser();
         }
         if (ImGui::Button("Blank"))
         {
@@ -144,7 +146,6 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
             ImGui::EndPopup();
         }
 
-        UIUtil::drawFileBrowser();
         ImGui::EndPopup();
     }
 }
@@ -365,6 +366,8 @@ void UI::render(Engine::Registry &registry)
                     ImGui::GetIO().Framerate);
         ImGui::End();
     }
+
+    UIUtil::drawFileBrowser();
 
     ImGui::Render();
 }
