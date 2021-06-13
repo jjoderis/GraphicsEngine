@@ -8,6 +8,13 @@
 
 extern bool dragging;
 
+bool isImage(const fs::path &path)
+{
+    fs::path extension{path.extension().c_str()};
+
+    return extension == ".jpg" || extension == ".jpeg" || extension == ".png";
+}
+
 template <>
 void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
     std::shared_ptr<Engine::OpenGLTextureComponent> texture, Engine::Registry &registry)
@@ -16,15 +23,28 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
 
     auto textures{texture->getTextures()};
 
+    int index{0};
     for (auto data : textures)
     {
         ImGui::Text(data.first.c_str());
+        if (ImGui::IsItemClicked(0))
+        {
+            UIUtil::can_open_function = [](const fs::path &path) -> bool
+            { return (fs::is_regular_file(path) && isImage(path)); };
+            UIUtil::open_function = [&, index](const fs::path &path, const std::string &fileName)
+            {
+                texture->editTexture(index, path, GL_TEXTURE_2D);
+                registry.updated<Engine::OpenGLTextureComponent>(selectedEntity);
+            };
+            ImGui::OpenPopup("File Browser");
+        }
+        ++index;
     }
 
     if (ImGui::Button("Add##new_texture"))
     {
         UIUtil::can_open_function = [](const fs::path &path) -> bool
-        { return (fs::is_regular_file(path) && path.extension() == ".jpg"); };
+        { return (fs::is_regular_file(path) && isImage(path)); };
         UIUtil::open_function = [&](const fs::path &path, const std::string &fileName)
         {
             texture->addTexture(path, GL_TEXTURE_2D);
@@ -35,48 +55,3 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
 
     UIUtil::drawFileBrowser();
 }
-
-// template <>
-// void UICreation::createComponentNodeMain<Engine::TransformComponent>(
-//     std::shared_ptr<Engine::TransformComponent> transform, Engine::Registry &registry)
-// {
-//     createImGuiComponentDragSource<Engine::TransformComponent>(dragging);
-
-//     ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
-//     if (ImGui::IsItemEdited())
-//     {
-//         transform->update();
-//         registry.updated<Engine::TransformComponent>(selectedEntity);
-//     }
-//     ImGui::DragFloat3("Scaling", transform->getScaling().raw(), 0.1);
-//     if (ImGui::IsItemEdited())
-//     {
-//         transform->update();
-//         registry.updated<Engine::TransformComponent>(selectedEntity);
-//     }
-
-//     auto rotDeg = MathLib::Util::radToDeg(transform->getRotation());
-//     ImGui::DragFloat3("Rotation", rotDeg.raw(), 1.0);
-//     if (ImGui::IsItemEdited())
-//     {
-//         transform->setRotation(MathLib::Util::degToRad(rotDeg));
-//         transform->update();
-//         registry.updated<Engine::TransformComponent>(selectedEntity);
-//     }
-// }
-
-// void UICreation::drawTransformNode(Engine::Registry &registry)
-// {
-//     if (std::shared_ptr<Engine::TransformComponent> transform =
-//             registry.getComponent<Engine::TransformComponent>(selectedEntity))
-//     {
-//         createComponentNodeOutline<Engine::TransformComponent>(
-//             "Transform",
-//             registry,
-//             transform.get(),
-//             [&]()
-//             {
-//
-//             });
-//     }
-// }

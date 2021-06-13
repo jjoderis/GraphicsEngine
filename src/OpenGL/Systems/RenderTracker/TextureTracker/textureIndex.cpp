@@ -19,9 +19,6 @@ Engine::Systems::OpenGLTextureIndex::~OpenGLTextureIndex()
 unsigned int
 Engine::Systems::OpenGLTextureIndex::needTexture(const fs::path &path, unsigned int type, OpenGLTextureComponent *user)
 {
-    bool pathUnknown = false;
-    bool typeUnknown = false;
-
     if (!m_textures.count(path) || !m_textures.at(path).count(type))
     {
         // TODO: create texture with given type

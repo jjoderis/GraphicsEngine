@@ -14,6 +14,8 @@ public:
     OpenGLTextureComponent();
 
     void addTexture(const std::filesystem::path &path, unsigned int type);
+    void editTexture(int index, const std::filesystem::path &path, unsigned int type);
+
     using textureData = std::pair<std::filesystem::path, unsigned int>;
     const std::vector<textureData> &getTextures() const;
     unsigned int getNumTextures() const;

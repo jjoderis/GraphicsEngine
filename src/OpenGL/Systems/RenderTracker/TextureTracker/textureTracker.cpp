@@ -43,6 +43,11 @@ void Engine::Systems::OpenGLRenderTextureTracker::update(OpenGLTextureComponent 
         if (std::get<0>(currData) != newData.first || std::get<1>(currData) != newData.second)
         {
             // TODO: check for old data and remove if necessary
+            if (!std::get<0>(currData).empty())
+            {
+                m_index->unneedTexture(std::get<0>(currData), std::get<1>(currData), texture);
+            }
+
             unsigned int textureIndex = m_index->needTexture(newData.first, newData.second, texture);
             std::get<0>(currData) = newData.first;
             std::get<1>(currData) = newData.second;
