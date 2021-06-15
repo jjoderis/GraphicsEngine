@@ -184,6 +184,15 @@ public:
 
     template <typename ComponentType>
     std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ComponentType>)>>
+    onUpdate(std::function<void(unsigned int, std::weak_ptr<ComponentType>)> &&cb)
+    {
+        ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
+
+        return compTable->onUpdate(std::move(cb));
+    }
+
+    template <typename ComponentType>
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ComponentType>)>>
     onUpdate(unsigned int entityId, std::function<void(unsigned int, std::weak_ptr<ComponentType>)> &&cb)
     {
         ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
@@ -193,11 +202,11 @@ public:
 
     template <typename ComponentType>
     std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ComponentType>)>>
-    onComponentSwap(unsigned int entityId, std::function<void(unsigned int, std::weak_ptr<ComponentType>)> &&cb)
+    onComponentSwap(std::function<void(unsigned int, std::weak_ptr<ComponentType>)> &&cb)
     {
         ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
 
-        return compTable->onComponentSwap(entityId, std::move(cb));
+        return compTable->onComponentSwap(std::move(cb));
     }
 
     template <typename ComponentType>

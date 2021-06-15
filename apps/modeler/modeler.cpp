@@ -23,6 +23,7 @@
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Components/Texture/texture.h>
 #include <OpenGL/Renderer/renderer.h>
+#include <OpenGL/Systems/GeometryTracker/geometryTracker.h>
 #include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 
@@ -54,6 +55,7 @@ int main()
 
     Engine::OpenGLRenderer *renderer = new Engine::OpenGLRenderer{registry};
     Engine::Systems::HierarchyTracker hierarchyTracker{registry};
+    Engine::Systems::OpenGLGeometryTracker geometryTracker{registry};
 
     // we have to delete the renderer before we tear down the OpenGL Context => we have to be able to delete the
     // renderer before this function ends

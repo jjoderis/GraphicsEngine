@@ -1,19 +1,13 @@
-#include "geometryTracker.h"
+#include "openGLGeometry.h"
 
-#include "../../../../Core/Components/Geometry/geometry.h"
-#include "../../../../Core/ECS/registry.h"
+#include "../../../Core/Components/Geometry/geometry.h"
+#include "../../../Core/Math/math.h"
 #include <glad/glad.h>
+#include <vector>
 
-Engine::Systems::OpenGLRenderGeometryTracker::OpenGLRenderGeometryTracker(unsigned int entity, Registry &registry)
-    : m_registry{registry}
-{
-    m_updateCallback = m_registry.onUpdate<Engine::GeometryComponent>(
-        entity,
-        [&](unsigned int updateEntity, std::weak_ptr<GeometryComponent> geometry) { update(geometry.lock().get()); });
-    update(registry.getComponent<GeometryComponent>(entity).get());
-}
+Engine::OpenGLGeometryComponent::OpenGLGeometryComponent(GeometryComponent *geometry) { update(geometry); }
 
-Engine::Systems::OpenGLRenderGeometryTracker::~OpenGLRenderGeometryTracker()
+Engine::OpenGLGeometryComponent::~OpenGLGeometryComponent()
 {
     if (m_VAO > 0)
     {
@@ -34,7 +28,7 @@ constexpr size_t normalSize{3 * sizeof(float)};
 constexpr size_t texCoordSize{2 * sizeof(float)};
 constexpr size_t faceSize{sizeof(unsigned int)};
 
-void Engine::Systems::OpenGLRenderGeometryTracker::update(GeometryComponent *geometry)
+void Engine::OpenGLGeometryComponent::update(GeometryComponent *geometry)
 {
     std::vector<Math::Vector3> &vertices{geometry->getVertices()};
     std::vector<Math::Vector3> &normals{geometry->getNormals()};
@@ -69,10 +63,12 @@ void Engine::Systems::OpenGLRenderGeometryTracker::update(GeometryComponent *geo
     if (m_VBO > 0 && (m_numPoints != vertices.size() || m_useNormals != useNormals || m_useTexCoords != m_useTexCoords))
     {
         glDeleteBuffers(1, &m_VBO);
+        m_VBO = 0;
     }
     if (m_EBO > 0 && m_numFaces != faces.size())
     {
         glDeleteBuffers(1, &m_EBO);
+        m_EBO = 0;
     }
 
     m_numPoints = vertices.size();
@@ -132,7 +128,7 @@ void Engine::Systems::OpenGLRenderGeometryTracker::update(GeometryComponent *geo
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, faces.size() * faceSize, faces.data());
 }
 
-void Engine::Systems::OpenGLRenderGeometryTracker::draw()
+void Engine::OpenGLGeometryComponent::draw()
 {
     glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, m_numFaces, GL_UNSIGNED_INT, 0);

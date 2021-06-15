@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 
-#include "./GeometryTracker/geometryTracker.h"
 #include "./ShaderTracker/shaderTracker.h"
 #include "./TransformTracker/transformTracker.h"
 
@@ -41,8 +40,6 @@ private:
 
     // callback that tracks addition of new render components
     componentCallback<RenderComponent> m_associateCallback;
-
-    std::map<GeometryComponent *, OpenGLRenderGeometryTracker> m_geometries;
 
     std::map<TransformComponent *, OpenGLRenderTransformTracker> m_transforms;
 

@@ -24,10 +24,12 @@ private:
     std::list<std::weak_ptr<component_table_callback>> m_addCallbacks{};
     // callbacks that are called before a component is removed from any entity
     std::list<std::weak_ptr<component_table_callback>> m_removeCallbacks{};
-    // callbacks for the updates of a specific component
-    std::vector<std::list<std::weak_ptr<component_table_callback>>> m_updateCallbacks{};
+    // callbacks that are called when any component is updated
+    std::list<std::weak_ptr<component_table_callback>> m_updateCallbacks{};
     // callbacks for when the component on an entity is swapped out with another
-    std::vector<std::list<std::weak_ptr<component_table_callback>>> m_swapCallbacks;
+    std::list<std::weak_ptr<component_table_callback>> m_swapCallbacks{};
+    // callbacks for the updates of a specific component
+    std::vector<std::list<std::weak_ptr<component_table_callback>>> m_componentUpdateCallbacks{};
 
     //  Add component only if it does not exit: return index
     int ensureComponent(std::weak_ptr<ComponentType> weakComponent)
@@ -43,7 +45,7 @@ private:
 
         m_components.push_back(component);
         m_owners.push_back(std::list<unsigned int>{});
-        m_updateCallbacks.push_back(std::list<std::weak_ptr<component_table_callback>>{});
+        m_componentUpdateCallbacks.push_back(std::list<std::weak_ptr<component_table_callback>>{});
         return m_components.size() - 1;
     }
 
@@ -52,7 +54,6 @@ private:
         if (entityId >= m_sparse.size())
         {
             m_sparse.resize(entityId + 1, -1);
-            m_swapCallbacks.resize(entityId + 1, std::list<std::weak_ptr<component_table_callback>>{});
         }
     }
 
@@ -76,11 +77,7 @@ private:
     }
 
 public:
-    ComponentTable(unsigned int numEntities)
-    {
-        m_sparse = std::vector<int>(numEntities, -1);
-        m_swapCallbacks = std::vector<std::list<std::weak_ptr<component_table_callback>>>(numEntities);
-    }
+    ComponentTable(unsigned int numEntities) { m_sparse = std::vector<int>(numEntities, -1); }
 
     std::shared_ptr<ComponentType> addComponent(unsigned int entityId, std::weak_ptr<ComponentType> component)
     {
@@ -101,7 +98,7 @@ public:
             }
 
             override = true;
-            invokeAndCleanup(m_swapCallbacks[entityId], entityId, component);
+            invokeAndCleanup(m_swapCallbacks, entityId, component);
             // if the entity points to another component
             // remove the other component from the entity
             bool deleted = removeComponent(entityId, override);
@@ -163,11 +160,7 @@ public:
 
             m_components.erase(it + componentIndex);
             m_owners.erase(m_owners.begin() + componentIndex);
-            m_updateCallbacks.erase(m_updateCallbacks.begin() + componentIndex);
-            if (!silent)
-            {
-                m_swapCallbacks[entityId].clear();
-            }
+            m_componentUpdateCallbacks.erase(m_componentUpdateCallbacks.begin() + componentIndex);
         }
 
         m_sparse[entityId] = -1;
@@ -233,28 +226,30 @@ public:
         return shared;
     }
 
+    std::shared_ptr<component_table_callback> onUpdate(component_table_callback &&cb)
+    {
+        std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
+        m_updateCallbacks.push_back(shared);
+        return shared;
+    }
+
     std::shared_ptr<component_table_callback> onUpdate(unsigned int entityId, component_table_callback &&cb)
     {
         if (m_sparse[entityId] > -1)
         {
             std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
-            m_updateCallbacks[m_sparse[entityId]].push_back(shared);
+            m_componentUpdateCallbacks[m_sparse[entityId]].push_back(shared);
             return shared;
         }
 
         return std::shared_ptr<component_table_callback>{};
     }
-    std::shared_ptr<component_table_callback> onComponentSwap(unsigned int entity, component_table_callback &&cb)
-    {
-        // only add if the entity actually has a component of this type
-        if (m_sparse[entity] > -1)
-        {
-            std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
-            m_swapCallbacks[entity].push_back(shared);
-            return shared;
-        }
 
-        return std::shared_ptr<component_table_callback>{};
+    std::shared_ptr<component_table_callback> onComponentSwap(component_table_callback &&cb)
+    {
+        std::shared_ptr<component_table_callback> shared = std::make_shared<component_table_callback>(cb);
+        m_swapCallbacks.push_back(shared);
+        return shared;
     }
 
     // called after one updated a coponent of an entity to signal the update to
@@ -264,10 +259,11 @@ public:
         int componentIndex = m_sparse[entityId];
         if (componentIndex > -1)
         {
+            invokeAndCleanup(m_updateCallbacks, entityId, m_components[componentIndex]);
             // There was an error where the cb list changed while being inside invokeAndCleanup
-            std::list<std::weak_ptr<component_table_callback>> cbs{m_updateCallbacks[componentIndex]};
+            std::list<std::weak_ptr<component_table_callback>> cbs{m_componentUpdateCallbacks[componentIndex]};
             invokeAndCleanup(cbs, entityId, m_components[componentIndex]);
-            m_updateCallbacks[componentIndex] = cbs;
+            m_componentUpdateCallbacks[componentIndex] = cbs;
         }
     }
 };

@@ -6,6 +6,7 @@
 #include "../../../Core/Components/Transform/transform.h"
 #include "../../../Core/ECS/registry.h"
 #include "../../Components/Material/material.h"
+#include "../../Components/OpenGLGeometry/openGLGeometry.h"
 #include "../../Components/Shader/shader.h"
 #include "../../Components/Texture/texture.h"
 
@@ -52,20 +53,32 @@ void Engine::Systems::OpenGLRenderTracker::ensureGeometry(unsigned int entity)
     std::shared_ptr<GeometryComponent> geometry{m_registry.getComponent<GeometryComponent>(entity)};
     if (!geometry)
     {
-        geometry = m_registry.addComponent<GeometryComponent>(
-            entity,
-            std::make_shared<Engine::GeometryComponent>(
-                std::initializer_list<Engine::Math::Vector3>{Engine::Math::Vector3{0.5, -0.5, 0.0},
-                                                             Engine::Math::Vector3{-0.5, -0.5, 0.0},
-                                                             Engine::Math::Vector3{0.0, 0.5, 0.0}},
-                std::initializer_list<unsigned int>{0, 1, 2}));
-        geometry->calculateNormals();
+        geometry = m_registry.addComponent<GeometryComponent>(entity, std::make_shared<Engine::GeometryComponent>());
     }
 
-    // check if the geometry is not currently known
-    if (m_geometries.find(geometry.get()) == m_geometries.end())
+    // make sure the entity has a OpenGLGeometryComponent
+    if (!m_registry.hasComponent<Engine::OpenGLGeometryComponent>(entity))
     {
-        m_geometries.try_emplace(geometry.get(), entity, m_registry);
+
+        std::shared_ptr<Engine::OpenGLGeometryComponent> openGLGeometry;
+
+        // check if another owner of the geometry has a fitting OpenGLGeometryComponent
+        // TODO: check if the existing OpenGLGeometry provides data needed for Shader
+        for (unsigned int owner : m_registry.getOwners<Engine::GeometryComponent>(entity))
+        {
+            if (auto existingOpenGLGeometry = m_registry.getComponent<Engine::OpenGLGeometryComponent>(owner))
+            {
+                openGLGeometry = existingOpenGLGeometry;
+                break;
+            }
+        }
+
+        if (!openGLGeometry)
+        {
+            openGLGeometry = std::make_shared<Engine::OpenGLGeometryComponent>(geometry.get());
+        }
+
+        m_registry.addComponent<Engine::OpenGLGeometryComponent>(entity, openGLGeometry);
     }
 
     std::get<0>(m_entities.at(entity)) = geometry.get();
@@ -142,7 +155,7 @@ void Engine::Systems::OpenGLRenderTracker::render()
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, transformUBO);
 
             std::get<4>(data)->bind();
-            m_geometries.at(std::get<0>(data)).draw();
+            m_registry.getComponent<Engine::OpenGLGeometryComponent>(entity)->draw();
         }
     }
 

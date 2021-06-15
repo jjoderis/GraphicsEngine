@@ -123,9 +123,14 @@ void Util::loadOBJFile(Engine::Registry &registry,
                         {
                             gTexCoords.push_back(texCoords[vt]);
                         }
-                        if (vnStr != "")
+                        // TODO: Find reason for crash when there are no normals on render
+                        // if (vnStr != "")
+                        // {
+                        //     gNormals.push_back(normals[vn]);
+                        // }
+                        if (vnStr == "")
                         {
-                            gNormals.push_back(normals[vn]);
+                            geometry->calculateNormals();
                         }
                     }
                     indices.push_back(refMap.at(refStr));

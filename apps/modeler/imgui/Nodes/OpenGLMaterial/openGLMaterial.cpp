@@ -24,6 +24,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
             ImGui::DragFloat(name, material->getProperty<float>(offset));
             if (ImGui::IsItemEdited())
             {
+                material->update();
                 registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
             }
             break;
@@ -31,6 +32,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
             ImGui::ColorEdit4(name, material->getProperty<float>(offset));
             if (ImGui::IsItemEdited())
             {
+                material->update();
                 registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
             }
             break;
@@ -38,6 +40,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
             ImGui::ColorEdit3(name, material->getProperty<float>(offset));
             if (ImGui::IsItemEdited())
             {
+                material->update();
                 registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
             }
             break;
