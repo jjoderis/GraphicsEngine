@@ -50,8 +50,9 @@ bool createComponentNodeStart(const char *componentName)
 }
 
 template <typename ComponentType>
-void makeRemovable(const char *componentName, Engine::Registry &registry)
+bool makeRemovable(const char *componentName, Engine::Registry &registry)
 {
+    bool wasRemoved = false;
     char buff[64]{'\0'};
     sprintf(buff, "%s_remove_popup", componentName);
     if (ImGui::IsItemClicked(1))
@@ -65,15 +66,18 @@ void makeRemovable(const char *componentName, Engine::Registry &registry)
         if (ImGui::Button(buff))
         {
             registry.removeComponent<ComponentType>(selectedEntity);
+            wasRemoved = true;
         }
         ImGui::EndPopup();
     }
+
+    return wasRemoved;
 }
 
 template <typename ComponentType>
-void createHeaderControls(const char *componentName, Engine::Registry &registry)
+bool createHeaderControls(const char *componentName, Engine::Registry &registry)
 {
-    makeRemovable<ComponentType>(componentName, registry);
+    return makeRemovable<ComponentType>(componentName, registry);
 }
 
 template <typename ComponentType>

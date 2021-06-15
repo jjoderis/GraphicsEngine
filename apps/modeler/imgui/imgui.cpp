@@ -208,9 +208,9 @@ void drawComponentNode(const char *componentName, Engine::Registry &registry)
     if (registry.hasComponent<ComponentType>(selectedEntity))
     {
         bool isOpen = UICreation::createComponentNodeStart<ComponentType>(componentName);
-        UICreation::createHeaderControls<ComponentType>(componentName, registry);
+        bool wasRemoved = UICreation::createHeaderControls<ComponentType>(componentName, registry);
 
-        if (isOpen)
+        if (isOpen && !wasRemoved)
         {
             std::shared_ptr<ComponentType> component = registry.getComponent<ComponentType>(selectedEntity);
             UICreation::createComponentNodeMain<ComponentType>(component, registry);
