@@ -1,5 +1,7 @@
 #include "material.h"
 
+#include <algorithm>
+#include <cstring>
 #include <glad/glad.h>
 
 Engine::OpenGLMaterialComponent::~OpenGLMaterialComponent()
@@ -15,10 +17,44 @@ void Engine::OpenGLMaterialComponent::setMaterialData(const ShaderMaterialData &
     if (materialData != m_dataInfo)
     {
         // TODO: keep data that is reused in new shader
-        int dataSize{std::get<0>(materialData)};
-        int oldDataSize(std::get<0>(m_dataInfo));
+        int dataSize{materialData.first};
+        int oldDataSize(m_dataInfo.first);
 
         std::vector<char> newData(dataSize, 0);
+
+        auto oldUniformsData{m_dataInfo.second};
+
+        for (auto newUniformData : materialData.second)
+        {
+            auto itr = std::find_if(oldUniformsData.begin(),
+                                    oldUniformsData.end(),
+                                    [&](MaterialUniformData &entry) {
+                                        return std::get<0>(entry) == std::get<0>(newUniformData) &&
+                                               std::get<1>(entry) == std::get<1>(newUniformData);
+                                    });
+            if (itr != oldUniformsData.end())
+            {
+                switch (std::get<1>(*itr.base()))
+                {
+                case GL_FLOAT:
+                    std::memcpy(newData.data() + std::get<2>(newUniformData),
+                                m_data.data() + std::get<2>(*itr.base()),
+                                sizeof(float));
+                    break;
+
+                case GL_FLOAT_VEC4:
+                    std::memcpy(newData.data() + std::get<2>(newUniformData),
+                                m_data.data() + std::get<2>(*itr.base()),
+                                4 * sizeof(float));
+                    break;
+                case GL_FLOAT_VEC3:
+                    std::memcpy(newData.data() + std::get<2>(newUniformData),
+                                m_data.data() + std::get<2>(*itr.base()),
+                                3 * sizeof(float));
+                    break;
+                }
+            }
+        }
 
         if (m_UBO > 0 && dataSize != oldDataSize)
         {
@@ -34,7 +70,7 @@ void Engine::OpenGLMaterialComponent::setMaterialData(const ShaderMaterialData &
 
 void Engine::OpenGLMaterialComponent::update()
 {
-    int materialDataSize{std::get<0>(m_dataInfo)};
+    int materialDataSize{m_dataInfo.first};
 
     if (m_UBO == 0)
     {

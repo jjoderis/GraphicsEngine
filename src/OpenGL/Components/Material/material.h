@@ -12,7 +12,7 @@ namespace Engine
 using MaterialUniformData = std::tuple<std::string, unsigned int, int>;
 // contains information about the size of the material information and the informations about material properties
 // size, materialUniformData (vector)
-using ShaderMaterialData = std::tuple<int, std::vector<MaterialUniformData>>;
+using ShaderMaterialData = std::pair<int, std::vector<MaterialUniformData>>;
 class OpenGLMaterialComponent
 {
 public:

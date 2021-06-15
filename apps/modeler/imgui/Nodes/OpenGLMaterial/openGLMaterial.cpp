@@ -10,7 +10,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
 {
     createImGuiComponentDragSource<Engine::OpenGLMaterialComponent>(dragging);
 
-    std::vector<Engine::MaterialUniformData> &materialsData{std::get<1>(material->getMaterialData())};
+    std::vector<Engine::MaterialUniformData> &materialsData{material->getMaterialData().second};
 
     for (Engine::MaterialUniformData &materialData : materialsData)
     {
