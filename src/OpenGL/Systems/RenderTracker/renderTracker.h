@@ -6,8 +6,6 @@
 #include <map>
 #include <memory>
 
-#include "./ShaderTracker/shaderTracker.h"
-
 namespace Engine
 {
 class Registry;
@@ -39,8 +37,6 @@ private:
     void ensureMaterial(unsigned int entity);
 
     void ensureTransform(unsigned int entity);
-
-    void ensureShader(unsigned int entity);
 
     void ensureTexture(unsigned int entity);
 };

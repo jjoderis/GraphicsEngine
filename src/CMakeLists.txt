@@ -51,6 +51,8 @@ set(OPENGL_HEADERS
     OpenGL/Systems/LightsTracker/lightsTracker.h
     OpenGL/Systems/RenderTracker/renderTracker.h
     OpenGL/Systems/GeometryTracker/geometryTracker.h
+    OpenGL/Systems/ShaderTracker/shaderTracker.h
+    OpenGL/Systems/MaterialTracker/materialTracker.h
     OpenGL/Systems/TransformTracker/transformTracker.h
 )
 
@@ -68,7 +70,8 @@ set(OPENGL_SOURCES
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
     OpenGL/Systems/RenderTracker/renderTracker.cpp
     OpenGL/Systems/GeometryTracker/geometryTracker.cpp
-    OpenGL/Systems/RenderTracker/ShaderTracker/shaderTracker.cpp
+    OpenGL/Systems/ShaderTracker/shaderTracker.cpp
+    OpenGL/Systems/MaterialTracker/materialTracker.cpp
     OpenGL/Systems/TransformTracker/transformTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/stb" "${BUILD_DIR}/external/stb")

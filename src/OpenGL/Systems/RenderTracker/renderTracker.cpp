@@ -28,8 +28,6 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
     // TODO: texture not always necessary
     ensureTexture(entity);
 
-    ensureShader(entity);
-
     // render children
     if (auto hierarchy = m_registry.getComponent<Engine::HierarchyComponent>(entity))
     {
@@ -98,19 +96,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureTransform(unsigned int entity)
         m_registry.addComponent<Engine::OpenGLTransformComponent>(
             entity, std::make_shared<Engine::OpenGLTransformComponent>(transform.get()));
     }
-}
-
-void Engine::Systems::OpenGLRenderTracker::ensureShader(unsigned int entity)
-{
-    // we expect the shader to exist for now since creating the shader here would need some kind of base
-    // shader code to be defined here
-    // std::shared_ptr<OpenGLShaderComponent> shader{m_registry.getComponent<OpenGLShaderComponent>(entity)};
-
-    // // check if the shader is not currently known
-    // if (m_shaders.find(shader.get()) == m_shaders.end())
-    // {
-    //     m_shaders.try_emplace(shader.get(), entity, m_registry);
-    // }
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)

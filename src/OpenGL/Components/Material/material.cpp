@@ -14,6 +14,7 @@ void Engine::OpenGLMaterialComponent::setMaterialData(const ShaderMaterialData &
 {
     if (materialData != m_dataInfo)
     {
+        // TODO: keep data that is reused in new shader
         int dataSize{std::get<0>(materialData)};
         int oldDataSize(std::get<0>(m_dataInfo));
 
