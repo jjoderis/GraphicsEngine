@@ -44,12 +44,14 @@ set(OPENGL_HEADERS
     OpenGL/Components/Texture/texture.h
     OpenGL/Components/Material/material.h
     OpenGL/Components/OpenGLGeometry/openGLGeometry.h
+    OpenGL/Components/OpenGLTransform/openGLTransform.h
     OpenGL/Shader/shader.h
     OpenGL/Renderer/renderer.h
     OpenGL/Systems/CameraTracker/cameraTracker.h
     OpenGL/Systems/LightsTracker/lightsTracker.h
     OpenGL/Systems/RenderTracker/renderTracker.h
     OpenGL/Systems/GeometryTracker/geometryTracker.h
+    OpenGL/Systems/TransformTracker/transformTracker.h
 )
 
 set(OPENGL_SOURCES
@@ -59,14 +61,15 @@ set(OPENGL_SOURCES
     OpenGL/Components/Texture/texture.cpp
     OpenGL/Components/Material/material.cpp
     OpenGL/Components/OpenGLGeometry/openGLGeometry.cpp
+    OpenGL/Components/OpenGLTransform/openGLTransform.cpp
     OpenGL/Shader/shader.cpp
     OpenGL/Renderer/renderer.cpp
     OpenGL/Systems/CameraTracker/cameraTracker.cpp
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
     OpenGL/Systems/RenderTracker/renderTracker.cpp
     OpenGL/Systems/GeometryTracker/geometryTracker.cpp
-    OpenGL/Systems/RenderTracker/TransformTracker/transformTracker.cpp
     OpenGL/Systems/RenderTracker/ShaderTracker/shaderTracker.cpp
+    OpenGL/Systems/TransformTracker/transformTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/stb" "${BUILD_DIR}/external/stb")
 

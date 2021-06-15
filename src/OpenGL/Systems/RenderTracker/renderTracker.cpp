@@ -7,33 +7,25 @@
 #include "../../../Core/ECS/registry.h"
 #include "../../Components/Material/material.h"
 #include "../../Components/OpenGLGeometry/openGLGeometry.h"
+#include "../../Components/OpenGLTransform/openGLTransform.h"
 #include "../../Components/Shader/shader.h"
 #include "../../Components/Texture/texture.h"
 
 Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : m_registry{registry}
 {
-    m_associateCallback = m_registry.onAdded<RenderComponent>(
-        [this](unsigned int entity, std::weak_ptr<RenderComponent> render)
-        {
-            if (m_entities.find(entity) == m_entities.end())
-            {
-                this->makeRenderable(entity);
-            }
-        });
-    // TODO: handle removal
+    m_addCallback = m_registry.onAdded<RenderComponent>(
+        [this](unsigned int entity, std::weak_ptr<RenderComponent> render) { this->makeRenderable(entity); });
 }
 
 void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
 {
-    m_entities.emplace(entity, entityData{nullptr, nullptr, nullptr, nullptr, nullptr});
-
     ensureMaterial(entity);
 
     ensureGeometry(entity);
 
     ensureTransform(entity);
 
-    // TODO: texture not necessary
+    // TODO: texture not always necessary
     ensureTexture(entity);
 
     ensureShader(entity);
@@ -80,8 +72,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureGeometry(unsigned int entity)
 
         m_registry.addComponent<Engine::OpenGLGeometryComponent>(entity, openGLGeometry);
     }
-
-    std::get<0>(m_entities.at(entity)) = geometry.get();
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity)
@@ -93,8 +83,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity)
         material =
             m_registry.addComponent<OpenGLMaterialComponent>(entity, std::make_shared<OpenGLMaterialComponent>());
     }
-
-    std::get<1>(m_entities.at(entity)) = material.get();
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureTransform(unsigned int entity)
@@ -105,28 +93,24 @@ void Engine::Systems::OpenGLRenderTracker::ensureTransform(unsigned int entity)
         transform = m_registry.addComponent<TransformComponent>(entity, std::make_shared<TransformComponent>());
     }
 
-    // check if the transform is not currently known
-    if (m_transforms.find(transform.get()) == m_transforms.end())
+    if (!m_registry.hasComponent<Engine::OpenGLTransformComponent>(entity))
     {
-        m_transforms.try_emplace(transform.get(), entity, m_registry);
+        m_registry.addComponent<Engine::OpenGLTransformComponent>(
+            entity, std::make_shared<Engine::OpenGLTransformComponent>(transform.get()));
     }
-
-    std::get<2>(m_entities.at(entity)) = transform.get();
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureShader(unsigned int entity)
 {
     // we expect the shader to exist for now since creating the shader here would need some kind of base
     // shader code to be defined here
-    std::shared_ptr<OpenGLShaderComponent> shader{m_registry.getComponent<OpenGLShaderComponent>(entity)};
+    // std::shared_ptr<OpenGLShaderComponent> shader{m_registry.getComponent<OpenGLShaderComponent>(entity)};
 
-    // check if the shader is not currently known
-    if (m_shaders.find(shader.get()) == m_shaders.end())
-    {
-        m_shaders.try_emplace(shader.get(), entity, m_registry);
-    }
-
-    std::get<3>(m_entities.at(entity)) = shader.get();
+    // // check if the shader is not currently known
+    // if (m_shaders.find(shader.get()) == m_shaders.end())
+    // {
+    //     m_shaders.try_emplace(shader.get(), entity, m_registry);
+    // }
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
@@ -136,28 +120,4 @@ void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
     {
         texture = m_registry.addComponent<OpenGLTextureComponent>(entity, std::make_shared<OpenGLTextureComponent>());
     }
-
-    std::get<4>(m_entities.at(entity)) = texture.get();
-}
-
-void Engine::Systems::OpenGLRenderTracker::render()
-{
-    auto renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
-
-    for (auto entities : renderableEntities)
-    {
-        for (auto entity : entities)
-        {
-            m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)->useShader();
-            m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
-            entityData &data{m_entities.at(entity)};
-            unsigned int transformUBO{m_transforms.at(std::get<2>(data)).getBuffer()};
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, transformUBO);
-
-            std::get<4>(data)->bind();
-            m_registry.getComponent<Engine::OpenGLGeometryComponent>(entity)->draw();
-        }
-    }
-
-    glUseProgram(0);
 }

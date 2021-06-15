@@ -1,6 +1,11 @@
 #include "renderer.h"
 
 #include "../../Core/ECS/registry.h"
+#include "../Components/Material/material.h"
+#include "../Components/OpenGLGeometry/openGLGeometry.h"
+#include "../Components/OpenGLTransform/openGLTransform.h"
+#include "../Components/Shader/shader.h"
+#include "../Components/Texture/texture.h"
 
 Engine::OpenGLRenderer::OpenGLRenderer(Registry &registry)
     : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry}, m_ambientLightsTracker{m_ambientLightsInfoUBO,
@@ -28,5 +33,23 @@ void Engine::OpenGLRenderer::render()
     glBindBufferBase(GL_UNIFORM_BUFFER, 5, m_pointLightsInfoUBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 6, m_spotLightsInfoUBO);
 
-    m_renderTracker.render();
+    auto renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
+
+    for (auto entities : renderableEntities)
+    {
+        for (auto entity : entities)
+        {
+            m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)->useShader();
+            m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
+
+            m_registry.getComponent<Engine::OpenGLTransformComponent>(entity)->bind();
+
+            auto texture = m_registry.getComponent<Engine::OpenGLTextureComponent>(entity);
+            texture->bind();
+            m_registry.getComponent<Engine::OpenGLGeometryComponent>(entity)->draw();
+            texture->unbind();
+        }
+    }
+
+    glUseProgram(0);
 }

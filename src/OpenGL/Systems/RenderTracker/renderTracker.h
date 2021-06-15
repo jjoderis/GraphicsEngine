@@ -7,17 +7,11 @@
 #include <memory>
 
 #include "./ShaderTracker/shaderTracker.h"
-#include "./TransformTracker/transformTracker.h"
 
 namespace Engine
 {
 class Registry;
 class RenderComponent;
-class GeometryComponent;
-class OpenGLMaterialComponent;
-class OpenGLShaderComponent;
-class TransformComponent;
-class OpenGLTextureComponent;
 
 namespace Systems
 {
@@ -29,28 +23,14 @@ public:
 
     OpenGLRenderTracker(Registry &registry);
 
-    void render();
-
 private:
     Registry &m_registry;
 
     // callback type for component events (add, update, remove)
-    template <typename T>
-    using componentCallback = std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<T>)>>;
+    using render_callback = std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::RenderComponent>)>>;
 
     // callback that tracks addition of new render components
-    componentCallback<RenderComponent> m_associateCallback;
-
-    std::map<TransformComponent *, OpenGLRenderTransformTracker> m_transforms;
-
-    std::map<OpenGLShaderComponent *, OpenGLRenderShaderTracker> m_shaders;
-
-    using entityData = std::tuple<GeometryComponent *,
-                                  OpenGLMaterialComponent *,
-                                  TransformComponent *,
-                                  OpenGLShaderComponent *,
-                                  OpenGLTextureComponent *>;
-    std::map<unsigned int, entityData> m_entities;
+    render_callback m_addCallback;
 
     void makeRenderable(unsigned int entityId);
 
