@@ -5,10 +5,17 @@
 namespace Engine
 {
 class Registry;
-}
+
 namespace Util
 {
-void loadOBJFile(Engine::Registry &registry, const std::filesystem::path &filePath);
+class OpenGLTextureIndex;
+}
+} // namespace Engine
+namespace Util
+{
+void loadOBJFile(Engine::Registry &registry,
+                 const std::filesystem::path &filePath,
+                 Engine::Util::OpenGLTextureIndex &textureIndex);
 }
 
 #endif

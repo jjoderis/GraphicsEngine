@@ -8,6 +8,7 @@ Engine::Util::loadTexture(const std::filesystem::path &path, unsigned int type, 
 {
     // TODO: create texture with given type
     int width, height, n;
+    stbi_set_flip_vertically_on_load(true);
     unsigned char *data = stbi_load(path.c_str(), &width, &height, &n, 0);
 
     if (data == NULL)

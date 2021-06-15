@@ -31,7 +31,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
     {
         int size = ImGui::GetWindowContentRegionMin().x + ImGui::GetWindowContentRegionMax().x;
         size = std::min(128, size);
-        ImGui::Image((void *)data.first, ImVec2{(float)size, (float)size});
+        ImGui::Image((void *)data.first, ImVec2{(float)size, (float)size}, ImVec2{0, 1}, ImVec2{1, 0});
         if (ImGui::IsItemClicked(0))
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool

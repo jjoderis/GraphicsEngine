@@ -65,7 +65,9 @@ int main()
 
     unsigned int light1{registry.addEntity()};
     registry.addComponent<Engine::TagComponent>(light1, std::make_shared<Engine::TagComponent>("Light 1"));
-    registry.addComponent<Engine::PointLightComponent>(light1, std::make_shared<Engine::PointLightComponent>());
+    auto ambientLight =
+        registry.addComponent<Engine::AmbientLightComponent>(light1, std::make_shared<Engine::AmbientLightComponent>());
+
     registry.addComponent<Engine::TransformComponent>(light1, std::make_shared<Engine::TransformComponent>());
     registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
 

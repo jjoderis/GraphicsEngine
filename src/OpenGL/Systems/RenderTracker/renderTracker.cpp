@@ -1,6 +1,7 @@
 #include "renderTracker.h"
 
 #include "../../../Core/Components/Geometry/geometry.h"
+#include "../../../Core/Components/Hierarchy/hierarchy.h"
 #include "../../../Core/Components/Render/render.h"
 #include "../../../Core/Components/Transform/transform.h"
 #include "../../../Core/ECS/registry.h"
@@ -35,11 +36,15 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
     ensureTexture(entity);
 
     ensureShader(entity);
-    /**
-     * TODO: setup callbacks for changes on all needed components ONCE
-     * Components should not be removable while the Render Component is on them
-     * what happens if a component gets swapped out on one entity?
-     **/
+
+    // render children
+    if (auto hierarchy = m_registry.getComponent<Engine::HierarchyComponent>(entity))
+    {
+        for (unsigned int child : hierarchy->getChildren())
+        {
+            m_registry.addComponent<Engine::RenderComponent>(child, std::make_shared<Engine::RenderComponent>());
+        }
+    }
 }
 
 void Engine::Systems::OpenGLRenderTracker::ensureGeometry(unsigned int entity)
@@ -74,12 +79,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity)
     {
         material =
             m_registry.addComponent<OpenGLMaterialComponent>(entity, std::make_shared<OpenGLMaterialComponent>());
-    }
-
-    // check if the material is not currently known
-    if (m_materials.find(material.get()) == m_materials.end())
-    {
-        m_materials.try_emplace(material.get(), entity, m_registry);
     }
 
     std::get<1>(m_entities.at(entity)) = material.get();
@@ -130,22 +129,22 @@ void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
 
 void Engine::Systems::OpenGLRenderTracker::render()
 {
-    for (auto const &shaderMapEntry : m_shaders)
+    auto renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
+
+    for (auto entities : renderableEntities)
     {
-        shaderMapEntry.first->useShader();
-
-        const std::list<unsigned int> &entities{shaderMapEntry.second.getUsers()};
-
-        for (unsigned int entity : entities)
+        for (auto entity : entities)
         {
+            m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)->useShader();
+            m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
             entityData &data{m_entities.at(entity)};
-            unsigned int materialUBO{m_materials.at(std::get<1>(data)).getBuffer()};
             unsigned int transformUBO{m_transforms.at(std::get<2>(data)).getBuffer()};
-
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, materialUBO);
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, transformUBO);
+
             std::get<4>(data)->bind();
             m_geometries.at(std::get<0>(data)).draw();
         }
     }
+
+    glUseProgram(0);
 }

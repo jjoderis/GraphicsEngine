@@ -28,6 +28,8 @@ private:
     Registry &m_registry;
     int m_numPoints{0};
     int m_numFaces{0};
+    bool m_useNormals{0};
+    bool m_useTexCoords{0};
     unsigned int m_VAO{0};
     unsigned int m_VBO{0};
     unsigned int m_EBO{0};

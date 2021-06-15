@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "./GeometryTracker/geometryTracker.h"
-#include "./MaterialTracker/materialTracker.h"
 #include "./ShaderTracker/shaderTracker.h"
 #include "./TransformTracker/transformTracker.h"
 
@@ -44,8 +43,6 @@ private:
     componentCallback<RenderComponent> m_associateCallback;
 
     std::map<GeometryComponent *, OpenGLRenderGeometryTracker> m_geometries;
-
-    std::map<OpenGLMaterialComponent *, OpenGLRenderMaterialTracker> m_materials;
 
     std::map<TransformComponent *, OpenGLRenderTransformTracker> m_transforms;
 

@@ -17,9 +17,11 @@ class OpenGLMaterialComponent
 {
 public:
     OpenGLMaterialComponent() {}
+    ~OpenGLMaterialComponent();
 
     void setMaterialData(const ShaderMaterialData &materialData);
     ShaderMaterialData &getMaterialData();
+    void update();
 
     template <typename T>
     T *getProperty(int offset)
@@ -28,10 +30,12 @@ public:
     }
 
     std::vector<char> &getData();
+    void bind();
 
 private:
     ShaderMaterialData m_dataInfo{0, std::vector<MaterialUniformData>{}};
     std::vector<char> m_data;
+    unsigned int m_UBO{0};
 };
 } // namespace Engine
 

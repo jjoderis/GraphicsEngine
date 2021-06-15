@@ -14,6 +14,7 @@
 #include "Util/fileBrowser.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
+#include <Core/Components/Hierarchy/hierarchy.h>
 #include <Core/Components/Light/light.h>
 #include <Core/Components/Tag/tag.h>
 #include <Core/Components/Transform/transform.h>
@@ -74,6 +75,7 @@ void UI::init(Engine::Registry &registry)
     std::shared_ptr<Engine::CameraComponent> camera =
         registry.addComponent<Engine::CameraComponent>(mainCamera, std::make_shared<Engine::CameraComponent>(registry));
     camera->updateAspect((float)width / (float)height);
+    camera->getFar() = 300;
     registry.updated<Engine::CameraComponent>(mainCamera);
 
     UIUtil::initFileBrowserIcons();
@@ -153,6 +155,19 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
 std::vector<fs::path> shaderDirectoryPaths;
 std::vector<std::string> shaderDirectoryNames;
 
+void addShaders(Engine::Registry &registry, unsigned int entity, std::shared_ptr<Engine::OpenGLShaderComponent> shader)
+{
+    registry.addComponent<Engine::OpenGLShaderComponent>(entity, shader);
+
+    if (auto hierarchy = registry.getComponent<Engine::HierarchyComponent>(entity))
+    {
+        for (unsigned int child : hierarchy->getChildren())
+        {
+            addShaders(registry, child, shader);
+        }
+    }
+}
+
 void drawShaderTypeSelection(Engine::Registry &registry)
 {
     if (ImGui::BeginPopup("Select Shader"))
@@ -163,10 +178,10 @@ void drawShaderTypeSelection(Engine::Registry &registry)
             {
                 try
                 {
-                    registry.addComponent<Engine::OpenGLShaderComponent>(
-                        selectedEntity,
-                        std::make_shared<Engine::OpenGLShaderComponent>(
-                            Engine::loadShaders(shaderDirectoryPaths[i].c_str())));
+                    addShaders(registry,
+                               selectedEntity,
+                               std::make_shared<Engine::OpenGLShaderComponent>(
+                                   Engine::loadShaders(shaderDirectoryPaths[i].c_str())));
                 }
                 catch (Engine::ShaderException &err)
                 {

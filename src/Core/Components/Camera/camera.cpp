@@ -46,7 +46,7 @@ void Engine::CameraComponent::calculateProjection()
         m_projectionMatrix = Math::Matrix4 {
             c / m_aspect, 0.0f,                      0.0f,                                      0.0f,
                     0.0f,    c,                      0.0f,                                      0.0f,
-                    0.0f, 0.0f,  -(m_far+m_near)/(m_far-m_near), -(2.0f*m_far*m_near)/(m_far-m_near),
+                    0.0f, 0.0f,  (m_far+m_near)/(m_far-m_near), (2.0f*m_far*m_near)/(m_far-m_near),
                     0.0f, 0.0f,                           -1.0f,                                0.0f
         };
         // clang-format on

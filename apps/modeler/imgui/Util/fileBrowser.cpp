@@ -96,7 +96,7 @@ void drawDirectoryEntries()
         ImGui::PushID(i);
 
         ImGui::BeginGroup();
-        ImGui::ImageButton(((void *)buffer), iconSize);
+        ImGui::ImageButton(((void *)buffer), iconSize, ImVec2{0, 1}, ImVec2{1, 0});
         ImGui::Text(entry.filename().c_str());
         ImGui::EndGroup();
 

@@ -15,6 +15,7 @@ class GeometryComponent
 private:
     std::vector<Math::Vector3> m_vertices;
     std::vector<Math::Vector3> m_normals;
+    std::vector<Math::Vector2> m_texCoords;
     std::vector<unsigned int> m_faces;
 
 public:
@@ -25,6 +26,7 @@ public:
                       std::vector<unsigned int> &&faces);
     std::vector<Math::Vector3> &getVertices();
     std::vector<Math::Vector3> &getNormals();
+    std::vector<Math::Vector2> &getTexCoords();
     std::vector<unsigned int> &getFaces();
 
     // adds a single vertex

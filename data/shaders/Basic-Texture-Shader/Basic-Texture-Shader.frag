@@ -55,18 +55,17 @@ layout (std140) uniform SpotLights{
 
 in vec3 position;
 in vec3 normal;
-in vec3 cameraPosition;
-in vec3 iPos;
+in vec2 iTexCoord;
 
 uniform sampler2D texture1;
 
-#define M_PI 3.1415926535897932384626433832795
+out vec4 FragColor;
 
-vec3 calculateAmbientLightColors(vec3 diffuse) {
+vec3 calculateAmbientLightColors(vec3 dColor) {
     vec3 accColor = vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < numAmbientLights; ++i) {
-        accColor = accColor + ambientLights[i].color * diffuse;
+        accColor = accColor + ambientLights[i].color * dColor;
     }
 
     return accColor;
@@ -82,94 +81,64 @@ windowing = pow(max(0, 1 - pow(( lightDist / 1000.0), 4.0)), 2.0);
     attenuation = (8 * intensity)/(pow(lightDist, 2.0) + 0.01);
 }
 
-vec3 calculatePointLightColors(vec3 fNormal, vec3 viewDirection, vec3 diffuse, vec3 specular, float specularExp) {
-    vec3 accColor = vec3(0, 0, 0);
+vec3 calculatePointLightColors(vec3 fNormal, vec3 dColor) {
+    vec3 accColor = vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < numPointLights; ++i){
-        vec3 lightVec, lightDirection;
-        float lightDist, windowing, attenuation;
+	vec3 lightVec, lightDirection;
+        float lightDist, windowing, attenuation;   
         
-        getLightStats(pointLights[i].position, pointLights[i].intensity, lightDist, lightDirection, windowing, attenuation);
+        getLightStats(pointLights[i].position, pointLights[i].intensity, lightDist, lightDirection, windowing, attenuation); 
         
         vec3 lightColor = windowing * attenuation * pointLights[i].color;
-        
+    
         float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
-        
-        accColor += lightColor * lightAngle * diffuse;
-        
-        vec3 reflected = reflect(-lightDirection, fNormal);
-        float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);      
 
-        accColor += lightColor * specular * s;
+
+        accColor += lightAngle * lightColor * dColor.xyz;
     }
 
     return accColor;
 }
 
-vec3 calculateSpotLightColors(vec3 fNormal, vec3 viewDirection, vec3 diffuse, vec3 specular, float specularExp) {
-    vec3 accColor = vec3(0, 0, 0);
+vec3 calculateSpotLightColors(vec3 fNormal, vec3 dColor) {
+    vec3 accColor = vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < numSpotLights; ++i){
-        vec3 lightVec, lightDirection;
+    	vec3 lightVec, lightDirection;
         float lightDist, windowing, attenuation;
         
         getLightStats(spotLights[i].position, spotLights[i].intensity, lightDist, lightDirection, windowing, attenuation);
-        
+
         float lightDot = dot(spotLights[i].direction, - lightDirection);
         float cosCutoff = cos(spotLights[i].cutoffAngle);
         float t = clamp((lightDot - cosCutoff)/(cos(spotLights[i].penumbraAngle) - cosCutoff), 0, 1);
-        
+
         vec3 lightColor = windowing * attenuation * pow(t, 2.0) * spotLights[i].color;
-        
         float lightAngle = clamp(dot(lightDirection, fNormal), 0, 1);
-        
-        accColor += lightColor * lightAngle * diffuse;
 
-        vec3 reflected = reflect(-lightDirection, fNormal);
-        float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);
-
-        accColor += lightColor * specular * s;
+        accColor += lightAngle * lightColor * dColor.xyz;
     }
 
     return accColor;
 }
 
-vec3 calculateDirectionalLightColors(vec3 fNormal, vec3 viewDirection, vec3 diffuse, vec3 specular, float specularExp) {
+vec3 calculateDirectionalLightColors(vec3 fNormal, vec3 dColor) {
     vec3 accColor = vec3(0, 0 ,0);
 
     for (int i = 0; i < numDirectionalLights; ++i){
         float lightAngle = clamp(dot(-directionalLights[i].direction, fNormal), 0, 1);
-        vec3 lightColor = directionalLights[i].color;
-        
-        accColor += lightColor * diffuse * lightAngle;
-
-        vec3 reflected = reflect(directionalLights[i].direction, fNormal);
-        float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);
-        
-        accColor += lightColor * specular * s;
+        accColor = accColor + lightAngle * directionalLights[i].color * dColor.xyz;
     }
 
     return accColor;
 }
 
-out vec4 FragColor;
 void main()
 {
     vec3 fNormal = normalize(normal);
-    vec3 viewDirection = normalize(cameraPosition - position);
+    vec3 dColor = texture(texture1, iTexCoord).xyz;
+    vec3 accColor = calculateAmbientLightColors(dColor) + calculateDirectionalLightColors(fNormal, dColor) + calculatePointLightColors(fNormal, dColor) + calculateSpotLightColors(fNormal, dColor);    
 
-    float u = ((M_PI+atan(iPos.z, iPos.x))/(2*M_PI));
-    float v = 1-((atan(sqrt(pow(iPos.x,2)+pow(-iPos.z,2)),iPos.y))/M_PI);
-    vec2 uv = vec2(-u,v);
-
-    vec3 diffuse = texture(texture1, uv).xyz;
-    vec3 specular = specularColor.xyz;
-    float specularExp = specularExponent;
-
-    vec3 accColor = calculateAmbientLightColors(diffuse) + calculateDirectionalLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculatePointLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculateSpotLightColors(fNormal, viewDirection, diffuse, specular, specularExp);
-    
-    FragColor = vec4(accColor  , 1.0);
+    FragColor = vec4(accColor, 1.0);
 }

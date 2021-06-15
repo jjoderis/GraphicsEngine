@@ -21,7 +21,7 @@ Engine::Util::OpenGLTextureIndex::needTexture(const fs::path &path, unsigned int
 {
     if (!m_textures.count(path) || !m_textures.at(path).count(type))
     {
-        unsigned int texture = Util::loadTexture(path, type).buffer;
+        unsigned int texture = Util::loadTexture(path, type, GL_RGBA).buffer;
         m_buffers.emplace(texture, bufferData{path, type});
 
         if (!m_textures.count(path))

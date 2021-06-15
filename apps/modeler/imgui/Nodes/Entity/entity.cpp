@@ -1,5 +1,7 @@
 #include "entity.h"
 
+#include "../../Util/fileBrowser.h"
+#include "../../Util/objectLoader.h"
 #include "../helpers.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
@@ -11,8 +13,12 @@
 #include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Components/Texture/texture.h>
+#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 #include <imgui.h>
+#include <iostream>
+
+extern Engine::Util::OpenGLTextureIndex textureIndex;
 
 void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry)
 {
@@ -53,6 +59,25 @@ void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry
     }
 }
 
+void removeWithChildren(Engine::Registry &registry, unsigned int entity)
+{
+    if (entity == selectedEntity)
+    {
+        selectedEntity = -1;
+    }
+
+    if (auto hierarchy = registry.getComponent<Engine::HierarchyComponent>(entity))
+    {
+        auto &children = hierarchy->getChildren();
+        for (int i = children.size() - 1; i >= 0; --i)
+        {
+            removeWithChildren(registry, children[i]);
+        }
+    }
+
+    registry.removeEntity(entity);
+}
+
 void drawEntityNode(unsigned int entity, Engine::Registry &registry)
 {
     if (std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -76,11 +101,19 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
         id.append(std::to_string(entity));
         if (ImGui::Button(id.c_str()))
         {
-            registry.removeEntity(entity);
-
-            if (entity == selectedEntity)
+            if (ImGui::GetIO().KeyShift)
             {
-                selectedEntity = -1;
+                // remove recursively if shift is pressed
+                removeWithChildren(registry, entity);
+            }
+            else
+            {
+                registry.removeEntity(entity);
+
+                if (entity == selectedEntity)
+                {
+                    selectedEntity = -1;
+                }
             }
         }
 
@@ -132,6 +165,14 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
         if (ImGui::Button("Add Entity"))
         {
             ImGui::OpenPopup("entity_add_popup");
+        }
+        if (ImGui::Button("Import Entity"))
+        {
+            UIUtil::can_open_function = [](const fs::path &path) -> bool
+            { return (fs::is_regular_file(path) && path.extension() == ".obj"); };
+            UIUtil::open_function = [&](const fs::path &path, const std::string &fileName)
+            { Util::loadOBJFile(registry, path, textureIndex); };
+            UIUtil::openFileBrowser();
         }
         if (ImGui::BeginPopup("entity_add_popup"))
         {

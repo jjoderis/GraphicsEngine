@@ -23,6 +23,8 @@ std::vector<unsigned int> &Engine::GeometryComponent::getFaces() { return m_face
 
 std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getNormals() { return m_normals; }
 
+std::vector<Engine::Math::Vector2> &Engine::GeometryComponent::getTexCoords() { return m_texCoords; };
+
 void Engine::GeometryComponent::addVertex(Math::Vector3 &&newVertex)
 {
     m_vertices.emplace_back(newVertex);
