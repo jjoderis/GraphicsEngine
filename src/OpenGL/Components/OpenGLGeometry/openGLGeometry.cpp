@@ -128,8 +128,20 @@ void Engine::OpenGLGeometryComponent::update(GeometryComponent *geometry)
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, faces.size() * faceSize, faces.data());
 }
 
+void Engine::OpenGLGeometryComponent::drawPoints(bool on) {
+    m_drawPoints = on;
+}
+
+bool Engine::OpenGLGeometryComponent::drawingPoints() {
+    return m_drawPoints;
+}
+
 void Engine::OpenGLGeometryComponent::draw()
 {
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, m_numFaces, GL_UNSIGNED_INT, 0);
+    if (m_drawPoints) {
+        glDrawArrays(GL_POINTS, 0, m_numPoints);
+    } else {
+        glDrawElements(GL_TRIANGLES, m_numFaces, GL_UNSIGNED_INT, 0);
+    }
 }

@@ -1,5 +1,6 @@
 #include "../helpers.h"
 #include <Core/Components/Geometry/geometry.h>
+#include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
 
 extern bool dragging;
 
@@ -105,5 +106,13 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
             vert -= avg;
         }
         registry.updated<Engine::GeometryComponent>(selectedEntity);
+    }
+
+    if (auto openGLGeometry = registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity)) {
+        bool drawingPoints = openGLGeometry->drawingPoints();
+        ImGui::Checkbox("Draw as points: ", &drawingPoints);
+        if (ImGui::IsItemEdited()) {
+            openGLGeometry->drawPoints(drawingPoints);
+        }
     }
 }

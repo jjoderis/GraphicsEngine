@@ -34,6 +34,9 @@ public:
     // calls the OpenGL draw function with our geometry data
     void draw();
 
+    void drawPoints(bool on);
+    bool drawingPoints();
+
 private:
     // buffers for OpenGL Object Data
     unsigned int m_VAO{0};
@@ -45,6 +48,8 @@ private:
     // defines which geometry data is currently used
     bool m_useNormals{0};
     bool m_useTexCoords{0};
+
+    bool m_drawPoints{0};
 };
 
 } // namespace Engine

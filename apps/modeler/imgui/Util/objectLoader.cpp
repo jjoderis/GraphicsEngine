@@ -148,6 +148,7 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 // load object name
                 std::string name;
                 lineStream >> name;
+                geometry->calculateNormals();
 
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 hierarchy->setParent(rootEntity);
@@ -159,6 +160,7 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 // load object name
                 std::string name;
                 lineStream >> name;
+                geometry->calculateNormals();
 
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 hierarchy->setParent(rootEntity);
@@ -171,6 +173,7 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 // load object name
                 std::string name;
                 lineStream >> name;
+                geometry->calculateNormals();
 
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 auto textureComp = registry.addComponent<Engine::OpenGLTextureComponent>(
