@@ -128,10 +128,6 @@ void Util::loadOBJFile(Engine::Registry &registry,
                         // {
                         //     gNormals.push_back(normals[vn]);
                         // }
-                        if (vnStr == "")
-                        {
-                            geometry->calculateNormals();
-                        }
                     }
                     indices.push_back(refMap.at(refStr));
                 }
@@ -149,7 +145,6 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 std::string name;
                 lineStream >> name;
                 geometry->calculateNormals();
-
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 hierarchy->setParent(rootEntity);
                 registry.updated<Engine::HierarchyComponent>(currentEntity);
@@ -161,7 +156,6 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 std::string name;
                 lineStream >> name;
                 geometry->calculateNormals();
-
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 hierarchy->setParent(rootEntity);
                 currentGroup = currentEntity;
@@ -174,7 +168,6 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 std::string name;
                 lineStream >> name;
                 geometry->calculateNormals();
-
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
                 auto textureComp = registry.addComponent<Engine::OpenGLTextureComponent>(
                     currentEntity, std::make_shared<Engine::OpenGLTextureComponent>());

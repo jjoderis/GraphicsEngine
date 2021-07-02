@@ -35,7 +35,7 @@ void Engine::OpenGLRenderer::render()
 
     auto renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
 
-    for (auto entities : renderableEntities)
+    for (auto &entities : renderableEntities)
     {
         for (auto entity : entities)
         {
