@@ -99,7 +99,7 @@ vec3 calculatePointLightColors(vec3 fNormal, vec3 viewDirection, vec3 diffuse, v
         
         vec3 reflected = reflect(-lightDirection, fNormal);
         float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);      
+        s = max(pow(s, specularExp), 0);      
 
         accColor += lightColor * specular * s;
     }
@@ -128,7 +128,7 @@ vec3 calculateSpotLightColors(vec3 fNormal, vec3 viewDirection, vec3 diffuse, ve
 
         vec3 reflected = reflect(-lightDirection, fNormal);
         float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);
+        s = max(pow(s, specularExp), 0);
 
         accColor += lightColor * specular * s;
     }
@@ -147,7 +147,7 @@ vec3 calculateDirectionalLightColors(vec3 fNormal, vec3 viewDirection, vec3 diff
 
         vec3 reflected = reflect(directionalLights[i].direction, fNormal);
         float s = clamp(dot(reflected, viewDirection), 0, 1);
-        s = pow(s, specularExp);
+        s = max(pow(s, specularExp), 0);
         
         accColor += lightColor * specular * s;
     }
