@@ -33,7 +33,7 @@ void Engine::OpenGLRenderer::render()
     glBindBufferBase(GL_UNIFORM_BUFFER, 5, m_pointLightsInfoUBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 6, m_spotLightsInfoUBO);
 
-    auto renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
+    auto &renderableEntities = m_registry.getOwners<Engine::RenderComponent>();
 
     for (auto &entities : renderableEntities)
     {

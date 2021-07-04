@@ -12,6 +12,7 @@
 #include "OpenGL/Components/Texture/texture.h"
 #include "Util/errorModal.h"
 #include "Util/fileBrowser.h"
+#include "Window/Raytracing/raytracingWindow.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Hierarchy/hierarchy.h>
@@ -20,7 +21,9 @@
 #include <Core/Components/Transform/transform.h>
 #include <Core/ECS/util.h>
 #include <Core/Math/math.h>
+#include <Core/Util/Raycaster/raycaster.h>
 #include <OpenGL/Components/Shader/shader.h>
+#include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Util/fileHandling.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -37,6 +40,9 @@ bool dragging{1};
 using namespace UICreation;
 int selectedEntity = -1;
 int possible_component_current = 0;
+
+Engine::Math::Vector3 debugOrigin{0, 0, 0};
+Engine::Math::Vector3 debugDirection{0, 0, 0};
 
 void UI::init(Engine::Registry &registry)
 {
@@ -222,6 +228,7 @@ void drawComponentNode(const char *componentName, Engine::Registry &registry)
 
 void UI::render(Engine::Registry &registry)
 {
+
     if (showDemoWindow)
     {
         ImGui::ShowDemoWindow(&showDemoWindow);
@@ -231,6 +238,11 @@ void UI::render(Engine::Registry &registry)
         ImGui::Begin("Hello World!");
 
         ImGui::Checkbox("Show Demo Window", &showDemoWindow);
+
+        if (ImGui::Button("Raytrace"))
+        {
+            UICreation::showRaytracingWindow(registry);
+        }
 
         UICreation::drawEntitiesNode(registry);
 
@@ -245,7 +257,8 @@ void UI::render(Engine::Registry &registry)
                                              "Ambient Light",
                                              "Directional Light",
                                              "Point Light",
-                                             "Spot Light"};
+                                             "Spot Light",
+                                             "Bounding Box"};
             if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
                 if (!registry.hasComponent<Engine::OpenGLMaterialComponent>(selectedEntity) &&
@@ -302,6 +315,8 @@ void UI::render(Engine::Registry &registry)
                 {
                     registry.addComponent<Engine::OpenGLMaterialComponent>(
                         selectedEntity, std::make_shared<Engine::OpenGLMaterialComponent>());
+                    registry.addComponent<Engine::RaytracingMaterial>(selectedEntity,
+                                                                      std::make_shared<Engine::RaytracingMaterial>());
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Geometry"))
                 {
@@ -383,6 +398,35 @@ void UI::render(Engine::Registry &registry)
     }
 
     UIUtil::drawFileBrowser();
+
+    UICreation::drawRaytracingWindow();
+
+    // catch clicks on the main window
+    if (ImGui::IsMouseClicked(0) && !ImGui::GetIO().WantCaptureMouse)
+    {
+        auto viewport = ImGui::GetMainViewport();
+        auto viewportMin = viewport->Pos;
+        auto viewportMax = ImVec2(viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y);
+        auto mousePos = ImGui::GetMousePos();
+
+        if (mousePos.x > viewportMin.x && mousePos.y > viewportMin.y && mousePos.x < viewportMax.x &&
+            mousePos.y < viewportMax.y)
+        {
+            Engine::Math::IVector2 pixelPosition{mousePos.x - viewportMin.x, mousePos.y - viewportMin.y};
+            Engine::Math::IVector2 viewportSize{viewportMax.x - viewportMin.x, viewportMax.y - viewportMin.y};
+
+            unsigned int activeCameraEntity = registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
+            auto camera = registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+            Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, viewportSize);
+
+            auto intersections = Engine::Util::castRay(cameraRay, registry);
+
+            if (intersections.size())
+            {
+                selectedEntity = intersections.begin()->getEntity();
+            }
+        }
+    }
 
     ImGui::Render();
 }

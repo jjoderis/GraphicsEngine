@@ -1,6 +1,7 @@
 #include "camera.h"
 
 #include "../../ECS/registry.h"
+#include "../../Util/Raycaster/raycaster.h"
 #include "../Transform/transform.h"
 
 Engine::CameraComponent::CameraComponent(Registry &registry) : m_registry{registry}
@@ -142,3 +143,21 @@ void Engine::CameraComponent::setFov(float fov) { m_fov = fov; }
 
 float &Engine::CameraComponent::getAspect() { return m_aspect; }
 void Engine::CameraComponent::setAspect(float aspect) { m_aspect = aspect; }
+
+Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pixelPosition,
+                                                        const Math::IVector2 &screenSize)
+{
+    float normalizedX = 2 * ((pixelPosition(0) + 0.5) / screenSize(0)) - 1;
+    float normalizedY = 1 - 2 * ((pixelPosition(1) + 0.5) / screenSize(1));
+
+    float projectionPlaneWidth = tan(m_fov / 2);
+
+    float cameraX = projectionPlaneWidth * m_aspect * normalizedX;
+    float cameraY = projectionPlaneWidth * normalizedY;
+
+    Engine::Util::Ray ray{{0, 0, 0}, {cameraX, cameraY, -1}};
+
+    ray = m_viewMatrixInverse * ray;
+
+    return ray;
+}

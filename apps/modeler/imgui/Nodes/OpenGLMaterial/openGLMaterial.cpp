@@ -1,5 +1,6 @@
 #include "../helpers.h"
 #include <OpenGL/Components/Material/material.h>
+#include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <glad/glad.h>
 
 extern bool dragging;
@@ -44,6 +45,27 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
                 registry.updated<Engine::OpenGLMaterialComponent>(selectedEntity);
             }
             break;
+        }
+    }
+
+    if (auto raytracingMaterial = registry.getComponent<Engine::RaytracingMaterial>(selectedEntity))
+    {
+        ImGui::Separator();
+        ImGui::Text("Raytracing Material");
+
+        ImGui::ColorEdit4("Color", raytracingMaterial->getColor().raw());
+        bool isReflective = raytracingMaterial->isReflective();
+        ImGui::Checkbox("Reflective", &isReflective);
+        if (ImGui::IsItemClicked(0))
+        {
+            if (!isReflective)
+            {
+                raytracingMaterial->makeReflective();
+            }
+            else
+            {
+                raytracingMaterial->makeUnreflective();
+            }
         }
     }
 }

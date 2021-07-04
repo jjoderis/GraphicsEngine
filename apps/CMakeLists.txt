@@ -21,6 +21,7 @@ add_library(modelerLib
     modeler/imgui/Util/objectLoader.cpp
     modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
+    modeler/imgui/Window/Raytracing/raytracingWindow.cpp
     modeler/imgui/Nodes/Entity/entity.cpp
     modeler/imgui/Nodes/Camera/camera.cpp
     modeler/imgui/Nodes/Geometry/geometryNode.cpp
@@ -31,7 +32,7 @@ add_library(modelerLib
     modeler/imgui/Nodes/Texture/texture.cpp
 )
 
-target_link_libraries(modelerLib glfw glad engineCore engineOpenGL)
+target_link_libraries(modelerLib glfw glad engineCore engineOpenGL engineRaytracing)
 target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR})
 
 add_executable(Modeler modeler/modeler.cpp ${IMGUI_SOURCES})

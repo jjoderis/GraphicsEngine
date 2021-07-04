@@ -10,6 +10,11 @@ namespace Engine
 class TransformComponent;
 class Registry;
 
+namespace Util
+{
+class Ray;
+}
+
 enum class ProjectionType
 {
     Ortographic,
@@ -82,6 +87,8 @@ public:
 
     float &getAspect();
     void setAspect(float aspect);
+
+    Util::Ray getCameraRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
 };
 
 class ActiveCameraComponent

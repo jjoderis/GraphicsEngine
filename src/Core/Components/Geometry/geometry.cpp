@@ -18,6 +18,7 @@ Engine::GeometryComponent::GeometryComponent(std::vector<Math::Vector3> &&vertic
 }
 
 std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getVertices() { return m_vertices; }
+const std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getVertices() const { return m_vertices; }
 
 std::vector<unsigned int> &Engine::GeometryComponent::getFaces() { return m_faces; }
 

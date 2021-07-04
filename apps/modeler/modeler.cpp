@@ -28,6 +28,7 @@
 #include <OpenGL/Systems/ShaderTracker/shaderTracker.h>
 #include <OpenGL/Systems/TransformTracker/transformTracker.h>
 #include <OpenGL/Util/textureIndex.h>
+#include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <cstring>
 
 #include <iostream>
@@ -96,6 +97,8 @@ int main()
         object1, std::make_shared<Engine::OpenGLTextureComponent>());
     texture->addTexture(textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D, texture.get()),
                         GL_TEXTURE_2D);
+
+    registry.addComponent<Engine::RaytracingMaterial>(object1, std::make_shared<Engine::RaytracingMaterial>());
 
     std::weak_ptr<Engine::TransformComponent> transform{
         registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};

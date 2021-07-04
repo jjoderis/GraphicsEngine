@@ -5,6 +5,7 @@ set(CORE_HEADERS
     Core/ECS/registry.h
     Core/ECS/util.h
     Core/Math/math.h
+    Core/Util/Raycaster/raycaster.h
     Core/Components/Tag/tag.h
     Core/Components/Geometry/geometry.h
     Core/Components/Transform/transform.h
@@ -12,12 +13,14 @@ set(CORE_HEADERS
     Core/Components/Light/light.h
     Core/Components/Hierarchy/hierarchy.h
     Core/Components/Render/render.h
+    Core/Components/BoundingBox/boundingBox.h
     Core/Systems/HierarchyTracker/hierarchyTracker.h
 )
 
 set(CORE_SOURCES
     Util/fileHandling.cpp
     Core/Math/math.cpp
+    Core/Util/Raycaster/raycaster.cpp
     Core/Components/Tag/tag.cpp
     Core/Components/Geometry/geometry.cpp
     Core/Components/Transform/transform.cpp
@@ -25,6 +28,7 @@ set(CORE_SOURCES
     Core/Components/Light/light.cpp
     Core/Components/Hierarchy/hierarchy.cpp
     Core/Components/Render/render.cpp
+    Core/Components/BoundingBox/boundingBox.cpp
     Core/Systems/HierarchyTracker/hierarchyTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
@@ -81,3 +85,22 @@ add_library(engineOpenGL ${OPENGL_SOURCES} ${OPENGL_HEADERS})
 target_link_libraries(engineOpenGL PUBLIC glad mathlib stb)
 
 target_include_directories(engineOpenGL INTERFACE Core/ OpenGL/)
+
+
+# engine Raytracing specific library
+
+set(RAYTRACING_HEADERS
+    Raytracing/raytracer.h
+    Raytracing/Components/Material/raytracingMaterial.h
+)
+
+set(RAYTRACING_SOURCES
+    Raytracing/raytracer.cpp
+    Raytracing/Components/Material/raytracingMaterial.cpp
+)
+
+add_library(engineRaytracing ${RAYTRACING_SOURCES} ${RAYTRACING_HEADERS})
+
+target_link_libraries(engineRaytracing PUBLIC mathlib)
+
+target_include_directories(engineRaytracing INTERFACE Core/ Raytracing/)

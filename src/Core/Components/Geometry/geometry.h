@@ -25,6 +25,7 @@ public:
                       std::vector<Math::Vector3> &&normals,
                       std::vector<unsigned int> &&faces);
     std::vector<Math::Vector3> &getVertices();
+    const std::vector<Math::Vector3> &getVertices() const;
     std::vector<Math::Vector3> &getNormals();
     std::vector<Math::Vector2> &getTexCoords();
     std::vector<unsigned int> &getFaces();

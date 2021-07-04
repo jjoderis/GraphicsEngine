@@ -1,4 +1,5 @@
 #include "../helpers.h"
+#include <Core/Components/BoundingBox/boundingBox.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
 
@@ -108,11 +109,22 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
         registry.updated<Engine::GeometryComponent>(selectedEntity);
     }
 
-    if (auto openGLGeometry = registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity)) {
+    if (auto openGLGeometry = registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity))
+    {
         bool drawingPoints = openGLGeometry->drawingPoints();
         ImGui::Checkbox("Draw as points: ", &drawingPoints);
-        if (ImGui::IsItemEdited()) {
+        if (ImGui::IsItemEdited())
+        {
             openGLGeometry->drawPoints(drawingPoints);
+        }
+    }
+
+    if (!registry.hasComponent<Engine::BoundingBoxComponent>(selectedEntity))
+    {
+        if (ImGui::Button("Add Bounding Box"))
+        {
+            registry.addComponent<Engine::BoundingBoxComponent>(
+                selectedEntity, std::make_shared<Engine::BoundingBoxComponent>(*geometry.get()));
         }
     }
 }
