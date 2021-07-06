@@ -259,11 +259,13 @@ public:
         int componentIndex = m_sparse[entityId];
         if (componentIndex > -1)
         {
-            invokeAndCleanup(m_updateCallbacks, entityId, m_components[componentIndex]);
             // There was an error where the cb list changed while being inside invokeAndCleanup
             std::list<std::weak_ptr<component_table_callback>> cbs{m_componentUpdateCallbacks[componentIndex]};
             invokeAndCleanup(cbs, entityId, m_components[componentIndex]);
             m_componentUpdateCallbacks[componentIndex] = cbs;
+            // has to be this way for now to allow the hierarchyTracker to take effect before the transformTracker for
+            // rendering
+            invokeAndCleanup(m_updateCallbacks, entityId, m_components[componentIndex]);
         }
     }
 };
