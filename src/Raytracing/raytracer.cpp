@@ -241,11 +241,11 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
 
     auto shadowIntersections = Engine::Util::castRay(lightRay, registry);
 
-    if there
-        was an intersection between the object and the light then it is in shadow if (shadowIntersections.size())
-        {
-            return Engine::Math::Vector4{0, 0, 0, 0};
-        }
+    // if there was an intersection between the object and the light then it is in shadow
+    if (shadowIntersections.size())
+    {
+        return Engine::Math::Vector4{0, 0, 0, 0};
+    }
 
     float lightAngle = clamp(dot(lightVector, surfaceNormal), 0, 1);
 
