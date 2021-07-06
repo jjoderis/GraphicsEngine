@@ -109,14 +109,7 @@ void calculateGeometryIntersections(unsigned int entity,
             // check if intersection with triangle plane is inside triangle and the triangle is in front of the ray
             if (b1 > 0 && b2 > 0 && b1 + b2 < 1 && t > 0)
             {
-                auto intersection = origin + t * direction;
-                if (t < 0.0001)
-                {
-                    if (allClose(intersection, origin, 10 * std::numeric_limits<float>::epsilon()))
-                    {
-                        continue;
-                    }
-                }
+                auto intersection = (1 - b1 - b2) * p0 + b1 * p1 + b2 * p2;
 
                 intersection = transform->getModelMatrix() * Engine::Math::Vector4{intersection, 1};
                 float distance = (intersection - ray.getOrigin()).norm();

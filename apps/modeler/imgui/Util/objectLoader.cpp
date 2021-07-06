@@ -139,51 +139,41 @@ void Util::loadOBJFile(Engine::Registry &registry,
                     gFaces.push_back(indices[i + 1]);
                 }
             }
-            else if (type == "o")
+            else if (type == "o" || type == "g" || type == "usemtl")
             {
                 // load object name
                 std::string name;
                 lineStream >> name;
                 geometry->calculateNormals();
                 auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
-                hierarchy->setParent(rootEntity);
-                registry.updated<Engine::HierarchyComponent>(currentEntity);
-                break;
-            }
-            else if (type == "g")
-            {
-                // load object name
-                std::string name;
-                lineStream >> name;
-                geometry->calculateNormals();
-                auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
-                hierarchy->setParent(rootEntity);
-                currentGroup = currentEntity;
-                registry.updated<Engine::HierarchyComponent>(currentEntity);
-                break;
-            }
-            else if (type == "usemtl")
-            {
-                // load object name
-                std::string name;
-                lineStream >> name;
-                geometry->calculateNormals();
-                auto hierarchy = createEntity(name, currentEntity, registry, tag, geometry);
-                auto textureComp = registry.addComponent<Engine::OpenGLTextureComponent>(
-                    currentEntity, std::make_shared<Engine::OpenGLTextureComponent>());
-                for (auto path : textureLib.at(name))
-                {
-                    textureComp->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D, textureComp.get()),
-                                            GL_TEXTURE_2D);
-                }
-                if (name == "default")
+
+                if (type == "o" || type == "g")
                 {
                     hierarchy->setParent(rootEntity);
+                    if (type == "g")
+                    {
+                        currentGroup = currentEntity;
+                    }
                 }
                 else
                 {
-                    hierarchy->setParent(currentGroup);
+                    auto textureComp = registry.addComponent<Engine::OpenGLTextureComponent>(
+                        currentEntity, std::make_shared<Engine::OpenGLTextureComponent>());
+                    for (auto path : textureLib.at(name))
+                    {
+                        textureComp->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D, textureComp.get()),
+                                                GL_TEXTURE_2D);
+                    }
+                    if (name == "default")
+                    {
+                        hierarchy->setParent(rootEntity);
+                    }
+                    else
+                    {
+                        hierarchy->setParent(currentGroup);
+                    }
                 }
+
                 registry.updated<Engine::HierarchyComponent>(currentEntity);
                 break;
             }

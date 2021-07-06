@@ -134,7 +134,27 @@ Engine::Math::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::R
     {
         if (material->isReflective())
         {
-            return Engine::Math::Vector4{1, 0.466, 0, 1};
+            auto intersection = *intersections.begin();
+            auto intersectionEntity = intersection.getEntity();
+            auto geometry = registry.getComponent<Engine::GeometryComponent>(intersectionEntity);
+            auto transform = registry.getComponent<Engine::TransformComponent>(intersectionEntity);
+
+            auto baryParams = intersection.getBaryParams();
+
+            auto &faces = geometry->getFaces();
+            auto &vertexNormals = geometry->getNormals();
+            auto intersectionFaceIndex = intersection.getFace();
+
+            auto surfaceNormal = ((1 - baryParams(0) - baryParams(1)) * vertexNormals[faces[intersectionFaceIndex]] +
+                                  baryParams(0) * vertexNormals[faces[intersectionFaceIndex + 1]] +
+                                  baryParams(1) * vertexNormals[faces[intersectionFaceIndex + 2]])
+                                     .normalize();
+
+            auto reflectedDirection = ray.getDirection().reflect(surfaceNormal);
+            auto newOrigin =
+                intersection.getIntersection() + reflectedDirection * std::numeric_limits<float>::epsilon();
+            Engine::Util::Ray reflectedRay{newOrigin, reflectedDirection};
+            return calculateColor(registry, reflectedRay);
         }
         else
         {
@@ -193,21 +213,6 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
         lighPosition = lightTransform->getModelMatrix() * Engine::Math::Vector4{lighPosition, 1};
     }
 
-    auto lightVector = lighPosition - intersection.getIntersection();
-
-    auto lightRay = Engine::Util::Ray(intersection.getIntersection(), lightVector);
-
-    auto shadowIntersections = Engine::Util::castRay(lightRay, registry);
-
-    // if there was an intersection between the object and the light then it is in shadow
-    if (shadowIntersections.size())
-    {
-        return Engine::Math::Vector4{0, 0, 0, 0};
-    }
-
-    float lightDist = lightVector.norm();
-    lightVector /= lightDist;
-
     unsigned int intersectionEntity = intersection.getEntity();
     int intersectionFaceIndex = intersection.getFace();
 
@@ -225,6 +230,22 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
 
     surfaceNormal = transform->getNormalMatrix() * Engine::Math::Vector4{surfaceNormal, 1};
     surfaceNormal.normalize();
+
+    auto origin = intersection.getIntersection() + 10 * std::numeric_limits<float>::epsilon() * surfaceNormal;
+
+    auto lightVector = lighPosition - intersection.getIntersection();
+    float lightDist = lightVector.norm();
+    lightVector /= lightDist;
+
+    auto lightRay = Engine::Util::Ray(origin, lightVector);
+
+    auto shadowIntersections = Engine::Util::castRay(lightRay, registry);
+
+    if there
+        was an intersection between the object and the light then it is in shadow if (shadowIntersections.size())
+        {
+            return Engine::Math::Vector4{0, 0, 0, 0};
+        }
 
     float lightAngle = clamp(dot(lightVector, surfaceNormal), 0, 1);
 
