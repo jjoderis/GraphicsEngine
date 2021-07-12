@@ -60,8 +60,7 @@ void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
                     }
                     else
                     {
-                        parentHierarchy = m_registry.addComponent<HierarchyComponent>(
-                            newParent, std::make_shared<HierarchyComponent>());
+                        parentHierarchy = m_registry.createComponent<HierarchyComponent>(newParent);
                     }
 
                     parentHierarchy->addChild(updateEntity);

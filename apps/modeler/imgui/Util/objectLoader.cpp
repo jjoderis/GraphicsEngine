@@ -24,12 +24,10 @@ std::shared_ptr<Engine::HierarchyComponent> createEntity(std::string &name,
                                                          std::shared_ptr<Engine::GeometryComponent> &geometry)
 {
     currentEntity = registry.addEntity();
-    tag = registry.addComponent<Engine::TagComponent>(currentEntity, std::make_shared<Engine::TagComponent>(name));
-    geometry =
-        registry.addComponent<Engine::GeometryComponent>(currentEntity, std::make_shared<Engine::GeometryComponent>());
-    registry.addComponent<Engine::TransformComponent>(currentEntity, std::make_shared<Engine::TransformComponent>());
-    std::shared_ptr<Engine::HierarchyComponent> hierarchy = registry.addComponent<Engine::HierarchyComponent>(
-        currentEntity, std::make_shared<Engine::HierarchyComponent>());
+    tag = registry.createComponent<Engine::TagComponent>(currentEntity, name);
+    geometry = registry.createComponent<Engine::GeometryComponent>(currentEntity);
+    registry.createComponent<Engine::TransformComponent>(currentEntity);
+    auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(currentEntity);
 
     return hierarchy;
 }
@@ -43,10 +41,9 @@ void Util::loadOBJFile(Engine::Registry &registry,
 
     unsigned int rootEntity{registry.addEntity()};
 
-    std::shared_ptr<Engine::TagComponent> tag = std::make_shared<Engine::TagComponent>("Import Root");
+    auto tag = std::make_shared<Engine::TagComponent>("Import Root");
     registry.addComponent<Engine::TagComponent>(rootEntity, tag);
-    std::shared_ptr<Engine::GeometryComponent> geometry =
-        registry.addComponent<Engine::GeometryComponent>(rootEntity, std::make_shared<Engine::GeometryComponent>());
+    auto geometry = registry.createComponent<Engine::GeometryComponent>(rootEntity);
 
     // parse all information from the file content
     std::vector<Engine::Math::Vector3> vertices{};
@@ -157,8 +154,7 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 }
                 else
                 {
-                    auto textureComp = registry.addComponent<Engine::OpenGLTextureComponent>(
-                        currentEntity, std::make_shared<Engine::OpenGLTextureComponent>());
+                    auto textureComp = registry.createComponent<Engine::OpenGLTextureComponent>(currentEntity);
                     for (auto path : textureLib.at(name))
                     {
                         textureComp->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D, textureComp.get()),

@@ -60,8 +60,7 @@ void Engine::Systems::OpenGLCameraTracker::createInitActiveCB()
         {
             if (m_registry.getComponents<Engine::CameraComponent>().size() == 1)
             {
-                m_registry.addComponent<Engine::ActiveCameraComponent>(
-                    entity, std::make_shared<Engine::ActiveCameraComponent>());
+                m_registry.createComponent<Engine::ActiveCameraComponent>(entity);
             }
         });
 }

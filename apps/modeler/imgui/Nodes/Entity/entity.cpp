@@ -45,8 +45,7 @@ void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry
                 registry.getComponent<Engine::HierarchyComponent>(dropEntity);
             if (!hierarchy)
             {
-                hierarchy = registry.addComponent<Engine::HierarchyComponent>(
-                    dropEntity, std::make_shared<Engine::HierarchyComponent>());
+                hierarchy = registry.createComponent<Engine::HierarchyComponent>(dropEntity);
             }
             // see if we assigned a new parent and change hierarchy component if we did
             if (entity != hierarchy->getParent())
@@ -183,13 +182,11 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
                 unsigned int newEntity = registry.addEntity();
                 if (!std::strlen(name))
                 {
-                    registry.addComponent<Engine::TagComponent>(
-                        newEntity, std::make_shared<Engine::TagComponent>("Unnamed Entity"));
+                    registry.createComponent<Engine::TagComponent>(newEntity, "Unnamed Entity");
                 }
                 else
                 {
-                    registry.addComponent<Engine::TagComponent>(newEntity,
-                                                                std::make_shared<Engine::TagComponent>(name));
+                    registry.createComponent<Engine::TagComponent>(newEntity, name);
                 }
                 name[0] = '\0';
                 ImGui::CloseCurrentPopup();

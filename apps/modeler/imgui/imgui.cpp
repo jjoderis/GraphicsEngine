@@ -73,13 +73,11 @@ void UI::init(Engine::Registry &registry)
     glfwGetFramebufferSize(window, &width, &height);
 
     mainCamera = registry.addEntity();
-    registry.addComponent<Engine::TagComponent>(mainCamera, std::make_shared<Engine::TagComponent>("Modeler Camera"));
-    std::shared_ptr<Engine::TransformComponent> transform =
-        registry.addComponent<Engine::TransformComponent>(mainCamera, std::make_shared<Engine::TransformComponent>());
+    registry.createComponent<Engine::TagComponent>(mainCamera, "Modeler Camera");
+    auto transform = registry.createComponent<Engine::TransformComponent>(mainCamera);
     transform->setRotation(Engine::Math::Vector3{0.0, M_PI, 0.0});
     transform->update();
-    std::shared_ptr<Engine::CameraComponent> camera =
-        registry.addComponent<Engine::CameraComponent>(mainCamera, std::make_shared<Engine::CameraComponent>(registry));
+    auto camera = registry.createComponent<Engine::CameraComponent>(mainCamera, registry);
     camera->updateAspect((float)width / (float)height);
     camera->getFar() = 300;
     registry.updated<Engine::CameraComponent>(mainCamera);
@@ -114,12 +112,11 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
         }
         if (ImGui::Button("Blank"))
         {
-            registry.addComponent<Engine::GeometryComponent>(selectedEntity,
-                                                             std::make_shared<Engine::GeometryComponent>());
+            registry.createComponent<Engine::GeometryComponent>(selectedEntity);
         }
         if (ImGui::Button("Triangle"))
         {
-            std::shared_ptr<Engine::GeometryComponent> geometry = std::make_shared<Engine::GeometryComponent>(
+            auto geometry = std::make_shared<Engine::GeometryComponent>(
                 std::initializer_list<Engine::Math::Vector3>{Engine::Math::Vector3{0.5, -0.5, 0.0},
                                                              Engine::Math::Vector3{-0.5, -0.5, 0.0},
                                                              Engine::Math::Vector3{0.0, 0.5, 0.0}},
@@ -313,10 +310,8 @@ void UI::render(Engine::Registry &registry)
             {
                 if (!strcmp(possibleComponents[possible_component_current], "Material"))
                 {
-                    registry.addComponent<Engine::OpenGLMaterialComponent>(
-                        selectedEntity, std::make_shared<Engine::OpenGLMaterialComponent>());
-                    registry.addComponent<Engine::RaytracingMaterial>(selectedEntity,
-                                                                      std::make_shared<Engine::RaytracingMaterial>());
+                    registry.createComponent<Engine::OpenGLMaterialComponent>(selectedEntity);
+                    registry.createComponent<Engine::RaytracingMaterial>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Geometry"))
                 {
@@ -324,8 +319,7 @@ void UI::render(Engine::Registry &registry)
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Transform"))
                 {
-                    registry.addComponent<Engine::TransformComponent>(selectedEntity,
-                                                                      std::make_shared<Engine::TransformComponent>());
+                    registry.createComponent<Engine::TransformComponent>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Render"))
                 {
@@ -346,8 +340,7 @@ void UI::render(Engine::Registry &registry)
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Camera"))
                 {
-                    std::shared_ptr<Engine::CameraComponent> camera = registry.addComponent<Engine::CameraComponent>(
-                        selectedEntity, std::make_shared<Engine::CameraComponent>(registry));
+                    auto camera = registry.createComponent<Engine::CameraComponent>(selectedEntity, registry);
                     int width, height;
                     GLFWwindow *window = Window::getWindow();
                     glfwGetFramebufferSize(window, &width, &height);
@@ -356,23 +349,19 @@ void UI::render(Engine::Registry &registry)
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Ambient Light"))
                 {
-                    registry.addComponent<Engine::AmbientLightComponent>(
-                        selectedEntity, std::make_shared<Engine::AmbientLightComponent>());
+                    registry.createComponent<Engine::AmbientLightComponent>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Directional Light"))
                 {
-                    registry.addComponent<Engine::DirectionalLightComponent>(
-                        selectedEntity, std::make_shared<Engine::DirectionalLightComponent>());
+                    registry.createComponent<Engine::DirectionalLightComponent>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Point Light"))
                 {
-                    registry.addComponent<Engine::PointLightComponent>(selectedEntity,
-                                                                       std::make_shared<Engine::PointLightComponent>());
+                    registry.createComponent<Engine::PointLightComponent>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Spot Light"))
                 {
-                    registry.addComponent<Engine::SpotLightComponent>(selectedEntity,
-                                                                      std::make_shared<Engine::SpotLightComponent>());
+                    registry.createComponent<Engine::SpotLightComponent>(selectedEntity);
                 }
                 possible_component_current = 0;
             }

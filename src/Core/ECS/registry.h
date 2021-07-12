@@ -79,6 +79,19 @@ public:
         m_freeEntityIds.push_front(index);
     }
 
+    template <typename ComponentType, typename... Args>
+    std::shared_ptr<ComponentType> createComponent(unsigned int entityId, Args &&...args)
+    {
+        if (entityId >= m_maxEntities)
+        {
+            throw "EntityId out of bounds\n";
+        }
+
+        ComponentTable<ComponentType> *compTable = ensureComponentTable<ComponentType>();
+
+        return compTable->createComponent(entityId, std::forward<Args>(args)...);
+    }
+
     template <typename ComponentType>
     std::shared_ptr<ComponentType> addComponent(unsigned int entityId, std::weak_ptr<ComponentType> component)
     {

@@ -79,6 +79,13 @@ private:
 public:
     ComponentTable(unsigned int numEntities) { m_sparse = std::vector<int>(numEntities, -1); }
 
+    template <typename... Args>
+    std::shared_ptr<ComponentType> createComponent(unsigned int entityId, Args &&...args)
+    {
+        auto component = std::make_shared<ComponentType>(std::forward<Args>(args)...);
+        return addComponent(entityId, component);
+    }
+
     std::shared_ptr<ComponentType> addComponent(unsigned int entityId, std::weak_ptr<ComponentType> component)
     {
         ensureEntity(entityId);

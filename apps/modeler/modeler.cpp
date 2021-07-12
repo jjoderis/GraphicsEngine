@@ -73,17 +73,15 @@ int main()
     UI::init(registry);
 
     unsigned int light1{registry.addEntity()};
-    registry.addComponent<Engine::TagComponent>(light1, std::make_shared<Engine::TagComponent>("Light 1"));
-    auto ambientLight =
-        registry.addComponent<Engine::AmbientLightComponent>(light1, std::make_shared<Engine::AmbientLightComponent>());
+    registry.createComponent<Engine::TagComponent>(light1, "Light 1");
+    auto ambientLight = registry.createComponent<Engine::AmbientLightComponent>(light1);
 
-    registry.addComponent<Engine::TransformComponent>(light1, std::make_shared<Engine::TransformComponent>());
+    registry.createComponent<Engine::TransformComponent>(light1);
     registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
 
     unsigned int object1{registry.addEntity()};
-    registry.addComponent<Engine::TagComponent>(object1, std::make_shared<Engine::TagComponent>("Object 1"));
-    std::shared_ptr<Engine::OpenGLMaterialComponent> material{registry.addComponent<Engine::OpenGLMaterialComponent>(
-        object1, std::make_shared<Engine::OpenGLMaterialComponent>())};
+    registry.createComponent<Engine::TagComponent>(object1, "Object 1");
+    auto material = registry.createComponent<Engine::OpenGLMaterialComponent>(object1);
     // TODO: nicer way to set data
     material->setMaterialData(
         Engine::ShaderMaterialData{48,
@@ -93,29 +91,24 @@ int main()
     float defaultData[48]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0};
     float *properties{material->getProperty<float>(0)};
     std::memcpy(properties, defaultData, 9 * sizeof(float));
-    std::shared_ptr<Engine::OpenGLTextureComponent> texture = registry.addComponent<Engine::OpenGLTextureComponent>(
-        object1, std::make_shared<Engine::OpenGLTextureComponent>());
+    auto texture = registry.createComponent<Engine::OpenGLTextureComponent>(object1);
     texture->addTexture(textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D, texture.get()),
                         GL_TEXTURE_2D);
 
-    registry.addComponent<Engine::RaytracingMaterial>(object1, std::make_shared<Engine::RaytracingMaterial>());
+    registry.createComponent<Engine::RaytracingMaterial>(object1);
 
-    std::weak_ptr<Engine::TransformComponent> transform{
-        registry.addComponent<Engine::TransformComponent>(object1, std::make_shared<Engine::TransformComponent>())};
-    transform.lock()->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
-    transform.lock()->update();
-    std::weak_ptr<Engine::GeometryComponent> geometry{
-        registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20))};
-    registry.addComponent<Engine::OpenGLShaderComponent>(
-        object1,
-        std::make_shared<Engine::OpenGLShaderComponent>(
-            Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture")));
-    registry.addComponent<Engine::RenderComponent>(object1, std::make_shared<Engine::RenderComponent>());
+    auto transform = registry.createComponent<Engine::TransformComponent>(object1);
+    transform->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
+    transform->update();
+    auto geometry =
+        registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20));
+    registry.createComponent<Engine::OpenGLShaderComponent>(
+        object1, Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture"));
+    registry.createComponent<Engine::RenderComponent>(object1);
 
     unsigned int object2{registry.addEntity()};
-    registry.addComponent<Engine::TagComponent>(object2, std::make_shared<Engine::TagComponent>("Object 2"));
-    std::shared_ptr<Engine::HierarchyComponent> hierarchy =
-        registry.addComponent<Engine::HierarchyComponent>(object2, std::make_shared<Engine::HierarchyComponent>());
+    registry.createComponent<Engine::TagComponent>(object2, "Object 2");
+    auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(object2);
     hierarchy->setParent(object1);
     registry.updated<Engine::HierarchyComponent>(object2);
 

@@ -72,8 +72,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLMaterialComponent>(
     {
         if (ImGui::Button("Add Raytracing Material"))
         {
-            registry.addComponent<Engine::RaytracingMaterial>(selectedEntity,
-                                                              std::make_shared<Engine::RaytracingMaterial>());
+            registry.createComponent<Engine::RaytracingMaterial>(selectedEntity);
         }
     }
 }

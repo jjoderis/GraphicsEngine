@@ -180,7 +180,7 @@ void UICreation::createComponentNodeMain<Engine::OpenGLShaderComponent>(
         }
         else
         {
-            registry.addComponent<Engine::RenderComponent>(selectedEntity, std::make_shared<Engine::RenderComponent>());
+            registry.createComponent<Engine::RenderComponent>(selectedEntity);
         }
     }
     // if (ImGui::RadioButton("Points", primitive_type

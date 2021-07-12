@@ -33,7 +33,7 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
     {
         for (unsigned int child : hierarchy->getChildren())
         {
-            m_registry.addComponent<Engine::RenderComponent>(child, std::make_shared<Engine::RenderComponent>());
+            m_registry.createComponent<Engine::RenderComponent>(child);
         }
     }
 }
@@ -43,7 +43,7 @@ void Engine::Systems::OpenGLRenderTracker::ensureGeometry(unsigned int entity)
     std::shared_ptr<GeometryComponent> geometry{m_registry.getComponent<GeometryComponent>(entity)};
     if (!geometry)
     {
-        geometry = m_registry.addComponent<GeometryComponent>(entity, std::make_shared<Engine::GeometryComponent>());
+        geometry = m_registry.createComponent<GeometryComponent>(entity);
     }
 
     // make sure the entity has a OpenGLGeometryComponent
@@ -78,8 +78,7 @@ void Engine::Systems::OpenGLRenderTracker::ensureMaterial(unsigned int entity)
     std::shared_ptr<OpenGLMaterialComponent> material{m_registry.getComponent<OpenGLMaterialComponent>(entity)};
     if (!material)
     {
-        material =
-            m_registry.addComponent<OpenGLMaterialComponent>(entity, std::make_shared<OpenGLMaterialComponent>());
+        material = m_registry.createComponent<OpenGLMaterialComponent>(entity);
     }
 }
 
@@ -88,13 +87,12 @@ void Engine::Systems::OpenGLRenderTracker::ensureTransform(unsigned int entity)
     std::shared_ptr<TransformComponent> transform{m_registry.getComponent<TransformComponent>(entity)};
     if (!transform)
     {
-        transform = m_registry.addComponent<TransformComponent>(entity, std::make_shared<TransformComponent>());
+        transform = m_registry.createComponent<TransformComponent>(entity);
     }
 
     if (!m_registry.hasComponent<Engine::OpenGLTransformComponent>(entity))
     {
-        m_registry.addComponent<Engine::OpenGLTransformComponent>(
-            entity, std::make_shared<Engine::OpenGLTransformComponent>(transform.get()));
+        m_registry.createComponent<Engine::OpenGLTransformComponent>(entity, transform.get());
     }
 }
 
@@ -103,6 +101,6 @@ void Engine::Systems::OpenGLRenderTracker::ensureTexture(unsigned int entity)
     std::shared_ptr<OpenGLTextureComponent> texture{m_registry.getComponent<OpenGLTextureComponent>(entity)};
     if (!texture)
     {
-        texture = m_registry.addComponent<OpenGLTextureComponent>(entity, std::make_shared<OpenGLTextureComponent>());
+        texture = m_registry.createComponent<OpenGLTextureComponent>(entity);
     }
 }

@@ -123,8 +123,7 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
     {
         if (ImGui::Button("Add Bounding Box"))
         {
-            registry.addComponent<Engine::BoundingBoxComponent>(
-                selectedEntity, std::make_shared<Engine::BoundingBoxComponent>(*geometry.get()));
+            registry.createComponent<Engine::BoundingBoxComponent>(selectedEntity, *geometry.get());
         }
     }
 }
