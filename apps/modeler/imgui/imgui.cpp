@@ -1,5 +1,6 @@
 #include "imgui.h"
 
+#include "./Util/SceneLoading/sceneLoader.h"
 #include "Nodes/Camera/camera.h"
 #include "Nodes/Entity/entity.h"
 #include "Nodes/Geometry/geometryNode.h"
@@ -239,6 +240,26 @@ void UI::render(Engine::Registry &registry)
         if (ImGui::Button("Raytrace"))
         {
             UICreation::showRaytracingWindow(registry);
+        }
+
+        if (ImGui::Button("Export Scene"))
+        {
+            UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
+            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
+            { Engine::Util::saveScene(path, registry); };
+            UIUtil::openFileBrowser();
+        }
+
+        if (ImGui::Button("Import Scene"))
+        {
+            UIUtil::can_open_function = [](const fs::path &path) -> bool
+            { return fs::is_regular_file(path) && path.extension().string() == ".gltf"; };
+            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
+            {
+                registry.clear();
+                Engine::Util::loadScene(path, registry);
+            };
+            UIUtil::openFileBrowser();
         }
 
         UICreation::drawEntitiesNode(registry);

@@ -259,6 +259,16 @@ public:
 
         return out;
     }
+
+    void clear()
+    {
+        auto reverseIterator = m_usedEntityIds.rbegin();
+
+        while (reverseIterator != m_usedEntityIds.rend())
+        {
+            removeEntity(*reverseIterator);
+        }
+    }
 };
 } // namespace Engine
 

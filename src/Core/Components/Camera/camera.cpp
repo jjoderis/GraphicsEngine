@@ -144,6 +144,9 @@ void Engine::CameraComponent::setFov(float fov) { m_fov = fov; }
 float &Engine::CameraComponent::getAspect() { return m_aspect; }
 void Engine::CameraComponent::setAspect(float aspect) { m_aspect = aspect; }
 
+bool Engine::CameraComponent::isPerspective() { return m_projection == ProjectionType::Perspective; }
+bool Engine::CameraComponent::isOrtographic() { return m_projection == ProjectionType::Ortographic; }
+
 Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pixelPosition,
                                                         const Math::IVector2 &screenSize)
 {

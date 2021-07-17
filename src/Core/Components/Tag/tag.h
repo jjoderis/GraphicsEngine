@@ -14,7 +14,7 @@ public:
     TagComponent() = delete;
 
     TagComponent(const char *tag);
-    TagComponent(std::string &tag);
+    TagComponent(const std::string &tag);
 
     const std::string &get();
 

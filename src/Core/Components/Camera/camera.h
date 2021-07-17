@@ -88,6 +88,9 @@ public:
     float &getAspect();
     void setAspect(float aspect);
 
+    bool isPerspective();
+    bool isOrtographic();
+
     Util::Ray getCameraRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
 };
 

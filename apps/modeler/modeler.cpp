@@ -77,7 +77,8 @@ int main()
     auto ambientLight = registry.createComponent<Engine::AmbientLightComponent>(light1);
 
     registry.createComponent<Engine::TransformComponent>(light1);
-    registry.addComponent<Engine::GeometryComponent>(light1, Engine::createSphereGeometry(0.1, 20, 20));
+    auto sphereGeometry = Engine::createSphereGeometry(1.0, 20, 20);
+    registry.addComponent<Engine::GeometryComponent>(light1, sphereGeometry);
 
     unsigned int object1{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(object1, "Object 1");
@@ -100,8 +101,7 @@ int main()
     auto transform = registry.createComponent<Engine::TransformComponent>(object1);
     transform->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
     transform->update();
-    auto geometry =
-        registry.addComponent<Engine::GeometryComponent>(object1, Engine::createSphereGeometry(1.0, 20, 20));
+    auto geometry = registry.addComponent<Engine::GeometryComponent>(object1, sphereGeometry);
     registry.createComponent<Engine::OpenGLShaderComponent>(
         object1, Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture"));
     registry.createComponent<Engine::RenderComponent>(object1);

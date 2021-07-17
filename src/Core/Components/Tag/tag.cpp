@@ -2,7 +2,7 @@
 
 Engine::TagComponent::TagComponent(const char *tag) : m_tag{tag} {}
 
-Engine::TagComponent::TagComponent(std::string &tag) : m_tag{tag} {}
+Engine::TagComponent::TagComponent(const std::string &tag) : m_tag{tag} {}
 
 const std::string &Engine::TagComponent::get() { return m_tag; }
 

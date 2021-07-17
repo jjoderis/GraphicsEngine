@@ -14,11 +14,16 @@ set(IMGUI_SOURCES
 
 set(IMGUI_INCLUDE_DIR "${EXTERN_DIR}/imgui")
 
+set(NLOHMANN-JSON_INCLUDE_DIR "${EXTERN_DIR}/nlohmann-json")
+
 add_library(modelerLib 
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
     modeler/imgui/Util/objectLoader.cpp
+    modeler/imgui/Util/SceneLoading/sceneLoader.cpp
+    modeler/imgui/Util/SceneLoading/serialization.cpp
+    modeler/imgui/Util/SceneLoading/parsing.cpp
     modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
     modeler/imgui/Window/Raytracing/raytracingWindow.cpp
@@ -33,7 +38,7 @@ add_library(modelerLib
 )
 
 target_link_libraries(modelerLib glfw glad engineCore engineOpenGL engineRaytracing)
-target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR})
+target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR} ${NLOHMANN-JSON_INCLUDE_DIR})
 
 add_executable(Modeler modeler/modeler.cpp ${IMGUI_SOURCES})
 target_include_directories(Modeler PRIVATE ${SRC_DIR})
