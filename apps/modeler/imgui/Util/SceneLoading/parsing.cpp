@@ -3,33 +3,46 @@
 #include <Components/Camera/camera.h>
 #include <Components/Geometry/geometry.h>
 #include <Components/Hierarchy/hierarchy.h>
+#include <Components/Material/material.h>
+#include <Components/Render/render.h>
+#include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
+#include <glad/glad.h>
 #include <map>
 #include <memory>
 #include <string>
 
 using json = nlohmann::json;
 
-using GeometryMap = std::map<int, std::shared_ptr<Engine::GeometryComponent>>;
-int addEntity(Engine::Registry &registry, json &j, json &node, GeometryMap &geometries);
+using GeometryMap = std::map<json, std::shared_ptr<Engine::GeometryComponent>>;
+using MaterialMap = std::map<json, std::shared_ptr<Engine::OpenGLMaterialComponent>>;
+using ShaderMap = std::map<std::string, std::shared_ptr<Engine::OpenGLShaderComponent>>;
+using MeshData = std::tuple<GeometryMap, MaterialMap, ShaderMap>;
+int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &MeshData);
 GeometryMap parseGeometries(json &j, const std::filesystem::path &path);
+MaterialMap parseMaterials(json &j, const std::filesystem::path &path);
+ShaderMap parseShaders(json &j, const std::filesystem::path &path);
 
 void SceneUtil::parseScene(Engine::Registry &registry, json &j, const std::filesystem::path &path)
 {
     GeometryMap geometries = parseGeometries(j, path);
+    MaterialMap materials = parseMaterials(j, path);
+    ShaderMap shaders = parseShaders(j, path);
+
+    MeshData meshData{geometries, materials, shaders};
 
     for (auto &node : j["scenes"][0]["nodes"])
     {
         unsigned int nodeIndex = node.get<unsigned int>();
-        addEntity(registry, j, j["nodes"][nodeIndex], geometries);
+        addEntity(registry, j, j["nodes"][nodeIndex], meshData);
     }
 }
 
 void addTransform(Engine::Registry &registry, json &node, int entityIndex);
 
-int addEntity(Engine::Registry &registry, json &j, json &node, GeometryMap &geometries)
+int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshData)
 {
     int entityIndex = registry.addEntity();
 
@@ -47,7 +60,7 @@ int addEntity(Engine::Registry &registry, json &j, json &node, GeometryMap &geom
         for (auto &child : node["children"])
         {
             unsigned int childNodeIndex = child.get<unsigned int>();
-            int childIndex = addEntity(registry, j, j["nodes"][childNodeIndex], geometries);
+            int childIndex = addEntity(registry, j, j["nodes"][childNodeIndex], meshData);
             auto childHierarchy = registry.createComponent<Engine::HierarchyComponent>(childIndex);
             childHierarchy->setParent(entityIndex);
             registry.updated<Engine::HierarchyComponent>(childIndex);
@@ -58,7 +71,36 @@ int addEntity(Engine::Registry &registry, json &j, json &node, GeometryMap &geom
 
     if (node.find("mesh") != node.end())
     {
-        registry.addComponent<Engine::GeometryComponent>(entityIndex, geometries.at(node["mesh"]));
+        auto mesh = j["meshes"].at(node["mesh"].get<int>());
+
+        if (mesh.find("material") != mesh.end())
+        {
+            auto material = j["materials"].at(mesh["material"].get<int>());
+
+            if (material.find("extras") != material.end())
+            {
+                json extras = material["extras"];
+
+                if (extras.find("shader") != extras.end())
+                {
+                    std::string shaderPath = extras["shader"]["path"];
+                    registry.addComponent<Engine::OpenGLShaderComponent>(entityIndex,
+                                                                         std::get<2>(meshData).at(shaderPath));
+
+                    if (extras["shader"]["active"].get<bool>())
+                    {
+                        registry.createComponent<Engine::RenderComponent>(entityIndex);
+                    }
+                }
+
+                extras.erase("shader");
+
+                registry.addComponent<Engine::OpenGLMaterialComponent>(entityIndex, std::get<1>(meshData).at(extras));
+            }
+        }
+        mesh.erase("material");
+
+        registry.addComponent<Engine::GeometryComponent>(entityIndex, std::get<0>(meshData).at(mesh));
     }
 
     if (node.find("camera") != node.end())
@@ -219,9 +261,16 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
     {
         BufferMap buffers{};
 
-        int meshIndex = 0;
         for (auto &mesh : j["meshes"])
         {
+            json geometryPart = mesh;
+            geometryPart.erase("material");
+
+            if (geometries.find(geometryPart) != geometries.end())
+            {
+                continue;
+            }
+
             auto geometry = std::make_shared<Engine::GeometryComponent>();
             auto &primitives = mesh["primitives"][0];
 
@@ -247,11 +296,137 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
                 loadData(j, buffers, attributes["TEXCOORD_0"], geometry->getTexCoords(), path);
             }
 
-            geometries.emplace(meshIndex, geometry);
-
-            ++meshIndex;
+            geometries.emplace(geometryPart, geometry);
         }
     }
 
     return geometries;
+}
+
+std::shared_ptr<Engine::OpenGLMaterialComponent>
+parseMaterial(json &materialNode, json &j, const std::filesystem::path &path)
+{
+    auto material = std::make_shared<Engine::OpenGLMaterialComponent>();
+
+    if (materialNode.find("extras") != materialNode.end())
+    {
+        if (materialNode["extras"].find("properties") != materialNode["extras"].end())
+        {
+            auto &properties = material->getMaterialData().second;
+
+            auto &data = material->getData();
+            int dataOffset = 0;
+
+            json &propertyNodes = materialNode["extras"]["properties"];
+
+            for (auto &propertyNode : propertyNodes)
+            {
+                Engine::MaterialUniformData property{};
+                std::get<0>(property) = propertyNode["name"];
+
+                json value = propertyNode["value"];
+
+                unsigned int type = GL_NONE;
+                int newOffset = dataOffset;
+
+                if (value.is_number_float())
+                {
+                    type = GL_FLOAT;
+                    newOffset = dataOffset + sizeof(float);
+                    data.resize(newOffset);
+                    *((float *)(data.data() + dataOffset)) = value.get<float>();
+                }
+                else if (value.is_array())
+                {
+                    if (value.size() == 3)
+                    {
+                        type = GL_FLOAT_VEC3;
+                        newOffset = dataOffset + 3 * sizeof(float);
+                        data.resize(newOffset);
+                        float *start = (float *)(data.data() + dataOffset);
+                        start[0] = value[0].get<float>();
+                        start[1] = value[1].get<float>();
+                        start[2] = value[2].get<float>();
+                    }
+                    else if (value.size() == 4)
+                    {
+                        type = GL_FLOAT_VEC4;
+                        newOffset = dataOffset + 4 * sizeof(float);
+                        data.resize(newOffset);
+                        float *start = (float *)(data.data() + dataOffset);
+                        start[0] = value[0].get<float>();
+                        start[1] = value[1].get<float>();
+                        start[2] = value[2].get<float>();
+                        start[3] = value[3].get<float>();
+                    }
+                }
+
+                std::get<1>(property) = type;
+                std::get<2>(property) = dataOffset;
+                dataOffset = newOffset;
+                properties.push_back(property);
+            }
+
+            material->getMaterialData().first = dataOffset;
+        }
+    }
+
+    return material;
+}
+
+MaterialMap parseMaterials(json &j, const std::filesystem::path &path)
+{
+    MaterialMap materials{};
+
+    if (j.find("materials") != j.end())
+    {
+        for (auto &material : j["materials"])
+        {
+            if (material.find("extras") != material.end())
+            {
+                json materialPart = material["extras"];
+                materialPart.erase("shader");
+
+                if (materials.find(materialPart) != materials.end())
+                {
+                    continue;
+                }
+
+                materials.emplace(materialPart, parseMaterial(material, j, path));
+            }
+        }
+    }
+
+    return materials;
+}
+
+ShaderMap parseShaders(json &j, const std::filesystem::path &path)
+{
+    ShaderMap shaders;
+
+    if (j.find("materials") != j.end())
+    {
+        for (auto &material : j["materials"])
+        {
+
+            if (material.find("extras") != material.end())
+            {
+                json &extras = material["extras"];
+
+                if (extras.find("shader") != extras.end())
+                {
+                    auto shaderSubPath = extras["shader"]["path"].get<std::string>();
+                    auto shaderPath = path;
+                    shaderPath.remove_filename();
+                    shaderPath.append(shaderSubPath);
+                    auto shaderData = Engine::loadShaders(shaderPath.c_str());
+                    auto shader = std::make_shared<Engine::OpenGLShaderComponent>(shaderData);
+
+                    shaders.emplace(shaderSubPath, shader);
+                }
+            }
+        }
+    }
+
+    return shaders;
 }

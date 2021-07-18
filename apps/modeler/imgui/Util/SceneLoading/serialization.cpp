@@ -3,6 +3,9 @@
 #include <Components/Camera/camera.h>
 #include <Components/Geometry/geometry.h>
 #include <Components/Hierarchy/hierarchy.h>
+#include <Components/Material/material.h>
+#include <Components/Render/render.h>
+#include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
@@ -11,9 +14,14 @@
 
 using json = nlohmann::json;
 
-using MeshMap = std::map<Engine::GeometryComponent *, int>;
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshMap &meshIndex);
-MeshMap addGeometries(Engine::Registry &registry, json &j, const std::filesystem::path &path);
+using GeometryMap = std::map<Engine::GeometryComponent *, json>;
+using MaterialMap = std::map<Engine::OpenGLMaterialComponent *, json>;
+using ShaderMap = std::map<Engine::OpenGLShaderComponent *, std::string>;
+using MeshMap = std::map<json, int>;
+using MaterialNodeMap = std::map<json, int>;
+using MeshData = std::tuple<GeometryMap, MaterialMap, MeshMap, ShaderMap, MaterialNodeMap>;
+int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData);
+MeshData addMeshes(Engine::Registry &registry, json &j, const std::filesystem::path &path);
 
 json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem::path &path)
 {
@@ -28,7 +36,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
     j["bufferViews"] = json::array();
     j["accessors"] = json::array();
 
-    MeshMap meshIndex = addGeometries(registry, j, path);
+    auto meshData = addMeshes(registry, j, path);
 
     for (auto entity : entities)
     {
@@ -37,7 +45,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
         if (!hierarchy || hierarchy->getParent() < 0)
         {
             // add the entity to the rootNodes list if it has no parent
-            int index = addEntity(entity, registry, j, meshIndex);
+            int index = addEntity(entity, registry, j, meshData);
             rootNodes.push_back(index);
         }
     }
@@ -52,7 +60,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
 
 void addTransform(unsigned int entity, Engine::Registry &registry, json &node);
 
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshMap &meshIndex)
+int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData)
 {
     auto node = json::object();
     if (auto tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -69,7 +77,7 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshMap 
 
             for (auto child : children)
             {
-                int index = addEntity(child, registry, j, meshIndex);
+                int index = addEntity(child, registry, j, meshData);
                 childList.push_back(index);
             }
 
@@ -81,7 +89,58 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshMap 
 
     if (auto geometry = registry.getComponent<Engine::GeometryComponent>(entity))
     {
-        node["mesh"] = meshIndex.at(geometry.get());
+        GeometryMap &geometryMap = std::get<0>(meshData);
+
+        auto mesh = geometryMap.at(geometry.get());
+
+        if (auto material = registry.getComponent<Engine::OpenGLMaterialComponent>(entity))
+        {
+            auto &materialMap = std::get<1>(meshData);
+            auto materialNode = materialMap.at(material.get());
+
+            if (auto shader = registry.getComponent<Engine::OpenGLShaderComponent>(entity))
+            {
+                std::string &shaderPath = std::get<3>(meshData).at(shader.get());
+                materialNode["extras"]["shader"] = {{"path", shaderPath}, {"active", false}};
+
+                if (registry.hasComponent<Engine::RenderComponent>(entity))
+                {
+                    materialNode["extras"]["shader"]["active"] = true;
+                }
+            }
+
+            int materialIndex;
+
+            MaterialNodeMap &nodeMap = std::get<4>(meshData);
+            if (nodeMap.find(materialNode) != nodeMap.end())
+            {
+                materialIndex = nodeMap.at(materialNode);
+            }
+            else
+            {
+                materialIndex = j["materials"].size();
+                j["materials"].push_back(materialNode);
+                nodeMap.emplace(materialNode, materialIndex);
+            }
+
+            mesh["material"] = materialIndex;
+        }
+
+        int meshIndex;
+
+        MeshMap &meshMap = std::get<2>(meshData);
+        if (meshMap.find(mesh) != meshMap.end())
+        {
+            meshIndex = meshMap.at(mesh);
+        }
+        else
+        {
+            meshIndex = j["meshes"].size();
+            j["meshes"].push_back(mesh);
+            meshMap.emplace(mesh, meshIndex);
+        }
+
+        node["mesh"] = meshIndex;
     }
 
     if (auto camera = registry.getComponent<Engine::CameraComponent>(entity))
@@ -293,19 +352,13 @@ void addToFile(FILE *out, std::vector<unsigned int> &data, int padding)
     fwrite(data.data(), sizeof(unsigned int), data.size(), out);
 }
 
-int addGeometry(Engine::GeometryComponent &geometry, json &j, std::filesystem::path path)
+json addGeometry(Engine::GeometryComponent &geometry, json &j, std::filesystem::path path)
 {
     auto &vertices{geometry.getVertices()};
 
-    // we don't need a geometry without any vertices
-    if (!vertices.size())
-    {
-        return -1;
-    }
+    json mesh = json::object();
 
     int meshIndex = j["meshes"].size();
-
-    json mesh = json::object();
 
     int bufferIndex = j["buffers"].size();
 
@@ -372,18 +425,55 @@ int addGeometry(Engine::GeometryComponent &geometry, json &j, std::filesystem::p
         j["bufferViews"].push_back(faceView);
     }
 
-    j["meshes"].push_back(mesh);
-
     j["buffers"].push_back({{"uri", bufferPath}, {"byteLength", byteOffset}});
 
     fclose(out);
 
-    return meshIndex;
+    return mesh;
 }
 
-MeshMap addGeometries(Engine::Registry &registry, json &j, const std::filesystem::path &path)
+json addMaterial(Engine::OpenGLMaterialComponent &material, json &j, std::filesystem::path path)
 {
-    MeshMap meshIndex{};
+    json materialNode = json::object();
+    materialNode["extras"] = json::object();
+    materialNode["extras"]["properties"] = json::array();
+
+    auto &properties = material.getMaterialData().second;
+
+    for (auto &property : properties)
+    {
+        const char *name{std::get<0>(property).c_str()};
+        unsigned int type{std::get<1>(property)};
+        int offset{std::get<2>(property)};
+
+        float *v;
+        switch (type)
+        {
+        case GL_FLOAT:
+            materialNode["extras"]["properties"].push_back(
+                {{"name", name}, {"value", *material.getProperty<float>(offset)}});
+            break;
+        case GL_FLOAT_VEC4:
+            v = material.getProperty<float>(offset);
+            materialNode["extras"]["properties"].push_back({{"name", name}, {"value", {v[0], v[1], v[2], v[3]}}});
+            break;
+        case GL_FLOAT_VEC3:
+            v = material.getProperty<float>(offset);
+            materialNode["extras"]["properties"].push_back({{"name", name}, {"value", {v[0], v[1], v[2]}}});
+            break;
+        }
+    }
+
+    return materialNode;
+}
+
+void exportShaders(Engine::OpenGLMaterialComponent &material, std::filesystem::path path) {}
+
+MeshData addMeshes(Engine::Registry &registry, json &j, const std::filesystem::path &path)
+{
+    GeometryMap geometryMap{};
+    MaterialMap materialMap{};
+    ShaderMap shaderMap{};
 
     auto bufferDirectoryPath = path;
     bufferDirectoryPath.append("buffers");
@@ -393,13 +483,34 @@ MeshMap addGeometries(Engine::Registry &registry, json &j, const std::filesystem
 
     for (auto &geometry : geometries)
     {
-        int index = addGeometry(*geometry, j, path);
-
-        if (index > -1)
-        {
-            meshIndex.emplace(geometry.get(), index);
-        }
+        geometryMap.emplace(geometry.get(), addGeometry(*geometry, j, path));
     }
 
-    return meshIndex;
+    auto &materials = registry.getComponents<Engine::OpenGLMaterialComponent>();
+
+    for (auto &material : materials)
+    {
+        materialMap.emplace(material.get(), addMaterial(*material, j, path));
+    }
+
+    auto shaderDirectoryPath = path;
+    shaderDirectoryPath.append("shaders");
+    std::filesystem::create_directory(shaderDirectoryPath);
+
+    auto &shaders = registry.getComponents<Engine::OpenGLShaderComponent>();
+
+    int shaderIndex = 0;
+    for (auto shader : shaders)
+    {
+        std::string shaderSubPath{"shaders/shader" + std::to_string(shaderIndex)};
+        shaderMap.emplace(shader.get(), shaderSubPath);
+        std::filesystem::path shaderPath{path};
+        shaderPath.append(shaderSubPath);
+        std::filesystem::create_directory(shaderPath);
+        Engine::saveShaders(shaderPath, shader->getShaders());
+
+        ++shaderIndex;
+    }
+
+    return {geometryMap, materialMap, MeshMap{}, shaderMap, MaterialNodeMap{}};
 }

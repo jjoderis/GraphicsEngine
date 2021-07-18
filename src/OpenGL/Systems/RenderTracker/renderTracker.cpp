@@ -33,7 +33,10 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
     {
         for (unsigned int child : hierarchy->getChildren())
         {
-            m_registry.createComponent<Engine::RenderComponent>(child);
+            if (m_registry.hasComponent<Engine::OpenGLShaderComponent>(child))
+            {
+                m_registry.createComponent<Engine::RenderComponent>(child);
+            }
         }
     }
 }
