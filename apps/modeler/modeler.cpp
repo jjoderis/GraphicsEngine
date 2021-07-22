@@ -74,7 +74,7 @@ int main()
 
     unsigned int light1{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(light1, "Light 1");
-    auto ambientLight = registry.createComponent<Engine::AmbientLightComponent>(light1);
+    registry.createComponent<Engine::PointLightComponent>(light1);
 
     registry.createComponent<Engine::TransformComponent>(light1);
     auto sphereGeometry = Engine::createSphereGeometry(1.0, 20, 20);

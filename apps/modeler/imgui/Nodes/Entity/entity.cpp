@@ -1,5 +1,6 @@
 #include "entity.h"
 
+#include "../../Util/SceneLoading/sceneLoader.h"
 #include "../../Util/fileBrowser.h"
 #include "../../Util/objectLoader.h"
 #include "../helpers.h"
@@ -168,9 +169,18 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
         if (ImGui::Button("Import Entity"))
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool
-            { return (fs::is_regular_file(path) && path.extension() == ".obj"); };
+            { return (fs::is_regular_file(path) && (path.extension() == ".obj" || path.extension() == ".gltf")); };
             UIUtil::open_function = [&](const fs::path &path, const std::string &fileName)
-            { Util::loadOBJFile(registry, path, textureIndex); };
+            {
+                if (path.extension() == ".obj")
+                {
+                    Util::loadOBJFile(registry, path, textureIndex);
+                }
+                else if (path.extension() == ".gltf")
+                {
+                    Engine::Util::loadScene(path, registry);
+                }
+            };
             UIUtil::openFileBrowser();
         }
         if (ImGui::BeginPopup("entity_add_popup"))

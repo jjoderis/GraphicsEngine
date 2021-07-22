@@ -13,6 +13,7 @@ public:
 
 protected:
     Light();
+    Light(const Math::Vector3 &color);
     Math::Vector3 m_color{1.0, 1.0, 1.0};
 };
 
@@ -24,6 +25,7 @@ class DirectionalLightComponent : virtual public Light
 {
 public:
     DirectionalLightComponent();
+    DirectionalLightComponent(const Math::Vector3 &color, const Math::Vector3 &direction);
 
     void setDirection(const Math::Vector3 &direction);
     Math::Vector3 &getDirection();
@@ -43,6 +45,7 @@ public:
 
 protected:
     PunctualLight();
+    PunctualLight(const Math::Vector3 &color, const Math::Vector3 &position, float intensity);
     Math::Vector3 m_position{0.0, 0.0, 0.0};
     float m_intensity{1.0};
 };
@@ -51,12 +54,15 @@ class PointLightComponent : public PunctualLight
 {
 public:
     PointLightComponent();
+    PointLightComponent(const Math::Vector3 &color, const Math::Vector3 &position, float intensity);
 };
 
 class SpotLightComponent : public DirectionalLightComponent, public PunctualLight
 {
 public:
     SpotLightComponent();
+    SpotLightComponent(
+        const Math::Vector3 &color, const Math::Vector3 &position, float intensity, float cutoff, float penumbra);
 
     void setCutoff(float angle);
     float getCutoff();

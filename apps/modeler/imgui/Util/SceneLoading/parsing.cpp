@@ -3,6 +3,7 @@
 #include <Components/Camera/camera.h>
 #include <Components/Geometry/geometry.h>
 #include <Components/Hierarchy/hierarchy.h>
+#include <Components/Light/light.h>
 #include <Components/Material/material.h>
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
@@ -123,6 +124,49 @@ int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshDat
         registry.createComponent<Engine::ActiveCameraComponent>(entityIndex);
     }
 
+    if (node.find("extensions") != node.end())
+    {
+        if (node["extensions"].find("KHR_lights_punctual") != node["extensions"].end())
+        {
+            int lightIndex = node["extensions"]["KHR_lights_punctual"]["light"].get<int>();
+            json &lightNode = j["extensions"]["KHR_lights_punctual"]["lights"][lightIndex];
+
+            if (lightNode["type"] == "point")
+            {
+                registry.createComponent<Engine::PointLightComponent>(
+                    entityIndex,
+                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
+                                          lightNode["color"][1].get<int>(),
+                                          lightNode["color"][2].get<int>()},
+                    Engine::Math::Vector3{0, 0, 0},
+                    lightNode["intensity"]);
+            }
+
+            if (lightNode["type"] == "spot")
+            {
+                registry.createComponent<Engine::SpotLightComponent>(
+                    entityIndex,
+                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
+                                          lightNode["color"][1].get<int>(),
+                                          lightNode["color"][2].get<int>()},
+                    Engine::Math::Vector3{0, 0, 0},
+                    lightNode["intensity"],
+                    lightNode["spot"]["outerConeAngle"].get<float>(),
+                    lightNode["spot"]["innerConeAngle"].get<float>());
+            }
+
+            if (lightNode["type"] == "directional")
+            {
+                registry.createComponent<Engine::DirectionalLightComponent>(
+                    entityIndex,
+                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
+                                          lightNode["color"][1].get<int>(),
+                                          lightNode["color"][2].get<int>()},
+                    Engine::Math::Vector3{0, 0, -1});
+            }
+        }
+    }
+
     return entityIndex;
 }
 
@@ -196,7 +240,21 @@ void loadData<std::vector<unsigned int>>(json &j,
     auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
     auto &buffer = getBuffer(j, buffers, view["buffer"], path);
 
-    int start = accessor["byteOffset"].get<int>() + view["byteOffset"].get<int>();
+    int accessorOffset = 0;
+
+    if (accessor.find("byteOffset") != accessor.end())
+    {
+        accessorOffset = accessor["byteOffset"].get<int>();
+    }
+
+    int viewOffset = 0;
+
+    if (view.find("byteOffset") != view.end())
+    {
+        viewOffset = view["byteOffset"].get<int>();
+    }
+
+    int start = accessorOffset + viewOffset;
     int numElements = accessor["count"];
     unsigned int *data = (unsigned int *)(buffer.data() + start);
     target.reserve(numElements);
@@ -218,7 +276,21 @@ void loadData<std::vector<Engine::Math::Vector3>>(json &j,
     auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
     auto &buffer = getBuffer(j, buffers, view["buffer"], path);
 
-    int start = accessor["byteOffset"].get<int>() + view["byteOffset"].get<int>();
+    int accessorOffset = 0;
+
+    if (accessor.find("byteOffset") != accessor.end())
+    {
+        accessorOffset = accessor["byteOffset"].get<int>();
+    }
+
+    int viewOffset = 0;
+
+    if (view.find("byteOffset") != view.end())
+    {
+        viewOffset = view["byteOffset"].get<int>();
+    }
+
+    int start = accessorOffset + viewOffset;
     int numElements = accessor["count"];
     float *data = (float *)(buffer.data() + start);
     target.reserve(numElements);
@@ -241,7 +313,21 @@ void loadData<std::vector<Engine::Math::Vector2>>(json &j,
     auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
     auto &buffer = getBuffer(j, buffers, view["buffer"], path);
 
-    int start = accessor["byteOffset"].get<int>() + view["byteOffset"].get<int>();
+    int accessorOffset = 0;
+
+    if (accessor.find("byteOffset") != accessor.end())
+    {
+        accessorOffset = accessor["byteOffset"].get<int>();
+    }
+
+    int viewOffset = 0;
+
+    if (view.find("byteOffset") != view.end())
+    {
+        viewOffset = view["byteOffset"].get<int>();
+    }
+
+    int start = accessorOffset + viewOffset;
     int numElements = accessor["count"];
     float *data = (float *)(buffer.data() + start);
     target.reserve(numElements);
@@ -408,7 +494,6 @@ ShaderMap parseShaders(json &j, const std::filesystem::path &path)
     {
         for (auto &material : j["materials"])
         {
-
             if (material.find("extras") != material.end())
             {
                 json &extras = material["extras"];

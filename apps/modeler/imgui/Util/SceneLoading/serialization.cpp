@@ -3,6 +3,7 @@
 #include <Components/Camera/camera.h>
 #include <Components/Geometry/geometry.h>
 #include <Components/Hierarchy/hierarchy.h>
+#include <Components/Light/light.h>
 #include <Components/Material/material.h>
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
@@ -20,8 +21,14 @@ using ShaderMap = std::map<Engine::OpenGLShaderComponent *, std::string>;
 using MeshMap = std::map<json, int>;
 using MaterialNodeMap = std::map<json, int>;
 using MeshData = std::tuple<GeometryMap, MaterialMap, MeshMap, ShaderMap, MaterialNodeMap>;
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData);
+using PointLightMap = std::map<Engine::PointLightComponent *, int>;
+using SpotLightMap = std::map<Engine::SpotLightComponent *, int>;
+using DirectionalLightMap = std::map<Engine::DirectionalLightComponent *, int>;
+using LightData = std::tuple<PointLightMap, SpotLightMap, DirectionalLightMap>;
+int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData, LightData &lightData);
 MeshData addMeshes(Engine::Registry &registry, json &j, const std::filesystem::path &path);
+
+LightData addLights(Engine::Registry &registry, json &j);
 
 json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem::path &path)
 {
@@ -38,6 +45,8 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
 
     auto meshData = addMeshes(registry, j, path);
 
+    auto lightData = addLights(registry, j);
+
     for (auto entity : entities)
     {
         auto hierarchy = registry.getComponent<Engine::HierarchyComponent>(entity);
@@ -45,7 +54,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
         if (!hierarchy || hierarchy->getParent() < 0)
         {
             // add the entity to the rootNodes list if it has no parent
-            int index = addEntity(entity, registry, j, meshData);
+            int index = addEntity(entity, registry, j, meshData, lightData);
             rootNodes.push_back(index);
         }
     }
@@ -60,7 +69,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
 
 void addTransform(unsigned int entity, Engine::Registry &registry, json &node);
 
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData)
+int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData, LightData &lightData)
 {
     auto node = json::object();
     if (auto tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -77,7 +86,7 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData
 
             for (auto child : children)
             {
-                int index = addEntity(child, registry, j, meshData);
+                int index = addEntity(child, registry, j, meshData, lightData);
                 childList.push_back(index);
             }
 
@@ -171,6 +180,28 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData
         }
 
         j["cameras"].push_back(cameraNode);
+    }
+
+    auto pointLight = registry.getComponent<Engine::PointLightComponent>(entity);
+    auto spotLight = registry.getComponent<Engine::SpotLightComponent>(entity);
+    auto directionalLight = registry.getComponent<Engine::DirectionalLightComponent>(entity);
+
+    if (pointLight || spotLight || directionalLight)
+    {
+        node["extensions"] = json::object();
+
+        if (pointLight)
+        {
+            node["extensions"]["KHR_lights_punctual"] = {{"light", std::get<0>(lightData).at(pointLight.get())}};
+        }
+        if (spotLight)
+        {
+            node["extensions"]["KHR_lights_punctual"] = {{"light", std::get<1>(lightData).at(spotLight.get())}};
+        }
+        if (directionalLight)
+        {
+            node["extensions"]["KHR_lights_punctual"] = {{"light", std::get<2>(lightData).at(directionalLight.get())}};
+        }
     }
 
     int index = j["nodes"].size();
@@ -513,4 +544,76 @@ MeshData addMeshes(Engine::Registry &registry, json &j, const std::filesystem::p
     }
 
     return {geometryMap, materialMap, MeshMap{}, shaderMap, MaterialNodeMap{}};
+}
+
+LightData addLights(Engine::Registry &registry, json &j)
+{
+    PointLightMap pointLights{};
+    SpotLightMap spotLights{};
+    DirectionalLightMap directionalLights{};
+
+    json lights = json::array();
+
+    for (auto &pointLight : registry.getComponents<Engine::PointLightComponent>())
+    {
+        json lightNode = json::object();
+
+        auto &color = pointLight->getColor();
+        lightNode["color"] = {color.at(0), color.at(1), color.at(2)};
+        lightNode["intensity"] = pointLight->getIntensity();
+        lightNode["type"] = "point";
+
+        pointLights.emplace(pointLight.get(), lights.size());
+        lights.push_back(lightNode);
+    }
+
+    for (auto &spotLight : registry.getComponents<Engine::SpotLightComponent>())
+    {
+        json lightNode = json::object();
+
+        auto &color = spotLight->getColor();
+        lightNode["color"] = {color.at(0), color.at(1), color.at(2)};
+        lightNode["intensity"] = spotLight->getIntensity();
+        lightNode["type"] = "spot";
+        lightNode["spot"] = {{"innerConeAngle", spotLight->getPenumbra()}, {"outerConeAngle", spotLight->getCutoff()}};
+
+        spotLights.emplace(spotLight.get(), lights.size());
+        lights.push_back(lightNode);
+    }
+
+    for (auto &directionalLight : registry.getComponents<Engine::DirectionalLightComponent>())
+    {
+        json lightNode = json::object();
+
+        auto &color = directionalLight->getColor();
+        lightNode["color"] = {color.at(0), color.at(1), color.at(2)};
+        lightNode["intensity"] = 1.0;
+        lightNode["type"] = "directional";
+
+        directionalLights.emplace(directionalLight.get(), lights.size());
+        lights.push_back(lightNode);
+    }
+
+    if (lights.size())
+    {
+        if (j.find("extensions") != j.end())
+        {
+            j["extensions"] = json::object();
+        }
+        if (j["extensions"].find("KHR_lights_punctual") != j["extensions"].end())
+        {
+            j["extensions"]["KHR_lights_punctual"] = json::object();
+        }
+
+        j["extensions"]["KHR_lights_punctual"]["lights"] = lights;
+
+        if (j.find("extensionsUsed") != j.end())
+        {
+            j["extensionsUsed"] = json::array();
+        }
+
+        j["extensionsUsed"].push_back("KHR_lights_punctual");
+    }
+
+    return {pointLights, spotLights, directionalLights};
 }
