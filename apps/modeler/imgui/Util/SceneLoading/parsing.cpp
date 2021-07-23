@@ -8,9 +8,12 @@
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
+#include <Components/Texture/texture.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
+#include <Util/textureIndex.h>
 #include <glad/glad.h>
+#include <imgui.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -21,12 +24,20 @@ using GeometryMap = std::map<json, std::shared_ptr<Engine::GeometryComponent>>;
 using MaterialMap = std::map<json, std::shared_ptr<Engine::OpenGLMaterialComponent>>;
 using ShaderMap = std::map<std::string, std::shared_ptr<Engine::OpenGLShaderComponent>>;
 using MeshData = std::tuple<GeometryMap, MaterialMap, ShaderMap>;
-int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &MeshData);
+int addEntity(Engine::Registry &registry,
+              const std::filesystem::path &path,
+              json &j,
+              json &node,
+              MeshData &MeshData,
+              Engine::Util::OpenGLTextureIndex &textureIndex);
 GeometryMap parseGeometries(json &j, const std::filesystem::path &path);
 MaterialMap parseMaterials(json &j, const std::filesystem::path &path);
 ShaderMap parseShaders(json &j, const std::filesystem::path &path);
 
-void SceneUtil::parseScene(Engine::Registry &registry, json &j, const std::filesystem::path &path)
+void SceneUtil::parseScene(Engine::Registry &registry,
+                           json &j,
+                           const std::filesystem::path &path,
+                           Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     GeometryMap geometries = parseGeometries(j, path);
     MaterialMap materials = parseMaterials(j, path);
@@ -37,13 +48,18 @@ void SceneUtil::parseScene(Engine::Registry &registry, json &j, const std::files
     for (auto &node : j["scenes"][0]["nodes"])
     {
         unsigned int nodeIndex = node.get<unsigned int>();
-        addEntity(registry, j, j["nodes"][nodeIndex], meshData);
+        addEntity(registry, path, j, j["nodes"][nodeIndex], meshData, textureIndex);
     }
 }
 
 void addTransform(Engine::Registry &registry, json &node, int entityIndex);
 
-int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshData)
+int addEntity(Engine::Registry &registry,
+              const std::filesystem::path &path,
+              json &j,
+              json &node,
+              MeshData &meshData,
+              Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     int entityIndex = registry.addEntity();
 
@@ -61,7 +77,7 @@ int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshDat
         for (auto &child : node["children"])
         {
             unsigned int childNodeIndex = child.get<unsigned int>();
-            int childIndex = addEntity(registry, j, j["nodes"][childNodeIndex], meshData);
+            int childIndex = addEntity(registry, path, j, j["nodes"][childNodeIndex], meshData, textureIndex);
             auto childHierarchy = registry.createComponent<Engine::HierarchyComponent>(childIndex);
             childHierarchy->setParent(entityIndex);
             registry.updated<Engine::HierarchyComponent>(childIndex);
@@ -77,6 +93,21 @@ int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshDat
         if (mesh.find("material") != mesh.end())
         {
             auto material = j["materials"].at(mesh["material"].get<int>());
+
+            if (material.find("pbrMetallicRoughness") != material.end())
+            {
+                if (material["pbrMetallicRoughness"].find("baseColorTexture") != material["pbrMetallicRoughness"].end())
+                {
+                    int textureI = material["pbrMetallicRoughness"]["baseColorTexture"]["index"];
+                    int imageIndex = j["textures"].at(textureI)["source"];
+                    std::string imagePath = j["images"].at(imageIndex)["uri"];
+                    auto fullPath = path;
+                    fullPath.remove_filename();
+                    fullPath.append(imagePath);
+                    registry.createComponent<Engine::OpenGLTextureComponent>(entityIndex)
+                        ->addTexture(textureIndex.needTexture(fullPath, GL_TEXTURE_2D));
+                }
+            }
 
             if (material.find("extras") != material.end())
             {
@@ -113,7 +144,12 @@ int addEntity(Engine::Registry &registry, json &j, json &node, MeshData &meshDat
         if (cameraNode["type"] == "perspective")
         {
             auto &attributes = cameraNode["perspective"];
-            camera->setAspect(attributes["aspectRatio"]);
+
+            auto viewport = ImGui::GetMainViewport();
+            float width = viewport->Size.x;
+            float height = viewport->Size.y;
+
+            camera->setAspect(width / height);
             camera->setFov(attributes["yfov"]);
             camera->setNear(attributes["znear"]);
             camera->setFar(attributes["zfar"]);

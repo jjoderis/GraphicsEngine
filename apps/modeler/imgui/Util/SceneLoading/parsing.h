@@ -7,13 +7,21 @@
 
 namespace Engine
 {
+namespace Util
+{
+class OpenGLTextureIndex;
+}
+
 class Registry;
 } // namespace Engine
 
 namespace SceneUtil
 {
 
-void parseScene(Engine::Registry &registry, nlohmann::json &j, const std::filesystem::path &path);
+void parseScene(Engine::Registry &registry,
+                nlohmann::json &j,
+                const std::filesystem::path &path,
+                Engine::Util::OpenGLTextureIndex &textureIndex);
 
 } // namespace SceneUtil
 

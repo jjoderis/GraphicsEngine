@@ -34,6 +34,8 @@
 #include "../glfw/window.h"
 #include <GLFW/glfw3.h>
 
+extern Engine::Util::OpenGLTextureIndex textureIndex;
+
 bool showDemoWindow{false};
 unsigned int mainCamera{0};
 bool dragging{1};
@@ -246,7 +248,7 @@ void UI::render(Engine::Registry &registry)
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
             UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            { Engine::Util::saveScene(path, registry); };
+            { Engine::Util::saveScene(path, registry, textureIndex); };
             UIUtil::openFileBrowser();
         }
 
@@ -257,7 +259,7 @@ void UI::render(Engine::Registry &registry)
             UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
             {
                 registry.clear();
-                Engine::Util::loadScene(path, registry);
+                Engine::Util::loadScene(path, registry, textureIndex);
             };
             UIUtil::openFileBrowser();
         }

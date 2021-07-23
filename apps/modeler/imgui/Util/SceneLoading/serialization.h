@@ -8,13 +8,20 @@
 
 namespace Engine
 {
+namespace Util
+{
+class OpenGLTextureIndex;
+}
+
 class Registry;
 } // namespace Engine
 
 namespace SceneUtil
 {
 
-nlohmann::json serializeScene(Engine::Registry &registry, const std::filesystem::path &path);
+nlohmann::json serializeScene(Engine::Registry &registry,
+                              const std::filesystem::path &path,
+                              const Engine::Util::OpenGLTextureIndex &textureIndex);
 
 } // namespace SceneUtil
 

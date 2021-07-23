@@ -8,6 +8,7 @@
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
+#include <Components/Texture/texture.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
 #include <glad/glad.h>
@@ -25,12 +26,22 @@ using PointLightMap = std::map<Engine::PointLightComponent *, int>;
 using SpotLightMap = std::map<Engine::SpotLightComponent *, int>;
 using DirectionalLightMap = std::map<Engine::DirectionalLightComponent *, int>;
 using LightData = std::tuple<PointLightMap, SpotLightMap, DirectionalLightMap>;
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData, LightData &lightData);
+using TextureMap = std::map<std::filesystem::path, int>;
+using TextureData = std::tuple<TextureMap>;
+int addEntity(unsigned int entity,
+              const std::filesystem::path &path,
+              Engine::Registry &registry,
+              json &j,
+              MeshData &meshData,
+              LightData &lightData,
+              TextureData &textureData);
 MeshData addMeshes(Engine::Registry &registry, json &j, const std::filesystem::path &path);
 
 LightData addLights(Engine::Registry &registry, json &j);
 
-json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem::path &path)
+json SceneUtil::serializeScene(Engine::Registry &registry,
+                               const std::filesystem::path &path,
+                               const Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     auto &entities{registry.getEntities()};
 
@@ -42,10 +53,18 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
     j["buffers"] = json::array();
     j["bufferViews"] = json::array();
     j["accessors"] = json::array();
+    j["textures"] = json::array();
+    j["images"] = json::array();
 
     auto meshData = addMeshes(registry, j, path);
 
     auto lightData = addLights(registry, j);
+
+    auto textureDirectoryPath = path;
+    textureDirectoryPath.append("textures");
+    std::filesystem::create_directory(textureDirectoryPath);
+
+    TextureData TextureData{};
 
     for (auto entity : entities)
     {
@@ -54,7 +73,7 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
         if (!hierarchy || hierarchy->getParent() < 0)
         {
             // add the entity to the rootNodes list if it has no parent
-            int index = addEntity(entity, registry, j, meshData, lightData);
+            int index = addEntity(entity, path, registry, j, meshData, lightData, TextureData);
             rootNodes.push_back(index);
         }
     }
@@ -69,7 +88,13 @@ json SceneUtil::serializeScene(Engine::Registry &registry, const std::filesystem
 
 void addTransform(unsigned int entity, Engine::Registry &registry, json &node);
 
-int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData &meshData, LightData &lightData)
+int addEntity(unsigned int entity,
+              const std::filesystem::path &path,
+              Engine::Registry &registry,
+              json &j,
+              MeshData &meshData,
+              LightData &lightData,
+              TextureData &textureData)
 {
     auto node = json::object();
     if (auto tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -86,7 +111,7 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData
 
             for (auto child : children)
             {
-                int index = addEntity(child, registry, j, meshData, lightData);
+                int index = addEntity(child, path, registry, j, meshData, lightData, textureData);
                 childList.push_back(index);
             }
 
@@ -96,6 +121,7 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData
 
     addTransform(entity, registry, node);
 
+    // TODO: this will prevent the export of only a material if there is no geometry
     if (auto geometry = registry.getComponent<Engine::GeometryComponent>(entity))
     {
         GeometryMap &geometryMap = std::get<0>(meshData);
@@ -115,6 +141,35 @@ int addEntity(unsigned int entity, Engine::Registry &registry, json &j, MeshData
                 if (registry.hasComponent<Engine::RenderComponent>(entity))
                 {
                     materialNode["extras"]["shader"]["active"] = true;
+                }
+            }
+
+            if (auto texture = registry.getComponent<Engine::OpenGLTextureComponent>(entity))
+            {
+                if (texture->getNumTextures())
+                {
+                    materialNode["pbrMetallicRoughness"] = json::object();
+                    materialNode["pbrMetallicRoughness"]["baseColorTexture"] = json::object();
+
+                    auto absPath = texture->getTexture(0).getPath();
+                    auto &textureMap = std::get<0>(textureData);
+                    if (textureMap.find(absPath) != textureMap.end())
+                    {
+                        materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureMap.at(absPath);
+                    }
+                    else
+                    {
+                        // TODO: export samplers
+                        int index = j["images"].size();
+                        textureMap.emplace(absPath, index);
+                        std::string texturePath = "textures/" + absPath.filename().string();
+                        auto filePath{path};
+                        filePath.append(texturePath);
+                        j["images"].push_back({{"uri", texturePath}});
+                        std::filesystem::copy(absPath, filePath, std::filesystem::copy_options::overwrite_existing);
+                        j["textures"].push_back({{"source", index}});
+                        materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = index;
+                    }
                 }
             }
 

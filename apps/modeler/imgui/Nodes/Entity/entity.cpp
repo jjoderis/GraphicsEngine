@@ -178,7 +178,7 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
                 }
                 else if (path.extension() == ".gltf")
                 {
-                    Engine::Util::loadScene(path, registry);
+                    Engine::Util::loadScene(path, registry, textureIndex);
                 }
             };
             UIUtil::openFileBrowser();
