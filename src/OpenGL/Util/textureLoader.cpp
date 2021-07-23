@@ -3,8 +3,13 @@
 #include <glad/glad.h>
 #include <stb_image.h>
 
-Engine::Util::textureInfo
-Engine::Util::loadTexture(const std::filesystem::path &path, unsigned int type, unsigned int pixelType)
+Engine::Util::textureInfo Engine::Util::loadTexture(const std::filesystem::path &path,
+                                                    unsigned int type,
+                                                    unsigned int pixelType,
+                                                    unsigned int minFilter,
+                                                    unsigned int magFilter,
+                                                    unsigned int wrapS,
+                                                    unsigned int wrapT)
 {
     // TODO: create texture with given type
     int width, height, n;
@@ -40,6 +45,10 @@ Engine::Util::loadTexture(const std::filesystem::path &path, unsigned int type, 
 
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
     glTexImage2D(GL_TEXTURE_2D, 0, pixelType, width, height, 0, colorType, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 

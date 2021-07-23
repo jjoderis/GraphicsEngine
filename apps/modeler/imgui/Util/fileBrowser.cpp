@@ -2,10 +2,8 @@
 
 #include <glad/glad.h>
 #include <imgui.h>
-#include <misc/cpp/imgui_stdlib.h>
-
-#include <OpenGL/Util/textureIndex.h>
 #include <iostream>
+#include <misc/cpp/imgui_stdlib.h>
 #include <vector>
 
 #include <OpenGL/Util/textureLoader.h>

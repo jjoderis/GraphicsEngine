@@ -157,8 +157,7 @@ void Util::loadOBJFile(Engine::Registry &registry,
                     auto textureComp = registry.createComponent<Engine::OpenGLTextureComponent>(currentEntity);
                     for (auto path : textureLib.at(name))
                     {
-                        textureComp->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D, textureComp.get()),
-                                                GL_TEXTURE_2D);
+                        textureComp->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D));
                     }
                     if (name == "default")
                     {

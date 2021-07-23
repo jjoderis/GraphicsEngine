@@ -5,78 +5,93 @@
 
 namespace fs = std::filesystem;
 
+Engine::Util::OpenGLTextureHandler::OpenGLTextureHandler(unsigned int texture,
+                                                         const TextureData &data,
+                                                         OpenGLTextureIndex &index)
+    : m_texture{texture}, m_data{data}, m_index{index}
+{
+    // increase number of users
+    m_index.increaseUsers(m_data);
+}
+
+Engine::Util::OpenGLTextureHandler::OpenGLTextureHandler(const OpenGLTextureHandler &other)
+    : m_texture{other.m_texture}, m_data{other.m_data}, m_index{other.m_index}
+{
+    // increase number of users
+    m_index.increaseUsers(m_data);
+}
+
+Engine::Util::OpenGLTextureHandler &Engine::Util::OpenGLTextureHandler::operator=(const OpenGLTextureHandler &other)
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+
+    m_index.decreaseUsers(m_data);
+    m_index = other.m_index;
+    m_data = other.m_data;
+    m_index.increaseUsers(m_data);
+    m_texture = other.m_texture;
+}
+
+Engine::Util::OpenGLTextureHandler::~OpenGLTextureHandler()
+{
+    // reduce the number of texture users by one
+    m_index.decreaseUsers(m_data);
+}
+
+unsigned int Engine::Util::OpenGLTextureHandler::getTexture() const { return m_texture; }
+
+std::filesystem::path Engine::Util::OpenGLTextureHandler::getPath() const { return std::get<0>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::getType() const { return std::get<1>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::pixelType() const { return std::get<2>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::getMinFilter() const { return std::get<3>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::getMagFilter() const { return std::get<4>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::getWrapS() const { return std::get<5>(m_data); }
+unsigned int Engine::Util::OpenGLTextureHandler::getWrapT() const { return std::get<6>(m_data); }
+
 Engine::Util::OpenGLTextureIndex::~OpenGLTextureIndex()
 {
-    for (auto &typeData : m_textures)
+    for (auto &textureData : m_textures)
     {
-        for (auto &textureData : typeData.second)
-        {
-            glDeleteTextures(1, &textureData.second.first);
-        }
+        glDeleteTextures(1, &textureData.second.first);
     }
 }
 
-unsigned int
-Engine::Util::OpenGLTextureIndex::needTexture(const fs::path &path, unsigned int type, OpenGLTextureComponent *user)
+Engine::Util::OpenGLTextureHandler Engine::Util::OpenGLTextureIndex::needTexture(const std::filesystem::path &path,
+                                                                                 unsigned int type,
+                                                                                 unsigned int pixelType,
+                                                                                 unsigned int minFilter,
+                                                                                 unsigned int magFilter,
+                                                                                 unsigned int wrapS,
+                                                                                 unsigned int wrapT)
 {
-    if (!m_textures.count(path) || !m_textures.at(path).count(type))
+    auto absPath = std::filesystem::canonical(path);
+    TextureData data{absPath, type, pixelType, minFilter, magFilter, wrapS, wrapT};
+
+    if (m_textures.find(data) != m_textures.end())
     {
-        unsigned int texture = Util::loadTexture(path, type, GL_RGBA).buffer;
-        m_buffers.emplace(texture, bufferData{path, type});
-
-        if (!m_textures.count(path))
-        {
-            m_textures.emplace(path, typeMap{})
-                .first->second.emplace(type, textureData{texture, std::list<OpenGLTextureComponent *>{user}});
-        }
-        else
-        {
-            typeMap &typeData{m_textures.at(path)};
-
-            typeData.emplace(type, textureData{texture, std::list<OpenGLTextureComponent *>{user}});
-        }
-
-        return texture;
+        return OpenGLTextureHandler{m_textures.at(data).first, data, *this};
     }
 
-    return m_textures.at(path).at(type).first;
+    unsigned int texture = Util::loadTexture(path, type, pixelType, minFilter, magFilter, wrapS, wrapT).buffer;
+
+    m_textures.emplace(data, TextureUsage{texture, 0});
+
+    return OpenGLTextureHandler{texture, data, *this};
 }
 
-void Engine::Util::OpenGLTextureIndex::unneedTexture(const fs::path &path,
-                                                     unsigned int type,
-                                                     OpenGLTextureComponent *user)
+void Engine::Util::OpenGLTextureIndex::increaseUsers(const TextureData &data) { ++m_textures.at(data).second; }
+
+void Engine::Util::OpenGLTextureIndex::decreaseUsers(const TextureData &data)
 {
-    if (!m_textures.count(path) || !m_textures.at(path).count(type))
+    auto &numUsers = m_textures.at(data).second;
+    --numUsers;
+
+    if (numUsers == 0)
     {
-        return;
-    }
-
-    typeMap &types{m_textures.at(path)};
-
-    textureData &data{types.at(type)};
-
-    std::list<OpenGLTextureComponent *> &users{data.second};
-    users.remove(user);
-
-    if (!users.size())
-    {
-        m_buffers.erase(data.first);
-        glDeleteTextures(1, &data.first);
-        types.erase(type);
-
-        if (!types.size())
-        {
-            m_textures.erase(path);
-        }
-    }
-}
-
-void Engine::Util::OpenGLTextureIndex::unneedTexture(unsigned int buffer, OpenGLTextureComponent *user)
-{
-    if (m_buffers.count(buffer))
-    {
-        auto data{m_buffers.at(buffer)};
-
-        unneedTexture(data.first, data.second, user);
+        glDeleteTextures(1, &m_textures.at(data).first);
+        m_textures.erase(data);
     }
 }

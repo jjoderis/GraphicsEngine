@@ -1,22 +1,27 @@
 #ifndef ENGINE_OPENGL_COMPONENTS_TEXTURE
 #define ENGINE_OPENGL_COMPONENTS_TEXTURE
 
+#include "../../Util/textureIndex.h"
 #include <filesystem>
 #include <vector>
 
 namespace Engine
 {
+namespace Util
+{
+class OpenGLTextureHandler;
+};
+
 class OpenGLTextureComponent
 {
 public:
     // load texture from file at given path
     OpenGLTextureComponent();
 
-    void addTexture(unsigned int buffer, unsigned int type);
-    void editTexture(int index, unsigned int buffer, unsigned int type);
-    using textureData = std::pair<unsigned int, unsigned int>;
-    const std::vector<textureData> &getTextures() const;
-    textureData &getTexture(int index);
+    void addTexture(const Util::OpenGLTextureHandler &handler);
+    void editTexture(int index, const Util::OpenGLTextureHandler &handler);
+    const std::vector<Util::OpenGLTextureHandler> &getTextures() const;
+    Util::OpenGLTextureHandler &getTexture(int index);
     unsigned int getNumTextures() const;
 
     void bind();
@@ -24,7 +29,7 @@ public:
 
 private:
     unsigned int m_numTextures{0};
-    std::vector<textureData> m_textures;
+    std::vector<Util::OpenGLTextureHandler> m_textures;
 };
 } // namespace Engine
 

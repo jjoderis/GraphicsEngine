@@ -92,9 +92,8 @@ int main()
     float defaultData[48]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0};
     float *properties{material->getProperty<float>(0)};
     std::memcpy(properties, defaultData, 9 * sizeof(float));
-    auto texture = registry.createComponent<Engine::OpenGLTextureComponent>(object1);
-    texture->addTexture(textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D, texture.get()),
-                        GL_TEXTURE_2D);
+    registry.createComponent<Engine::OpenGLTextureComponent>(object1)->addTexture(
+        textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D));
 
     registry.createComponent<Engine::RaytracingMaterial>(object1);
 

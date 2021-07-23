@@ -17,7 +17,13 @@ struct textureInfo
     unsigned int buffer;
 };
 
-textureInfo loadTexture(const std::filesystem::path &path, unsigned int type, unsigned int pixelType = GL_RGB);
+textureInfo loadTexture(const std::filesystem::path &path,
+                        unsigned int type,
+                        unsigned int pixelType = GL_RGB,
+                        unsigned int minFilter = GL_LINEAR,
+                        unsigned int magFilter = GL_LINEAR,
+                        unsigned int wrapS = GL_REPEAT,
+                        unsigned int wrapT = GL_REPEAT);
 
 } // namespace Util
 

@@ -1,31 +1,29 @@
 #include "texture.h"
 
+#include "../../Util/textureIndex.h"
 #include <glad/glad.h>
 
 namespace fs = std::filesystem;
 
 Engine::OpenGLTextureComponent::OpenGLTextureComponent() {}
 
-void Engine::OpenGLTextureComponent::addTexture(unsigned int buffer, unsigned int type)
+void Engine::OpenGLTextureComponent::addTexture(const Util::OpenGLTextureHandler &handler)
 {
     ++m_numTextures;
-    m_textures.emplace_back(textureData{buffer, type});
+    m_textures.emplace_back(handler);
 }
 
-void Engine::OpenGLTextureComponent::editTexture(int index, unsigned int buffer, unsigned int type)
+void Engine::OpenGLTextureComponent::editTexture(int index, const Util::OpenGLTextureHandler &handler)
 {
-    m_textures[index].first = buffer;
-    m_textures[index].second = type;
+    m_textures[index] = handler;
 }
 
-const std::vector<Engine::OpenGLTextureComponent::textureData> &Engine::OpenGLTextureComponent::getTextures() const
+const std::vector<Engine::Util::OpenGLTextureHandler> &Engine::OpenGLTextureComponent::getTextures() const
 {
     return m_textures;
 };
-Engine::OpenGLTextureComponent::textureData &Engine::OpenGLTextureComponent::getTexture(int index)
-{
-    return m_textures[index];
-}
+
+Engine::Util::OpenGLTextureHandler &Engine::OpenGLTextureComponent::getTexture(int index) { return m_textures[index]; }
 
 unsigned int Engine::OpenGLTextureComponent::getNumTextures() const { return m_numTextures; }
 
@@ -35,7 +33,7 @@ void Engine::OpenGLTextureComponent::bind()
     {
         glActiveTexture(GL_TEXTURE0 + i);
         // TODO: bind actual texture type
-        glBindTexture(GL_TEXTURE_2D, m_textures[i].first);
+        glBindTexture(GL_TEXTURE_2D, m_textures[i].getTexture());
     }
 }
 
