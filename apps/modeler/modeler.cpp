@@ -29,6 +29,7 @@
 #include <OpenGL/Systems/TransformTracker/transformTracker.h>
 #include <OpenGL/Util/textureIndex.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
+#include <Systems/RenderTracker/renderTracker.h>
 #include <cstring>
 
 #include <iostream>
@@ -56,6 +57,9 @@ int main()
 {
     Window::init();
     OpenGL::init();
+
+    std::vector<unsigned int> renderables{};
+    Engine::Systems::OpenGLRenderTracker renderTracker{registry, renderables};
 
     Engine::OpenGLRenderer *renderer = new Engine::OpenGLRenderer{registry};
     Engine::Systems::HierarchyTracker hierarchyTracker{registry};
@@ -121,7 +125,7 @@ int main()
 
         UI::render(registry);
 
-        renderer->render();
+        renderer->render(renderables);
 
         UI::postRender();
 

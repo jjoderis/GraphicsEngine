@@ -3,7 +3,6 @@
 
 #include "../Systems/CameraTracker/cameraTracker.h"
 #include "../Systems/LightsTracker/lightsTracker.h"
-#include "../Systems/RenderTracker/renderTracker.h"
 #include <glad/glad.h>
 
 namespace Engine
@@ -24,7 +23,6 @@ private:
     Systems::DirectionalLightsTracker m_directionalLightsTracker;
     Systems::PointLightsTracker m_pointLightsTracker;
     Systems::SpotLightsTracker m_spotLightsTracker;
-    Systems::OpenGLRenderTracker m_renderTracker;
 
     Registry &m_registry;
 
@@ -33,7 +31,7 @@ public:
     OpenGLRenderer(Registry &registry);
     ~OpenGLRenderer();
 
-    void render();
+    void render(const std::vector<unsigned int> &renderables);
 };
 } // namespace Engine
 

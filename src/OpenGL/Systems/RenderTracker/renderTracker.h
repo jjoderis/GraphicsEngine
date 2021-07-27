@@ -19,16 +19,18 @@ class OpenGLRenderTracker
 public:
     OpenGLRenderTracker() = delete;
 
-    OpenGLRenderTracker(Registry &registry);
+    OpenGLRenderTracker(Registry &registry, std::vector<unsigned int> &renderables);
 
 private:
     Registry &m_registry;
+    std::vector<unsigned int> &m_renderables;
 
     // callback type for component events (add, update, remove)
     using render_callback = std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::RenderComponent>)>>;
 
     // callback that tracks addition of new render components
     render_callback m_addCallback;
+    render_callback m_removeCallback;
 
     void makeRenderable(unsigned int entityId);
 

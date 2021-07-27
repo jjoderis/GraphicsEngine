@@ -11,10 +11,19 @@
 #include "../../Components/Shader/shader.h"
 #include "../../Components/Texture/texture.h"
 
-Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry) : m_registry{registry}
+#include <algorithm>
+
+Engine::Systems::OpenGLRenderTracker::OpenGLRenderTracker(Registry &registry, std::vector<unsigned int> &renderables)
+    : m_registry{registry}, m_renderables{renderables}
 {
     m_addCallback = m_registry.onAdded<RenderComponent>(
         [this](unsigned int entity, std::weak_ptr<RenderComponent> render) { this->makeRenderable(entity); });
+
+    m_removeCallback = m_registry.onRemove<RenderComponent>(
+        [this](unsigned int entity, std::weak_ptr<RenderComponent> render) {
+            m_renderables.erase(std::remove(m_renderables.begin(), m_renderables.end(), entity), m_renderables.end());
+        }
+    );
 }
 
 void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
@@ -27,6 +36,8 @@ void Engine::Systems::OpenGLRenderTracker::makeRenderable(unsigned int entity)
 
     // TODO: texture not always necessary
     ensureTexture(entity);
+
+    m_renderables.push_back(entity);
 
     // render children
     if (auto hierarchy = m_registry.getComponent<Engine::HierarchyComponent>(entity))
