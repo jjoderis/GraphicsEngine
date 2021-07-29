@@ -28,6 +28,7 @@
 #include <Util/fileHandling.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 #include <imgui.h>
 
@@ -35,6 +36,8 @@
 #include <GLFW/glfw3.h>
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
+
+std::vector<UICreation::ComponentWindow*> componentWindows{};
 
 bool showDemoWindow{false};
 unsigned int mainCamera{0};
@@ -47,7 +50,7 @@ int possible_component_current = 0;
 Engine::Math::Vector3 debugOrigin{0, 0, 0};
 Engine::Math::Vector3 debugDirection{0, 0, 0};
 
-void UI::init(Engine::Registry &registry)
+void UI::init(Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     // setup imgui context
     IMGUI_CHECKVERSION();
@@ -86,6 +89,14 @@ void UI::init(Engine::Registry &registry)
     registry.updated<Engine::CameraComponent>(mainCamera);
 
     UIUtil::initFileBrowserIcons();
+
+    componentWindows.emplace_back(new TransformComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new GeometryComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new LightComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new MaterialComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new OpenGLShaderComponentWindow{selectedEntity, registry});
+    componentWindows.emplace_back(new TextureComponentWindow{selectedEntity, registry, textureIndex});
 }
 
 void UI::preRender()
@@ -208,23 +219,23 @@ void drawShaderTypeSelection(Engine::Registry &registry)
     }
 }
 
-template <typename ComponentType>
-void drawComponentNode(const char *componentName, Engine::Registry &registry)
-{
-    if (registry.hasComponent<ComponentType>(selectedEntity))
-    {
-        bool isOpen = UICreation::createComponentNodeStart<ComponentType>(componentName);
-        bool wasRemoved = UICreation::createHeaderControls<ComponentType>(componentName, registry);
+// template <typename ComponentType>
+// void drawComponentNode(const char *componentName, Engine::Registry &registry)
+// {
+//     if (registry.hasComponent<ComponentType>(selectedEntity))
+//     {
+//         bool isOpen = UICreation::createComponentNodeStart<ComponentType>(componentName);
+//         bool wasRemoved = UICreation::createHeaderControls<ComponentType>(componentName, registry);
 
-        if (isOpen && !wasRemoved)
-        {
-            std::shared_ptr<ComponentType> component = registry.getComponent<ComponentType>(selectedEntity);
-            UICreation::createComponentNodeMain<ComponentType>(component, registry);
-        }
+//         if (isOpen && !wasRemoved)
+//         {
+//             std::shared_ptr<ComponentType> component = registry.getComponent<ComponentType>(selectedEntity);
+//             UICreation::createComponentNodeMain<ComponentType>(component, registry);
+//         }
 
-        UICreation::createComponentNodeEnd();
-    }
-}
+//         UICreation::createComponentNodeEnd();
+//     }
+// }
 
 void UI::render(Engine::Registry &registry)
 {
@@ -391,16 +402,9 @@ void UI::render(Engine::Registry &registry)
             drawGeometryTypeSelection(registry);
             drawShaderTypeSelection(registry);
 
-            drawComponentNode<Engine::OpenGLMaterialComponent>("Material", registry);
-            drawComponentNode<Engine::GeometryComponent>("Geometry", registry);
-            drawComponentNode<Engine::TransformComponent>("Transform", registry);
-            drawComponentNode<Engine::OpenGLShaderComponent>("Shader", registry);
-            drawComponentNode<Engine::CameraComponent>("Camera", registry);
-            drawComponentNode<Engine::AmbientLightComponent>("Ambient Light", registry);
-            drawComponentNode<Engine::DirectionalLightComponent>("Directional Light", registry);
-            drawComponentNode<Engine::PointLightComponent>("Point Light", registry);
-            drawComponentNode<Engine::SpotLightComponent>("Spot Light", registry);
-            drawComponentNode<Engine::OpenGLTextureComponent>("Texture", registry);
+            for (auto componentWindow : componentWindows) {
+               componentWindow->render();
+            }
         }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",

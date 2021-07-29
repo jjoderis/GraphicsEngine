@@ -1,19 +1,21 @@
-#include "../helpers.h"
+#include "geometryNode.h"
 #include <Core/Components/BoundingBox/boundingBox.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
 
 extern bool dragging;
 
-template <>
-void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_ptr<Engine::GeometryComponent> geometry,
-                                                                    Engine::Registry &registry)
+UICreation::GeometryComponentWindow::GeometryComponentWindow(int &currentEntity, Engine::Registry &registry)
+    : TemplatedComponentWindow<Engine::GeometryComponent>{"Geometry", currentEntity, registry}
 {
+}
+
+void UICreation::GeometryComponentWindow::main() {
     createImGuiComponentDragSource<Engine::GeometryComponent>(dragging);
 
     if (ImGui::TreeNode("Vertices"))
     {
-        std::vector<Engine::Math::Vector3> &vertices{geometry->getVertices()};
+        std::vector<Engine::Math::Vector3> &vertices{m_component->getVertices()};
         for (int i = 0; i < vertices.size(); ++i)
         {
             std::string str = std::to_string(i);
@@ -21,7 +23,7 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
             ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
             if (ImGui::IsItemEdited())
             {
-                registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
             }
         }
         static Engine::Math::Vector3 newVertex{0.0, 0.0, 0.0};
@@ -35,8 +37,8 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
             ImGui::SameLine();
             if (ImGui::Button("+##add_vertex"))
             {
-                geometry->addVertex(Engine::Math::Vector3{newVertex});
-                registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_component->addVertex(Engine::Math::Vector3{newVertex});
+                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
                 newVertex = Engine::Math::Vector3{0.0f, 0.0f, 0.0f};
             }
             ImGui::EndPopup();
@@ -46,7 +48,7 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
     }
     if (ImGui::TreeNode("Faces"))
     {
-        std::vector<unsigned int> &faces{geometry->getFaces()};
+        std::vector<unsigned int> &faces{m_component->getFaces()};
         for (int i = 0; i < faces.size(); i += 3)
         {
             std::string str = std::to_string(i / 3);
@@ -54,7 +56,7 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
             ImGui::InputScalarN(str.c_str(), ImGuiDataType_U32, faces.data() + i, 3);
             if (ImGui::IsItemEdited())
             {
-                registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
             }
         }
         static unsigned int newFace[3]{0u, 0u, 0u};
@@ -68,8 +70,8 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
             ImGui::SameLine();
             if (ImGui::Button("+##add_face"))
             {
-                geometry->addFace(newFace[0], newFace[1], newFace[2]);
-                registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_component->addFace(newFace[0], newFace[1], newFace[2]);
+                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
                 newFace[0] = 0u;
                 newFace[1] = 0u;
                 newFace[2] = 0u;
@@ -81,35 +83,35 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
     }
     if (ImGui::Button("Calculate Normals"))
     {
-        geometry->calculateNormals();
-        registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_component->calculateNormals();
+        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
     }
     if (ImGui::Button("Invert Normals"))
     {
-        for (Engine::Math::Vector3 &normal : geometry->getNormals())
+        for (Engine::Math::Vector3 &normal : m_component->getNormals())
         {
             normal = -normal;
         }
-        registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
     }
 
     if (ImGui::Button("Center on origin"))
     {
         Engine::Math::Vector3 avg{0.0, 0.0, 0.0};
-        for (const Engine::Math::Vector3 &vert : geometry->getVertices())
+        for (const Engine::Math::Vector3 &vert : m_component->getVertices())
         {
             avg += vert;
         }
-        avg /= geometry->getVertices().size();
+        avg /= m_component->getVertices().size();
 
-        for (Engine::Math::Vector3 &vert : geometry->getVertices())
+        for (Engine::Math::Vector3 &vert : m_component->getVertices())
         {
             vert -= avg;
         }
-        registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
     }
 
-    if (auto openGLGeometry = registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity))
+    if (auto openGLGeometry = m_registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity))
     {
         bool drawingPoints = openGLGeometry->drawingPoints();
         ImGui::Checkbox("Draw as points: ", &drawingPoints);
@@ -119,11 +121,11 @@ void UICreation::createComponentNodeMain<Engine::GeometryComponent>(std::shared_
         }
     }
 
-    if (!registry.hasComponent<Engine::BoundingBoxComponent>(selectedEntity))
+    if (!m_registry.hasComponent<Engine::BoundingBoxComponent>(selectedEntity))
     {
         if (ImGui::Button("Add Bounding Box"))
         {
-            registry.createComponent<Engine::BoundingBoxComponent>(selectedEntity, *geometry.get());
+            m_registry.createComponent<Engine::BoundingBoxComponent>(selectedEntity, *m_component.get());
         }
     }
 }

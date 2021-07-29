@@ -7,9 +7,12 @@
 #include <glad/glad.h>
 #include <iostream>
 
-extern Engine::Util::OpenGLTextureIndex textureIndex;
-
 extern bool dragging;
+
+UICreation::TextureComponentWindow::TextureComponentWindow(int &currentEntity, Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &textureIndex)
+    : TemplatedComponentWindow<Engine::OpenGLTextureComponent>{"Texture", currentEntity, registry}, m_textureIndex{textureIndex}
+{    
+}
 
 bool isImage(const fs::path &path)
 {
@@ -18,13 +21,10 @@ bool isImage(const fs::path &path)
     return extension == ".jpg" || extension == ".jpeg" || extension == ".png";
 }
 
-template <>
-void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
-    std::shared_ptr<Engine::OpenGLTextureComponent> texture, Engine::Registry &registry)
-{
+void UICreation::TextureComponentWindow::main() {
     createImGuiComponentDragSource<Engine::OpenGLTextureComponent>(dragging);
 
-    auto textures{texture->getTextures()};
+    auto textures{m_component->getTextures()};
 
     int index{0};
     for (auto data : textures)
@@ -36,8 +36,8 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
         {
             UIUtil::can_open_function = [](const fs::path &path) -> bool
             { return (fs::is_regular_file(path) && isImage(path)); };
-            UIUtil::open_function = [&registry, texture, index](const fs::path &path, const std::string &fileName)
-            { texture->editTexture(index, textureIndex.needTexture(path, GL_TEXTURE_2D)); };
+            UIUtil::open_function = [this, index](const fs::path &path, const std::string &fileName)
+            { m_component->editTexture(index, m_textureIndex.needTexture(path, GL_TEXTURE_2D)); };
             UIUtil::openFileBrowser();
         }
         ++index;
@@ -47,8 +47,8 @@ void UICreation::createComponentNodeMain<Engine::OpenGLTextureComponent>(
     {
         UIUtil::can_open_function = [](const fs::path &path) -> bool
         { return (fs::is_regular_file(path) && isImage(path)); };
-        UIUtil::open_function = [texture](const fs::path &path, const std::string &fileName)
-        { texture->addTexture(textureIndex.needTexture(path, GL_TEXTURE_2D)); };
+        UIUtil::open_function = [this](const fs::path &path, const std::string &fileName)
+        { m_component->addTexture(m_textureIndex.needTexture(path, GL_TEXTURE_2D)); };
         UIUtil::openFileBrowser();
     }
 }

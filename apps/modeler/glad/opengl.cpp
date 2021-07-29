@@ -21,12 +21,14 @@ void GLAPIENTRY MessageCallback(GLenum source,
     (void)length;
     (void)userParam;
     (void)source;
-    fprintf(stderr,
+    if (type == GL_DEBUG_TYPE_ERROR) {
+        fprintf(stderr,
             "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
             (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
             type,
             severity,
             message);
+    } 
 }
 
 void frameBufferSizeCallback(GLFWwindow *window, int width, int height) { glViewport(0, 0, width, height); }

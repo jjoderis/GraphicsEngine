@@ -3,31 +3,33 @@
 
 extern bool dragging;
 
-template <>
-void UICreation::createComponentNodeMain<Engine::TransformComponent>(
-    std::shared_ptr<Engine::TransformComponent> transform, Engine::Registry &registry)
-{
+UICreation::TransformComponentWindow::TransformComponentWindow(int &currentEntity, Engine::Registry &registry)
+    : TemplatedComponentWindow<Engine::TransformComponent>{"Transform", currentEntity, registry}
+{    
+}
+
+void UICreation::TransformComponentWindow::main() {
     createImGuiComponentDragSource<Engine::TransformComponent>(dragging);
 
-    ImGui::DragFloat3("Translation", transform->getTranslation().raw(), 0.1);
+    ImGui::DragFloat3("Translation", m_component->getTranslation().raw(), 0.1);
     if (ImGui::IsItemEdited())
     {
-        transform->update();
-        registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_component->update();
+        m_registry.updated<Engine::TransformComponent>(selectedEntity);
     }
-    ImGui::DragFloat3("Scaling", transform->getScaling().raw(), 0.1);
+    ImGui::DragFloat3("Scaling", m_component->getScaling().raw(), 0.1);
     if (ImGui::IsItemEdited())
     {
-        transform->update();
-        registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_component->update();
+        m_registry.updated<Engine::TransformComponent>(selectedEntity);
     }
 
-    auto rotDeg = MathLib::Util::radToDeg(transform->getRotation());
+    auto rotDeg = MathLib::Util::radToDeg(m_component->getRotation());
     ImGui::DragFloat3("Rotation", rotDeg.raw(), 1.0);
     if (ImGui::IsItemEdited())
     {
-        transform->setRotation(MathLib::Util::degToRad(rotDeg));
-        transform->update();
-        registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_component->setRotation(MathLib::Util::degToRad(rotDeg));
+        m_component->update();
+        m_registry.updated<Engine::TransformComponent>(selectedEntity);
     }
 }

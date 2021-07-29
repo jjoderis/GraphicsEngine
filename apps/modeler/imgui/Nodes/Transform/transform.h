@@ -2,6 +2,7 @@
 #define APPS_MODELER_IMGUI_NODES_TRANSFORM
 
 #include "../helpers.h"
+#include "../Templates/componentWindow.h"
 
 namespace Engine
 {
@@ -11,9 +12,18 @@ class Registry;
 namespace UICreation
 {
 
-template <>
-void createComponentNodeMain<Engine::TransformComponent>(std::shared_ptr<Engine::TransformComponent> transform,
-                                                         Engine::Registry &registry);
+class TransformComponentWindow : public TemplatedComponentWindow<Engine::TransformComponent> {
+
+public:
+
+  TransformComponentWindow() = delete;
+  TransformComponentWindow(int &currentEntity, Engine::Registry &registry);
+
+private:
+
+  virtual void main() override;
+
+};
 
 }
 

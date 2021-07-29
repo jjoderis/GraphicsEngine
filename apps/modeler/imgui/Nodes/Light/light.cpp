@@ -1,78 +1,134 @@
 #include "../helpers.h"
+#include "light.h"
 #include <Core/Components/Light/light.h>
 
-template <>
-void UICreation::createComponentNodeMain<Engine::AmbientLightComponent>(
-    std::shared_ptr<Engine::AmbientLightComponent> light, Engine::Registry &registry)
+UICreation::LightComponentWindow::LightComponentWindow(int &currentEntity, Engine::Registry &registry)
+    : ComponentWindow{"Light", currentEntity, registry}
 {
-    ImGui::DragFloat3("Color", light->getColor().raw(), 0.01, 0.0, 1.0);
-    if (ImGui::IsItemEdited())
-    {
-        registry.updated<Engine::AmbientLightComponent>(selectedEntity);
+}
+    
+
+void UICreation::LightComponentWindow::render() {
+    bool hasAmbientLight = m_registry.hasComponent<Engine::AmbientLightComponent>(m_selectedEntity);
+    bool hasPointLight = m_registry.hasComponent<Engine::PointLightComponent>(m_selectedEntity);
+    bool hasSpotLight = m_registry.hasComponent<Engine::SpotLightComponent>(m_selectedEntity);
+    bool hasDirectionalLight = m_registry.hasComponent<Engine::DirectionalLightComponent>(m_selectedEntity);
+    if (hasAmbientLight || hasPointLight || hasSpotLight || hasDirectionalLight) {
+        ComponentWindow::render();
     }
 }
 
-template <>
-void UICreation::createComponentNodeMain<Engine::DirectionalLightComponent>(
-    std::shared_ptr<Engine::DirectionalLightComponent> light, Engine::Registry &registry)
-{
-    ImGui::DragFloat3("Color", light->getColor().raw(), 0.01, 0.0, 1.0);
-    if (ImGui::IsItemEdited())
-    {
-        registry.updated<Engine::DirectionalLightComponent>(selectedEntity);
-    }
-}
+void UICreation::LightComponentWindow::main() {
 
-template <>
-void UICreation::createComponentNodeMain<Engine::PointLightComponent>(
-    std::shared_ptr<Engine::PointLightComponent> light, Engine::Registry &registry)
-{
-    float intensity{light->getIntensity()};
-    ImGui::DragFloat("Intensity", &intensity, 0.01, 0.1, 10000.0);
-    if (ImGui::IsItemEdited())
-    {
-        light->setIntensity(intensity);
-        registry.updated<Engine::PointLightComponent>(selectedEntity);
-    }
+    if (auto ambientLight{m_registry.getComponent<Engine::AmbientLightComponent>(m_currentEntity)}) {
+        ImGui::Text("Ambient Light");
+        ImGui::SameLine();
+        if (ImGui::Button("x##Ambient")) {
+            m_registry.removeComponent<Engine::AmbientLightComponent>(m_currentEntity);
+        }
 
-    ImGui::DragFloat3("Color", light->getColor().raw(), 0.01, 0.0, 1.0);
-    if (ImGui::IsItemEdited())
-    {
-        registry.updated<Engine::PointLightComponent>(selectedEntity);
-    }
-}
+        ImGui::DragFloat3("Color##Ambient", ambientLight->getColor().raw(), 0.01, 0.0, 1.0);
+        if (ImGui::IsItemEdited())
+        {
+            m_registry.updated<Engine::AmbientLightComponent>(m_currentEntity);
+        }
 
-template <>
-void UICreation::createComponentNodeMain<Engine::SpotLightComponent>(std::shared_ptr<Engine::SpotLightComponent> light,
-                                                                     Engine::Registry &registry)
-{
-    float intensity{light->getIntensity()};
-    ImGui::DragFloat("Intensity", &intensity, 0.01, 0.1, 10000.0);
-    if (ImGui::IsItemEdited())
-    {
-        light->setIntensity(intensity);
-        registry.updated<Engine::SpotLightComponent>(selectedEntity);
+        ImGui::Separator();
+    } else {
+        if (ImGui::Button("Add Ambient Light")) {
+            m_registry.createComponent<Engine::AmbientLightComponent>(m_currentEntity);
+        }
     }
 
-    float cutoff{MathLib::Util::radToDeg(light->getCutoff())};
-    float penumbra{MathLib::Util::radToDeg(light->getPenumbra())};
-    ImGui::DragFloat("Cutoff Angle", &cutoff, 1.0, penumbra + 1.0, 175.0);
-    if (ImGui::IsItemEdited())
-    {
-        light->setCutoff(MathLib::Util::degToRad(cutoff));
-        registry.updated<Engine::SpotLightComponent>(selectedEntity);
+    if (auto pointLight{m_registry.getComponent<Engine::PointLightComponent>(m_currentEntity)}) {
+        ImGui::Text("Point Light");
+        ImGui::SameLine();
+        if (ImGui::Button("x##Point")) {
+            m_registry.removeComponent<Engine::PointLightComponent>(m_currentEntity);
+        }
+
+        float intensity{pointLight->getIntensity()};
+        ImGui::DragFloat("Intensity##Point", &intensity, 0.01, 0.1, 10000.0);
+        if (ImGui::IsItemEdited())
+        {
+            pointLight->setIntensity(intensity);
+            m_registry.updated<Engine::PointLightComponent>(m_currentEntity);
+        }
+
+        ImGui::DragFloat3("Color##Point", pointLight->getColor().raw(), 0.01, 0.0, 1.0);
+        if (ImGui::IsItemEdited())
+        {
+            m_registry.updated<Engine::PointLightComponent>(m_currentEntity);
+        }
+
+        ImGui::Separator();
+    } else {
+        if (ImGui::Button("Add Point Light")) {
+            m_registry.createComponent<Engine::PointLightComponent>(m_currentEntity);
+        }
     }
 
-    ImGui::DragFloat("Penumbra Angle", &penumbra, 1.0, 1.0, cutoff - 1.0);
-    if (ImGui::IsItemEdited())
-    {
-        light->setPenumbra(MathLib::Util::degToRad(penumbra));
-        registry.updated<Engine::SpotLightComponent>(selectedEntity);
+    if (auto spotLight{m_registry.getComponent<Engine::SpotLightComponent>(m_currentEntity)}) {
+        ImGui::Text("Spot Light");
+        ImGui::SameLine();
+        if (ImGui::Button("x##Spot")) {
+            m_registry.removeComponent<Engine::SpotLightComponent>(m_currentEntity);
+        }
+
+        float intensity{spotLight->getIntensity()};
+        ImGui::DragFloat("Intensity##Spot", &intensity, 0.01, 0.1, 10000.0);
+        if (ImGui::IsItemEdited())
+        {
+            spotLight->setIntensity(intensity);
+            m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
+        }
+
+        float cutoff{MathLib::Util::radToDeg(spotLight->getCutoff())};
+        float penumbra{MathLib::Util::radToDeg(spotLight->getPenumbra())};
+        ImGui::DragFloat("Cutoff Angle##Spot", &cutoff, 1.0, penumbra + 1.0, 175.0);
+        if (ImGui::IsItemEdited())
+        {
+            spotLight->setCutoff(MathLib::Util::degToRad(cutoff));
+            m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
+        }
+
+        ImGui::DragFloat("Penumbra Angle##Spot", &penumbra, 1.0, 1.0, cutoff - 1.0);
+        if (ImGui::IsItemEdited())
+        {
+            spotLight->setPenumbra(MathLib::Util::degToRad(penumbra));
+            m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
+        }
+
+        ImGui::DragFloat3("Color##Spot", spotLight->getColor().raw(), 0.01, 0.0, 1.0);
+        if (ImGui::IsItemEdited())
+        {
+            m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
+        }
+
+        ImGui::Separator();
+    } else {
+        if (ImGui::Button("Add Spot Light")) {
+            m_registry.createComponent<Engine::SpotLightComponent>(m_currentEntity);
+        }
     }
 
-    ImGui::DragFloat3("Color", light->getColor().raw(), 0.01, 0.0, 1.0);
-    if (ImGui::IsItemEdited())
-    {
-        registry.updated<Engine::SpotLightComponent>(selectedEntity);
+    if (auto directionalLight{m_registry.getComponent<Engine::DirectionalLightComponent>(m_currentEntity)}) {
+        ImGui::Text("Directional Light");
+        ImGui::SameLine();
+        if (ImGui::Button("x##Directional")) {
+            m_registry.removeComponent<Engine::DirectionalLightComponent>(m_currentEntity);
+        }
+
+        ImGui::DragFloat3("Color##Directional", directionalLight->getColor().raw(), 0.01, 0.0, 1.0);
+        if (ImGui::IsItemEdited())
+        {
+            m_registry.updated<Engine::DirectionalLightComponent>(m_currentEntity);
+        }
+
+        ImGui::Separator();
+    } else {
+        if (ImGui::Button("Add Directional Light")) {
+            m_registry.createComponent<Engine::DirectionalLightComponent>(m_currentEntity);
+        }
     }
 }

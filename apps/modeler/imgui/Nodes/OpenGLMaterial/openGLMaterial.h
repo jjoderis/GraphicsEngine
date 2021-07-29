@@ -2,18 +2,29 @@
 #define APPS_MODELER_IMGUI_NODES_MATERIAL
 
 #include "../helpers.h"
+#include "../Templates/componentWindow.h"
 
 namespace Engine
 {
-class OpenGLMaterialComponent;
 class Registry;
 } // namespace Engine
 namespace UICreation
 {
 
-template <>
-void createComponentNodeMain<Engine::OpenGLMaterialComponent>(std::shared_ptr<Engine::OpenGLMaterialComponent> material,
-                                                              Engine::Registry &registry);
+class MaterialComponentWindow : public ComponentWindow {
+
+public:
+
+  MaterialComponentWindow() = delete;
+  MaterialComponentWindow(int &currentEntity, Engine::Registry &registry);
+
+  virtual void render() override;
+
+private: 
+
+  virtual void main() override;
+
+};
 
 }
 

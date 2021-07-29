@@ -2,6 +2,7 @@
 #define APPS_MODELER_IMGUI_NODES_CAMERA
 
 #include "../helpers.h"
+#include "../Templates/componentWindow.h"
 
 namespace Engine
 {
@@ -11,9 +12,18 @@ class Registry;
 namespace UICreation
 {
 
-template <>
-void createComponentNodeMain<Engine::CameraComponent>(std::shared_ptr<Engine::CameraComponent> camera,
-                                                      Engine::Registry &registry);
+class CameraComponentWindow : public TemplatedComponentWindow<Engine::CameraComponent> {
+
+public:
+
+  CameraComponentWindow() = delete;
+  CameraComponentWindow(int &currentEntity, Engine::Registry &registry);
+
+private: 
+
+  virtual void main() override;
+
+};
 
 }
 

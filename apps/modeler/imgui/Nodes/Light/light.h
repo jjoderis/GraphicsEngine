@@ -2,33 +2,29 @@
 #define APPS_MODELER_IMGUI_NODES_LIGHT
 
 #include "../helpers.h"
+#include "../Templates/componentWindow.h"
 
 namespace Engine
 {
-class AmbientLightComponent;
-class DirectionalLightComponent;
-class PointLightComponent;
-class SpotLightComponent;
 class Registry;
 } // namespace Engine
 namespace UICreation
 {
 
-template <>
-void createComponentNodeMain<Engine::AmbientLightComponent>(std::shared_ptr<Engine::AmbientLightComponent> light,
-                                                            Engine::Registry &registry);
+class LightComponentWindow : public ComponentWindow {
 
-template <>
-void createComponentNodeMain<Engine::DirectionalLightComponent>(
-    std::shared_ptr<Engine::DirectionalLightComponent> light, Engine::Registry &registry);
+public:
 
-template <>
-void createComponentNodeMain<Engine::PointLightComponent>(std::shared_ptr<Engine::PointLightComponent> light,
-                                                          Engine::Registry &registry);
+    LightComponentWindow() = delete;
+    LightComponentWindow(int &currentEntity, Engine::Registry &registry);
 
-template <>
-void createComponentNodeMain<Engine::SpotLightComponent>(std::shared_ptr<Engine::SpotLightComponent> light,
-                                                         Engine::Registry &registry);
+    virtual void render() override;
+
+private: 
+
+    virtual void main() override;
+
+};
 
 } // namespace UICreation
 

@@ -20,6 +20,8 @@ add_library(modelerLib
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
+    modeler/imgui/Nodes/Templates/imguiWindow.cpp
+    modeler/imgui/Nodes/Templates/componentWindow.cpp
     modeler/imgui/Util/objectLoader.cpp
     modeler/imgui/Util/SceneLoading/sceneLoader.cpp
     modeler/imgui/Util/SceneLoading/serialization.cpp

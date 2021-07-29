@@ -74,7 +74,7 @@ int main()
 
     glfwSetFramebufferSizeCallback(window, cameraAspectCallback);
 
-    UI::init(registry);
+    UI::init(registry, textureIndex);
 
     unsigned int light1{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(light1, "Light 1");
