@@ -23,10 +23,11 @@ void UICreation::MaterialComponentWindow::render() {
 }
 
 void UICreation::MaterialComponentWindow::main() {
-    createImGuiComponentDragSource<Engine::OpenGLMaterialComponent>(dragging);
-
     if (auto material{m_registry.getComponent<Engine::OpenGLMaterialComponent>(m_currentEntity)}) {
         ImGui::Text("OpenGL Material");
+        ImGui::SameLine();
+        ImGui::Button("Drag##OpenGLMaterial");
+        createImGuiComponentDragSource<Engine::OpenGLMaterialComponent>(material);
         if (!m_registry.hasComponent<Engine::RenderComponent>(m_currentEntity)) {
             ImGui::SameLine();
             if (ImGui::Button("x##OpenGL")) {

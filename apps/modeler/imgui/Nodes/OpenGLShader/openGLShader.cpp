@@ -159,7 +159,8 @@ void UICreation::OpenGLShaderComponentWindow::drawShaderEditModal(unsigned int e
 }
 
 void UICreation::OpenGLShaderComponentWindow::main() {
-    createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(dragging);
+    ImGui::Button("Drag##OpenGLShader");
+    createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(m_component);
 
     if (ImGui::Button("Edit Shaders"))
     {

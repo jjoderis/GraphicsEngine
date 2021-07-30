@@ -22,7 +22,8 @@ bool isImage(const fs::path &path)
 }
 
 void UICreation::TextureComponentWindow::main() {
-    createImGuiComponentDragSource<Engine::OpenGLTextureComponent>(dragging);
+    ImGui::Button("Drag##OpenGLTexture");
+    createImGuiComponentDragSource<Engine::OpenGLTextureComponent>(m_component);
 
     auto textures{m_component->getTextures()};
 

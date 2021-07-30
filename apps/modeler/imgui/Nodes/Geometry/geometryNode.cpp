@@ -11,7 +11,8 @@ UICreation::GeometryComponentWindow::GeometryComponentWindow(int &currentEntity,
 }
 
 void UICreation::GeometryComponentWindow::main() {
-    createImGuiComponentDragSource<Engine::GeometryComponent>(dragging);
+    ImGui::Button("Start Drag");
+    createImGuiComponentDragSource<Engine::GeometryComponent>(m_component);
 
     if (ImGui::TreeNode("Vertices"))
     {

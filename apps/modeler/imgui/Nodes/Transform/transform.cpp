@@ -9,8 +9,6 @@ UICreation::TransformComponentWindow::TransformComponentWindow(int &currentEntit
 }
 
 void UICreation::TransformComponentWindow::main() {
-    createImGuiComponentDragSource<Engine::TransformComponent>(dragging);
-
     ImGui::DragFloat3("Translation", m_component->getTranslation().raw(), 0.1);
     if (ImGui::IsItemEdited())
     {

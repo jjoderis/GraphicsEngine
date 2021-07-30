@@ -90,12 +90,19 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             possible_component_current = 0;
         }
         createHierarchyDragAndDrop(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::OpenGLMaterialComponent>(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::TransformComponent>(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>(entity, registry);
-        UICreation::createImGuiComponentDropTarget<Engine::OpenGLTextureComponent>(entity, registry);
-
+        if (auto material{UICreation::createImGuiComponentDropTarget<Engine::OpenGLMaterialComponent>()}) {
+            registry.addComponent<Engine::OpenGLMaterialComponent>(entity, material);
+        }
+        if (auto geometry{UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>()}) {
+            registry.addComponent<Engine::GeometryComponent>(entity, geometry);
+        }
+        if (auto shader{UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>()}) {
+            registry.addComponent<Engine::OpenGLShaderComponent>(entity, shader);
+        }
+        if (auto texture{UICreation::createImGuiComponentDropTarget<Engine::OpenGLTextureComponent>()}) {
+            registry.addComponent<Engine::OpenGLTextureComponent>(entity, texture);
+        }
+        
         ImGui::SameLine();
         std::string id{"x##"};
         id.append(std::to_string(entity));
