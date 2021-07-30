@@ -6,8 +6,6 @@
 #include "Nodes/Geometry/geometryNode.h"
 #include "Nodes/Light/light.h"
 #include "Nodes/OpenGLMaterial/openGLMaterial.h"
-#include "Nodes/OpenGLShader/openGLShader.h"
-#include "Nodes/Texture/texture.h"
 #include "Nodes/Transform/transform.h"
 #include "Nodes/helpers.h"
 #include "OpenGL/Components/Texture/texture.h"
@@ -94,9 +92,7 @@ void UI::init(Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &text
     componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new GeometryComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new LightComponentWindow{selectedEntity, registry});
-    componentWindows.emplace_back(new MaterialComponentWindow{selectedEntity, registry});
-    componentWindows.emplace_back(new OpenGLShaderComponentWindow{selectedEntity, registry});
-    componentWindows.emplace_back(new TextureComponentWindow{selectedEntity, registry, textureIndex});
+    componentWindows.emplace_back(new MaterialComponentWindow{selectedEntity, registry, textureIndex});
 }
 
 void UI::preRender()
@@ -280,10 +276,10 @@ void UI::render(Engine::Registry &registry)
         if (selectedEntity > -1)
         {
             const char *possibleComponents[]{"",
-                                             "Material",
+                                             "Raytracing Material",
                                              "Geometry",
                                              "Transform",
-                                             "Render",
+                                             "Shader",
                                              "Camera",
                                              "Ambient Light",
                                              "Directional Light",
@@ -292,7 +288,7 @@ void UI::render(Engine::Registry &registry)
                                              "Bounding Box"};
             if (ImGui::BeginCombo("##Available Components", possibleComponents[possible_component_current]))
             {
-                if (!registry.hasComponent<Engine::OpenGLMaterialComponent>(selectedEntity) &&
+                if (!registry.hasComponent<Engine::RaytracingMaterial>(selectedEntity) &&
                     ImGui::Selectable(possibleComponents[1], possible_component_current == 1))
                 {
                     possible_component_current = 1;
@@ -342,9 +338,8 @@ void UI::render(Engine::Registry &registry)
             ImGui::SameLine();
             if (ImGui::Button("+") && possible_component_current)
             {
-                if (!strcmp(possibleComponents[possible_component_current], "Material"))
+                if (!strcmp(possibleComponents[possible_component_current], "Raytracing Material"))
                 {
-                    registry.createComponent<Engine::OpenGLMaterialComponent>(selectedEntity);
                     registry.createComponent<Engine::RaytracingMaterial>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Geometry"))
@@ -355,7 +350,7 @@ void UI::render(Engine::Registry &registry)
                 {
                     registry.createComponent<Engine::TransformComponent>(selectedEntity);
                 }
-                else if (!strcmp(possibleComponents[possible_component_current], "Render"))
+                else if (!strcmp(possibleComponents[possible_component_current], "Shader"))
                 {
                     ImGui::OpenPopup("Select Shader");
                     shaderDirectoryPaths = Util::getDirectories("../../data/shaders");

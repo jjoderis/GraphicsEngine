@@ -3,13 +3,19 @@
 #include "../../../Core/ECS/registry.h"
 #include "../../Components/Material/material.h"
 #include "../../Components/Shader/shader.h"
+#include "../../Components/Texture/texture.h"
 #include <set>
+
+void ensureMaterialAndTexture(unsigned int entity, Engine::Registry &registry);
 
 Engine::Systems::OpenGLShaderTracker::OpenGLShaderTracker(Registry &registry) : m_registry{registry}
 {
     m_addCallback = m_registry.onAdded<Engine::OpenGLShaderComponent>(
         [&](unsigned int addEntity, std::weak_ptr<OpenGLShaderComponent> shader)
-        { update(addEntity, shader.lock().get()); });
+        {
+            ensureMaterialAndTexture(addEntity, m_registry);
+            update(addEntity, shader.lock().get()); 
+        });
 
     m_updateCallback = m_registry.onUpdate<Engine::OpenGLShaderComponent>(
         [&](unsigned int updateEntity, std::weak_ptr<OpenGLShaderComponent> shader)
@@ -18,6 +24,15 @@ Engine::Systems::OpenGLShaderTracker::OpenGLShaderTracker(Registry &registry) : 
     m_swapCallback = m_registry.onComponentSwap<Engine::OpenGLShaderComponent>(
         [&](unsigned int swapEntity, std::weak_ptr<OpenGLShaderComponent> newShader)
         { update(swapEntity, newShader.lock().get()); });
+}
+
+void ensureMaterialAndTexture(unsigned int entity, Engine::Registry &registry) {
+    if (!registry.hasComponent<Engine::OpenGLMaterialComponent>(entity)) {
+        registry.createComponent<Engine::OpenGLMaterialComponent>(entity);
+    }
+    if (!registry.hasComponent<Engine::OpenGLTextureComponent>(entity)) {
+        registry.createComponent<Engine::OpenGLTextureComponent>(entity);
+    }
 }
 
 void Engine::Systems::OpenGLShaderTracker::update(unsigned int entity, OpenGLShaderComponent *shader)
@@ -34,10 +49,9 @@ void Engine::Systems::OpenGLShaderTracker::update(unsigned int entity, OpenGLSha
     std::set<OpenGLMaterialComponent *> uniqueMaterialComponents{};
     for (unsigned int owner : owners)
     {
-        if (auto materialComponent = m_registry.getComponent<Engine::OpenGLMaterialComponent>(owner))
-        {
-            uniqueMaterialComponents.emplace(materialComponent.get());
-        }
+        auto materialComponent = m_registry.getComponent<Engine::OpenGLMaterialComponent>(owner);
+
+        uniqueMaterialComponents.emplace(materialComponent.get());
     }
 
     for (auto &materialComponent : uniqueMaterialComponents)

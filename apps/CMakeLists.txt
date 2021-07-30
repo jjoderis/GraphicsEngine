@@ -33,10 +33,8 @@ add_library(modelerLib
     modeler/imgui/Nodes/Camera/camera.cpp
     modeler/imgui/Nodes/Geometry/geometryNode.cpp
     modeler/imgui/Nodes/OpenGLMaterial/openGLMaterial.cpp
-    modeler/imgui/Nodes/OpenGLShader/openGLShader.cpp
     modeler/imgui/Nodes/Transform/transform.cpp
     modeler/imgui/Nodes/Light/light.cpp
-    modeler/imgui/Nodes/Texture/texture.cpp
 )
 
 target_link_libraries(modelerLib glfw glad engineCore engineOpenGL engineRaytracing)
