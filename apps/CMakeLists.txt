@@ -20,8 +20,6 @@ add_library(modelerLib
     modeler/glfw/window.cpp
     modeler/glad/opengl.cpp
     modeler/imgui/imgui.cpp
-    modeler/imgui/Nodes/Templates/imguiWindow.cpp
-    modeler/imgui/Nodes/Templates/componentWindow.cpp
     modeler/imgui/Util/objectLoader.cpp
     modeler/imgui/Util/SceneLoading/sceneLoader.cpp
     modeler/imgui/Util/SceneLoading/serialization.cpp
@@ -29,12 +27,14 @@ add_library(modelerLib
     modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
     modeler/imgui/Window/Raytracing/raytracingWindow.cpp
-    modeler/imgui/Nodes/Entity/entity.cpp
-    modeler/imgui/Nodes/Camera/camera.cpp
-    modeler/imgui/Nodes/Geometry/geometryNode.cpp
-    modeler/imgui/Nodes/OpenGLMaterial/openGLMaterial.cpp
-    modeler/imgui/Nodes/Transform/transform.cpp
-    modeler/imgui/Nodes/Light/light.cpp
+    modeler/imgui/Window/Templates/imguiWindow.cpp
+    modeler/imgui/Window/Templates/componentWindow.cpp
+    modeler/imgui/Window/Entity/entity.cpp
+    modeler/imgui/Window/Camera/camera.cpp
+    modeler/imgui/Window/Geometry/geometryNode.cpp
+    modeler/imgui/Window/OpenGLMaterial/openGLMaterial.cpp
+    modeler/imgui/Window/Transform/transform.cpp
+    modeler/imgui/Window/Light/light.cpp
 )
 
 target_link_libraries(modelerLib glfw glad engineCore engineOpenGL engineRaytracing)

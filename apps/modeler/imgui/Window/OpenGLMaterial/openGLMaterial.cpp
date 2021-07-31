@@ -212,7 +212,7 @@ void UICreation::MaterialComponentWindow::main() {
             loadShaders(m_shader->getShaders());
             m_modalOpen = 1;
         }
-        drawShaderEditModal(selectedEntity, m_registry, m_shader);
+        drawShaderEditModal(m_selectedEntity, m_registry, m_shader);
         const char *types[2]{"Points\0", "Triangles\0"};
         static int primitive_type_current = 1;
         const char *comboLabel = types[primitive_type_current];
@@ -317,7 +317,7 @@ void UICreation::MaterialComponentWindow::main() {
         ImGui::Separator();
     }
 
-    if (auto raytracingMaterial = m_registry.getComponent<Engine::RaytracingMaterial>(selectedEntity))
+    if (auto raytracingMaterial = m_registry.getComponent<Engine::RaytracingMaterial>(m_selectedEntity))
     {
         ImGui::Text("Raytracing Material");
         ImGui::SameLine();
@@ -345,7 +345,7 @@ void UICreation::MaterialComponentWindow::main() {
     {
         if (ImGui::Button("Add Raytracing Material"))
         {
-            m_registry.createComponent<Engine::RaytracingMaterial>(selectedEntity);
+            m_registry.createComponent<Engine::RaytracingMaterial>(m_selectedEntity);
         }
     }
 }

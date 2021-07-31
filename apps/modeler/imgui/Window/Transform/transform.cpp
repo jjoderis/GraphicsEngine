@@ -1,5 +1,6 @@
 #include "transform.h"
 #include <Core/Components/Transform/transform.h>
+#include <imgui.h>
 
 extern bool dragging;
 
@@ -13,13 +14,13 @@ void UICreation::TransformComponentWindow::main() {
     if (ImGui::IsItemEdited())
     {
         m_component->update();
-        m_registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
     ImGui::DragFloat3("Scaling", m_component->getScaling().raw(), 0.1);
     if (ImGui::IsItemEdited())
     {
         m_component->update();
-        m_registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
 
     auto rotDeg = MathLib::Util::radToDeg(m_component->getRotation());
@@ -28,6 +29,6 @@ void UICreation::TransformComponentWindow::main() {
     {
         m_component->setRotation(MathLib::Util::degToRad(rotDeg));
         m_component->update();
-        m_registry.updated<Engine::TransformComponent>(selectedEntity);
+        m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
 }

@@ -2,6 +2,8 @@
 #include <Core/Components/BoundingBox/boundingBox.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
+#include <imgui.h>
+#include "../helpers.h"
 
 extern bool dragging;
 
@@ -24,7 +26,7 @@ void UICreation::GeometryComponentWindow::main() {
             ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
             if (ImGui::IsItemEdited())
             {
-                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
             }
         }
         static Engine::Math::Vector3 newVertex{0.0, 0.0, 0.0};
@@ -39,7 +41,7 @@ void UICreation::GeometryComponentWindow::main() {
             if (ImGui::Button("+##add_vertex"))
             {
                 m_component->addVertex(Engine::Math::Vector3{newVertex});
-                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
                 newVertex = Engine::Math::Vector3{0.0f, 0.0f, 0.0f};
             }
             ImGui::EndPopup();
@@ -57,7 +59,7 @@ void UICreation::GeometryComponentWindow::main() {
             ImGui::InputScalarN(str.c_str(), ImGuiDataType_U32, faces.data() + i, 3);
             if (ImGui::IsItemEdited())
             {
-                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
             }
         }
         static unsigned int newFace[3]{0u, 0u, 0u};
@@ -72,7 +74,7 @@ void UICreation::GeometryComponentWindow::main() {
             if (ImGui::Button("+##add_face"))
             {
                 m_component->addFace(newFace[0], newFace[1], newFace[2]);
-                m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+                m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
                 newFace[0] = 0u;
                 newFace[1] = 0u;
                 newFace[2] = 0u;
@@ -85,7 +87,7 @@ void UICreation::GeometryComponentWindow::main() {
     if (ImGui::Button("Calculate Normals"))
     {
         m_component->calculateNormals();
-        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
     }
     if (ImGui::Button("Invert Normals"))
     {
@@ -93,7 +95,7 @@ void UICreation::GeometryComponentWindow::main() {
         {
             normal = -normal;
         }
-        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
     }
 
     if (ImGui::Button("Center on origin"))
@@ -109,10 +111,10 @@ void UICreation::GeometryComponentWindow::main() {
         {
             vert -= avg;
         }
-        m_registry.updated<Engine::GeometryComponent>(selectedEntity);
+        m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
     }
 
-    if (auto openGLGeometry = m_registry.getComponent<Engine::OpenGLGeometryComponent>(selectedEntity))
+    if (auto openGLGeometry = m_registry.getComponent<Engine::OpenGLGeometryComponent>(m_selectedEntity))
     {
         bool drawingPoints = openGLGeometry->drawingPoints();
         ImGui::Checkbox("Draw as points: ", &drawingPoints);
@@ -122,11 +124,11 @@ void UICreation::GeometryComponentWindow::main() {
         }
     }
 
-    if (!m_registry.hasComponent<Engine::BoundingBoxComponent>(selectedEntity))
+    if (!m_registry.hasComponent<Engine::BoundingBoxComponent>(m_selectedEntity))
     {
         if (ImGui::Button("Add Bounding Box"))
         {
-            m_registry.createComponent<Engine::BoundingBoxComponent>(selectedEntity, *m_component.get());
+            m_registry.createComponent<Engine::BoundingBoxComponent>(m_selectedEntity, *m_component.get());
         }
     }
 }

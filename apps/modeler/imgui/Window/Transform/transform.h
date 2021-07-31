@@ -1,7 +1,6 @@
 #ifndef APPS_MODELER_IMGUI_NODES_TRANSFORM
 #define APPS_MODELER_IMGUI_NODES_TRANSFORM
 
-#include "../helpers.h"
 #include "../Templates/componentWindow.h"
 
 namespace Engine

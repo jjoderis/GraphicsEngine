@@ -1,7 +1,6 @@
 #ifndef APPS_MODELER_IMGUI_NODES_CAMERA
 #define APPS_MODELER_IMGUI_NODES_CAMERA
 
-#include "../helpers.h"
 #include "../Templates/componentWindow.h"
 
 namespace Engine
