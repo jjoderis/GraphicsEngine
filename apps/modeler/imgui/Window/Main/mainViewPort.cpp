@@ -48,6 +48,7 @@ void UICreation::MainViewPort::main() {
 
   if (ImGui::IsItemActive() && m_grabbedEntity > -1) {
     auto mouseDelta = ImGui::GetIO().MouseDelta;
+    auto scrolling = ImGui::GetIO().MouseWheel;
 
     if (mouseDelta.x || mouseDelta.y) {
       unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
@@ -78,6 +79,24 @@ void UICreation::MainViewPort::main() {
 
       m_currentPoint += t;
       m_currentPixel = newPixel;
+    }
+
+    if (scrolling) {
+      unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
+      auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+
+      Engine::Math::Vector3 cameraSpacePosition = camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+      cameraSpacePosition.normalize();
+      auto cameraSpaceDirection = cameraSpacePosition * scrolling * 0.1;
+      Engine::Math::Vector3 direction = camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 1};
+
+      auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
+
+      translation->translate(direction);
+      translation->update();
+      m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
+
+      m_currentPoint += direction;
     }
   }
         

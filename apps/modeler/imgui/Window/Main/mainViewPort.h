@@ -22,7 +22,6 @@ private:
   Engine::Registry &m_registry;
   int &m_selectedEntity;
   int m_grabbedEntity{-1};
-  float m_entityDistance{0.0f};
   Engine::Math::IVector2 m_currentPixel{0, 0};
   Engine::Math::Vector3 m_currentPoint{0, 0, 0};
 
