@@ -9,6 +9,28 @@ namespace Engine
 {
 class Registry;
 
+class OpenGLFramebuffer {
+
+public:
+
+    OpenGLFramebuffer();
+    ~OpenGLFramebuffer();
+
+    void bind();
+    void unbind();
+    unsigned int getTexture();
+    void clear();
+
+    void resize(int width, int height);
+
+private:
+    unsigned int m_framebuffer{0};
+    unsigned int m_texture{0};
+    unsigned int m_depthStencil{0};
+    int m_width{800};
+    int m_height{600};
+};
+
 class OpenGLRenderer
 {
 private:

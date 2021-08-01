@@ -15,6 +15,9 @@ public:
 
 protected:
   std::string m_name;
+  int m_flags{0};
+  bool m_open{NULL};
+
   int m_width{0};
   int m_height{0};
 
@@ -29,8 +32,7 @@ protected:
   void end();
 
   virtual void checkUpdates();
-  void onResize();
-
+  virtual void onResize();
 };
 
 }

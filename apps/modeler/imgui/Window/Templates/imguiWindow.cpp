@@ -15,7 +15,7 @@ void UICreation::ImGuiWindow::render() {
 }
 
 bool UICreation::ImGuiWindow::start() {
-  return ImGui::Begin(m_name.c_str());
+  return ImGui::Begin(m_name.c_str(), &m_open, m_flags);
 }
 
 void UICreation::ImGuiWindow::main() {

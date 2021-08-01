@@ -38,28 +38,10 @@ GLFWwindow *Window::m_window = nullptr;
 Engine::Registry registry{};
 Engine::Util::OpenGLTextureIndex textureIndex{};
 
-void cameraAspectCallback(GLFWwindow *window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-
-    std::vector<std::shared_ptr<Engine::CameraComponent>> cameras = registry.getComponents<Engine::CameraComponent>();
-
-    for (std::shared_ptr<Engine::CameraComponent> &camera : cameras)
-    {
-        camera->updateAspect((float)width / (float)height);
-
-        const std::list<unsigned int> owners{registry.getOwners<Engine::CameraComponent>(camera)};
-        registry.updated<Engine::CameraComponent>(owners.front());
-    }
-}
-
 int main()
 {
     Window::init();
     OpenGL::init();
-
-    std::vector<unsigned int> renderables{};
-    Engine::Systems::OpenGLRenderTracker renderTracker{registry, renderables};
 
     Engine::OpenGLRenderer *renderer = new Engine::OpenGLRenderer{registry};
     Engine::Systems::HierarchyTracker hierarchyTracker{registry};
@@ -72,9 +54,7 @@ int main()
     // renderer before this function ends
     GLFWwindow *window = Window::getWindow();
 
-    glfwSetFramebufferSizeCallback(window, cameraAspectCallback);
-
-    UI::init(registry, textureIndex);
+    UI::init(registry, *renderer, textureIndex);
 
     unsigned int light1{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(light1, "Light 1");
@@ -124,8 +104,6 @@ int main()
         UI::preRender();
 
         UI::render(registry);
-
-        renderer->render(renderables);
 
         UI::postRender();
 

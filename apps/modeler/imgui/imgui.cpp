@@ -1,6 +1,7 @@
 #include "imgui.h"
 
 #include "./Util/SceneLoading/sceneLoader.h"
+#include "Window/Main/mainViewPort.h"
 #include "Window/Camera/camera.h"
 #include "Window/Entity/entity.h"
 #include "Window/Geometry/geometryNode.h"
@@ -20,7 +21,7 @@
 #include <Core/Components/Transform/transform.h>
 #include <Core/ECS/util.h>
 #include <Core/Math/math.h>
-#include <Core/Util/Raycaster/raycaster.h>
+#include <OpenGL/Renderer/renderer.h>
 #include <OpenGL/Components/Shader/shader.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Util/fileHandling.h>
@@ -35,6 +36,8 @@
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
+UICreation::MainViewPort* mainViewport;
+
 std::vector<UICreation::ComponentWindow*> componentWindows{};
 
 bool showDemoWindow{false};
@@ -48,7 +51,7 @@ int possible_component_current = 0;
 Engine::Math::Vector3 debugOrigin{0, 0, 0};
 Engine::Math::Vector3 debugDirection{0, 0, 0};
 
-void UI::init(Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &textureIndex)
+void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     // setup imgui context
     IMGUI_CHECKVERSION();
@@ -72,21 +75,17 @@ void UI::init(Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &text
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    int width, height;
-
-    glfwGetFramebufferSize(window, &width, &height);
-
     mainCamera = registry.addEntity();
     registry.createComponent<Engine::TagComponent>(mainCamera, "Modeler Camera");
     auto transform = registry.createComponent<Engine::TransformComponent>(mainCamera);
     transform->setRotation(Engine::Math::Vector3{0.0, M_PI, 0.0});
     transform->update();
     auto camera = registry.createComponent<Engine::CameraComponent>(mainCamera, registry);
-    camera->updateAspect((float)width / (float)height);
-    camera->getFar() = 300;
     registry.updated<Engine::CameraComponent>(mainCamera);
 
     UIUtil::initFileBrowserIcons();
+
+    mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity};
 
     componentWindows.emplace_back(new TransformComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
@@ -215,24 +214,6 @@ void drawShaderTypeSelection(Engine::Registry &registry)
     }
 }
 
-// template <typename ComponentType>
-// void drawComponentNode(const char *componentName, Engine::Registry &registry)
-// {
-//     if (registry.hasComponent<ComponentType>(selectedEntity))
-//     {
-//         bool isOpen = UICreation::createComponentNodeStart<ComponentType>(componentName);
-//         bool wasRemoved = UICreation::createHeaderControls<ComponentType>(componentName, registry);
-
-//         if (isOpen && !wasRemoved)
-//         {
-//             std::shared_ptr<ComponentType> component = registry.getComponent<ComponentType>(selectedEntity);
-//             UICreation::createComponentNodeMain<ComponentType>(component, registry);
-//         }
-
-//         UICreation::createComponentNodeEnd();
-//     }
-// }
-
 void UI::render(Engine::Registry &registry)
 {
 
@@ -240,6 +221,8 @@ void UI::render(Engine::Registry &registry)
     {
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
+
+    mainViewport->render();
 
     {
         ImGui::Begin("Hello World!");
@@ -411,33 +394,6 @@ void UI::render(Engine::Registry &registry)
     UIUtil::drawFileBrowser();
 
     UICreation::drawRaytracingWindow();
-
-    // catch clicks on the main window
-    if (ImGui::IsMouseClicked(0) && !ImGui::GetIO().WantCaptureMouse)
-    {
-        auto viewport = ImGui::GetMainViewport();
-        auto viewportMin = viewport->Pos;
-        auto viewportMax = ImVec2(viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y);
-        auto mousePos = ImGui::GetMousePos();
-
-        if (mousePos.x > viewportMin.x && mousePos.y > viewportMin.y && mousePos.x < viewportMax.x &&
-            mousePos.y < viewportMax.y)
-        {
-            Engine::Math::IVector2 pixelPosition{mousePos.x - viewportMin.x, mousePos.y - viewportMin.y};
-            Engine::Math::IVector2 viewportSize{viewportMax.x - viewportMin.x, viewportMax.y - viewportMin.y};
-
-            unsigned int activeCameraEntity = registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-            auto camera = registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-            Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, viewportSize);
-
-            auto intersections = Engine::Util::castRay(cameraRay, registry);
-
-            if (intersections.size())
-            {
-                selectedEntity = intersections.begin()->getEntity();
-            }
-        }
-    }
 
     ImGui::Render();
 }
