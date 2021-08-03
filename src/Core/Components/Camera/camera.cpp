@@ -108,9 +108,10 @@ void Engine::CameraComponent::awaitTransformComponent(unsigned int entity)
 
 void Engine::CameraComponent::update(unsigned int entity, const std::shared_ptr<TransformComponent> &transform)
 {
-    m_viewMatrix = Math::getRotation(-transform->getRotation()) * Math::getTranslation(-transform->getTranslation());
+    auto rotation = transform->getRotation();
+    m_viewMatrix = Math::getRotation(rotation.getInverse()) * Math::getTranslation(-transform->getTranslation());
     m_viewMatrixInverse =
-        Math::getTranslation(transform->getTranslation()) * Math::getRotation(transform->getRotation());
+        Math::getTranslation(transform->getTranslation()) * Math::getRotation(rotation);
     m_registry.updated<CameraComponent>(entity);
 }
 

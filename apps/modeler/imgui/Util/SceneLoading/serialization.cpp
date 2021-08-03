@@ -273,7 +273,9 @@ void addTransform(unsigned int entity, Engine::Registry &registry, json &node)
         auto &translation = transform->getTranslation();
         auto &scale = transform->getScaling();
 
-        node["rotation"] = {rotation.at(0), rotation.at(1), rotation.at(2)};
+        auto &axis = rotation.qv();
+        auto &angle = rotation.qw();
+        node["rotation"] = {axis.at(0), axis.at(1), axis.at(2), angle};
         node["translation"] = {translation.at(0), translation.at(1), translation.at(2)};
         node["scale"] = {scale.at(0), scale.at(1), scale.at(2)};
     }

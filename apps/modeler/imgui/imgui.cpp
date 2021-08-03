@@ -78,7 +78,7 @@ void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engi
     mainCamera = registry.addEntity();
     registry.createComponent<Engine::TagComponent>(mainCamera, "Modeler Camera");
     auto transform = registry.createComponent<Engine::TransformComponent>(mainCamera);
-    transform->setRotation(Engine::Math::Vector3{0.0, M_PI, 0.0});
+    transform->setRotation(M_PI, {0.0, 1.0, 0.0});
     transform->update();
     auto camera = registry.createComponent<Engine::CameraComponent>(mainCamera, registry);
     registry.updated<Engine::CameraComponent>(mainCamera);

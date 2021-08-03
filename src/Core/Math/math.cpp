@@ -12,6 +12,10 @@ Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Vector3 &rot
     return MathLib::getRotation(rotation);
 }
 
+Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Quaternion &quat) {
+    return MathLib::getRotation(quat);
+}
+
 Engine::Math::Vector3 Engine::Math::extractEuler(const Matrix4 &rotationMat)
 {
     float head{atan2(-rotationMat(2, 0), rotationMat(2, 2))};

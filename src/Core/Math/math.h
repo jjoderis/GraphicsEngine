@@ -23,9 +23,12 @@ using Matrix2 = MathLib::Matrix<float, 2, 2>;
 using Matrix3 = MathLib::Matrix<float, 3, 3>;
 using Matrix4 = MathLib::Matrix<float, 4, 4>;
 
+using Quaternion = MathLib::Quaternion<float>;
+
 Matrix4 getTranslation(const Vector3 &location);
 Matrix4 getScaling(const Vector3 &scaling);
 Matrix4 getRotation(const Vector3 &rotation);
+Matrix4 getRotation(const Quaternion &quat);
 
 Matrix4 lookAt(const Vector3 &position, const Vector3 &up, const Vector3 &target);
 

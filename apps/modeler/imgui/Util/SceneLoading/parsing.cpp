@@ -217,8 +217,13 @@ void addTransform(Engine::Registry &registry, json &node, int entityIndex)
         auto transform = registry.createComponent<Engine::TransformComponent>(entityIndex);
         if (hasRotation)
         {
-            transform->getRotation() = {
-                node["rotation"][0].get<float>(), node["rotation"][1].get<float>(), node["rotation"][2].get<float>()};
+            Engine::Math::Quaternion q{
+                node["rotation"][0].get<float>(),
+                node["rotation"][1].get<float>(),
+                node["rotation"][2].get<float>(),
+                node["rotation"][3].get<float>()
+            };
+            transform->setRotation(q);
         }
         if (hasTranslation)
         {
