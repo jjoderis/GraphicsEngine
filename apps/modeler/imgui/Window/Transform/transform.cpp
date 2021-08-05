@@ -6,15 +6,24 @@ extern bool dragging;
 
 UICreation::TransformComponentWindow::TransformComponentWindow(int &currentEntity, Engine::Registry &registry)
     : TemplatedComponentWindow<Engine::TransformComponent>{"Transform", currentEntity, registry}
-{    
+{
+    m_transformChangeCallback = registry.onUpdate<Engine::TransformComponent>([this](unsigned int entity, std::weak_ptr<Engine::TransformComponent> transform) {
+        if (this->m_component == transform.lock()) {
+            this->updateInternals();
+        }
+    });
 }
 
-void UICreation::TransformComponentWindow::onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent) {
+void UICreation::TransformComponentWindow::updateInternals() {
     m_quat = m_component->getRotation();
     m_euler = MathLib::Util::radToDeg(m_component->getEulerRotation());
 
     auto angle{ MathLib::Util::radToDeg(2 * acos(m_quat.qw()))  };
     m_axisAngle = Engine::Math::Vector4{m_quat.qv(), angle};
+}
+
+void UICreation::TransformComponentWindow::onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent) {
+    updateInternals();
 }
 
 const char* possible_rotation_systems[]{

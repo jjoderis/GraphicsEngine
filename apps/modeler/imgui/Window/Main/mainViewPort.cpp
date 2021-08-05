@@ -6,11 +6,23 @@
 #include <Core/ECS/registry.h>
 #include <Components/Transform/transform.h>
 #include <Core/Util/Raycaster/raycaster.h>
-
+#include <Components/Tag/tag.h>
 
 UICreation::MainViewPort::MainViewPort(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, int &selectedEntity) 
   : ImGuiWindow{"Main Viewport"} ,m_registry{registry}, m_selectedEntity{selectedEntity}, m_renderer{renderer}, m_renderTracker{m_registry, m_renderables}
 {
+  m_cameraEntity = registry.addEntity();
+  registry.createComponent<Engine::TagComponent>(m_cameraEntity, "Modeler Camera");
+  auto transform = registry.createComponent<Engine::TransformComponent>(m_cameraEntity);
+  transform->setRotation(M_PI, {0.0, 1.0, 0.0});
+  transform->update();
+  m_camera = registry.createComponent<Engine::CameraComponent>(m_cameraEntity, registry);
+  registry.updated<Engine::CameraComponent>(m_cameraEntity);
+
+  m_cameraChangeCallback = registry.onAdded<Engine::ActiveCameraComponent>([this, &registry](unsigned int entity, std::weak_ptr<Engine::ActiveCameraComponent> aC) {
+    this->m_cameraEntity = entity;
+    this->m_camera = registry.getComponent<Engine::CameraComponent>(entity);
+  });
 }
 
 void UICreation::MainViewPort::main() {
@@ -21,19 +33,17 @@ void UICreation::MainViewPort::main() {
 
   auto size = ImGui::GetContentRegionAvail();
   ImGui::InvisibleButton("main viewport", {size.x, size.y}, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
-  if (ImGui::IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+  
+  if (ImGui::IsItemClicked(ImGuiPopupFlags_MouseButtonLeft) || ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
     m_grabbedEntity = -1;
 
-    auto viewportMin = ImGui::GetItemRectMin();
-    auto viewportMax = ImGui::GetItemRectMax();
-    auto mousePos = ImGui::GetMousePos();  
+    Engine::Math::IVector2 mousePos{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 
-    Engine::Math::IVector2 pixelPosition{mousePos.x - viewportMin.x, mousePos.y - viewportMin.y};
-    Engine::Math::IVector2 viewportSize{viewportMax.x - viewportMin.x, viewportMax.y - viewportMin.y};
-
+    Engine::Math::IVector2 pixelPosition{mousePos - m_pos};
+    
     unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
     auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-    Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, viewportSize);
+    Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, m_size);
 
     auto intersections = Engine::Util::castRay(cameraRay, m_registry);
 
@@ -42,53 +52,34 @@ void UICreation::MainViewPort::main() {
         m_selectedEntity = intersections.begin()->getEntity();
         m_grabbedEntity = m_selectedEntity;
         m_currentPoint = intersections.begin()->getIntersection();
-        m_currentPixel = pixelPosition;
+    } else if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+      Engine::Math::Vector3 direction = camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
+      m_currentPoint = (direction / direction.at(2)) * camera->getFar();
     }
+    m_currentPixel = pixelPosition;
   }
 
-  if (ImGui::IsItemActive() && m_grabbedEntity > -1) {
+  if (ImGui::IsItemActive()) {
     auto mouseDelta = ImGui::GetIO().MouseDelta;
     auto scrolling = ImGui::GetIO().MouseWheel;
 
     if (mouseDelta.x || mouseDelta.y) {
-      unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-      auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-
-      auto viewportMin = ImGui::GetItemRectMin();
-      auto viewportMax = ImGui::GetItemRectMax();
-      Engine::Math::IVector2 viewportSize{viewportMax.x - viewportMin.x, viewportMax.y - viewportMin.y};
-
       auto newPixel = m_currentPixel + Engine::Math::IVector2{mouseDelta.x, mouseDelta.y};
-      auto newRay = camera->getCameraRay(newPixel, viewportSize);
+      auto invertXPixel = m_currentPixel + Engine::Math::IVector2{-mouseDelta.x, mouseDelta.y};
 
-      newRay = camera->getViewMatrix() * newRay;
-
-      Engine::Math::Vector3 cameraSpacePosition = camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
-
-      auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
-
-      auto t = newCameraSpacePosition - cameraSpacePosition;
-
-      t = camera->getViewMatrix() * Engine::Math::Vector4{t, 1};
-
-      auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
-
-      translation->translate(t);
-      translation->update();
-      m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
-
-      m_currentPoint += t;
+      if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity > -1) {
+        dragEntity(newPixel);
+      } else if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+        dragCamera(newPixel);
+      }
       m_currentPixel = newPixel;
     }
 
     if (scrolling) {
-      unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-      auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-
-      Engine::Math::Vector3 cameraSpacePosition = camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+      Engine::Math::Vector3 cameraSpacePosition = m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
       cameraSpacePosition.normalize();
       auto cameraSpaceDirection = cameraSpacePosition * scrolling * 0.1;
-      Engine::Math::Vector3 direction = camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 1};
+      Engine::Math::Vector3 direction = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
 
       auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
 
@@ -103,16 +94,76 @@ void UICreation::MainViewPort::main() {
   ImGui::GetWindowDrawList()->AddImage((void *)m_framebuffer.getTexture(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), {0, 1}, {1, 0});
 }
 
+void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel) {
+  auto newRay = m_camera->getCameraSpaceRay(newPixel, m_size);
+
+  Engine::Math::Vector3 cameraSpacePosition = m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+
+  auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
+
+  auto t = newCameraSpacePosition - cameraSpacePosition;
+
+  t = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{t, 0};
+
+  if (ImGui::IsKeyDown(82)) {
+    std::cout << "Not implemented\n";
+  } else {
+    auto transform = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
+
+    transform->translate(t);
+    transform->update();
+    m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
+
+    m_currentPoint += t;
+  }
+}
+
+void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel) {
+  auto oldRay{m_camera->getCameraSpaceRay(m_currentPixel, m_size)};
+  auto newRay{m_camera->getCameraSpaceRay(newPixel, m_size)};
+  if (ImGui::IsKeyDown(82)) {
+    float angle{acos(dot(oldRay.getDirection(), newRay.getDirection()))};
+    auto axis{cross(oldRay.getDirection(), newRay.getDirection())};
+    axis = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{axis, 0};
+    axis.normalize();
+    
+    auto cameraTransform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
+    cameraTransform->rotate(angle, axis);
+    m_registry.updated<Engine::TransformComponent>(m_cameraEntity);
+  } else {
+    Engine::Math::Vector3 cameraSpacePosition = m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+
+    auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
+
+    auto t = newCameraSpacePosition - cameraSpacePosition;
+
+    t = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{t, 0};
+
+    if (t.norm() > 200) {
+      t.normalize();
+      t *= 200;
+    } 
+
+    auto transform = m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity);
+    transform->translate(-t);
+    transform->update();
+    m_registry.updated<Engine::TransformComponent>(m_cameraEntity);
+  }
+}
+
 void UICreation::MainViewPort::onResize() {
   ImGuiWindow::onResize();
 
-  m_framebuffer.resize(m_width, m_height);
+  int width = m_size.at(0);
+  int height = m_size.at(1);
+
+  m_framebuffer.resize(width, height);
 
   std::vector<std::shared_ptr<Engine::CameraComponent>> cameras = m_registry.getComponents<Engine::CameraComponent>();
 
   for (std::shared_ptr<Engine::CameraComponent> &camera : cameras)
   {
-      camera->updateAspect((float)m_width / (float)m_height);
+      camera->updateAspect((float)width / (float)height);
 
       const std::list<unsigned int> owners{m_registry.getOwners<Engine::CameraComponent>(camera)};
       m_registry.updated<Engine::CameraComponent>(owners.front());

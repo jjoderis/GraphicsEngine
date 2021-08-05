@@ -23,6 +23,8 @@ private:
   Engine::Math::Vector3 m_euler{0, 0, 0};
   Engine::Math::Vector4 m_axisAngle{0, 0, 0, 0};
   Engine::Math::Quaternion m_quat{0.0, 0.0, 0.0, 1.0};
+  
+  void updateInternals();
 
   virtual void main() override;
 
@@ -31,6 +33,8 @@ private:
   void drawQuaternion();
 
   virtual void onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent) override;
+
+  std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::TransformComponent>)>> m_transformChangeCallback;
 
 };
 

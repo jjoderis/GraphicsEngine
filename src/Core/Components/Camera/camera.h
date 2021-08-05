@@ -92,6 +92,7 @@ public:
     bool isOrtographic();
 
     Util::Ray getCameraRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
+    Util::Ray getCameraSpaceRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
 };
 
 class ActiveCameraComponent

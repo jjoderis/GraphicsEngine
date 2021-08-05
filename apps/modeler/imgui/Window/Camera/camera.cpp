@@ -27,4 +27,13 @@ void UICreation::CameraComponentWindow::main() {
         m_component->calculateProjection();
         m_registry.updated<Engine::CameraComponent>(m_selectedEntity);
     }
+    auto isUsed = m_registry.hasComponent<Engine::ActiveCameraComponent>(m_currentEntity);
+    if (ImGui::Checkbox("Use Camera", &isUsed) && isUsed) {
+        unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
+        auto oldCamera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+        m_component->setAspect(oldCamera->getAspect());
+        m_component->calculateProjection();
+        m_registry.updated<Engine::CameraComponent>(m_currentEntity);
+        m_registry.createComponent<Engine::ActiveCameraComponent>(m_currentEntity);
+    }
 }

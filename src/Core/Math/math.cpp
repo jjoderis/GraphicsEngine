@@ -12,7 +12,7 @@ Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Vector3 &rot
     return MathLib::getRotation(rotation);
 }
 
-Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Quaternion &quat) {
+Engine::Math::Matrix4 Engine::Math::getRotation(const Quaternion& quat) {
     return MathLib::getRotation(quat);
 }
 

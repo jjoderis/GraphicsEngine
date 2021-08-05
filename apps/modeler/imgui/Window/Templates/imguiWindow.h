@@ -2,6 +2,7 @@
 #define APPS_MODELER_IMGUI_WINDOW_CLASS
 
 #include <string>
+#include <Core/Math/math.h>
 
 namespace UICreation {
 
@@ -18,8 +19,10 @@ protected:
   int m_flags{0};
   bool m_open{NULL};
 
-  int m_width{0};
-  int m_height{0};
+  // position of the window
+  Engine::Math::IVector2 m_pos{0, 0};
+  // size of the windows content
+  Engine::Math::IVector2 m_size{0, 0};
 
   // prevent instances of this class
   ImGuiWindow(const std::string &name);
@@ -34,6 +37,8 @@ protected:
   virtual void checkUpdates();
   virtual void onResize();
 };
+
+
 
 }
 

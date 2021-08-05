@@ -148,9 +148,7 @@ void Engine::CameraComponent::setAspect(float aspect) { m_aspect = aspect; }
 bool Engine::CameraComponent::isPerspective() { return m_projection == ProjectionType::Perspective; }
 bool Engine::CameraComponent::isOrtographic() { return m_projection == ProjectionType::Ortographic; }
 
-Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pixelPosition,
-                                                        const Math::IVector2 &screenSize)
-{
+Engine::Util::Ray Engine::CameraComponent::getCameraSpaceRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize) {
     float normalizedX = 2 * ((pixelPosition(0) + 0.5) / screenSize(0)) - 1;
     float normalizedY = 1 - 2 * ((pixelPosition(1) + 0.5) / screenSize(1));
 
@@ -159,9 +157,11 @@ Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pi
     float cameraX = projectionPlaneWidth * m_aspect * normalizedX;
     float cameraY = projectionPlaneWidth * normalizedY;
 
-    Engine::Util::Ray ray{{0, 0, 0}, {cameraX, cameraY, -1}};
+    return {{0, 0, 0}, {cameraX, cameraY, -1}};
+}
 
-    ray = m_viewMatrixInverse * ray;
-
-    return ray;
+Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pixelPosition,
+                                                        const Math::IVector2 &screenSize)
+{
+    return m_viewMatrixInverse * getCameraSpaceRay(pixelPosition, screenSize);
 }

@@ -27,12 +27,21 @@ void UICreation::ImGuiWindow::end() {
 }
 
 void UICreation::ImGuiWindow::checkUpdates() {
-  auto size{ImGui::GetWindowSize()};
-  if (size.x != m_width || size.y != m_height) {
-    m_width = size.x;
-    m_height = size.y;
+  Engine::Math::IVector2 size{ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y};
+  auto windowPos{ImGui::GetWindowPos()};
+  auto contentOffset{  ImGui::GetWindowContentRegionMin() };
+  Engine::Math::IVector2 pos{windowPos.x + contentOffset.x, windowPos.y + contentOffset.y };
+
+  if (size != m_size) {
+    m_size = size;
 
     onResize();
+  }
+
+  if (pos != m_pos) {
+    m_pos = pos;
+
+    // TODO: onMove();
   }
 }
 

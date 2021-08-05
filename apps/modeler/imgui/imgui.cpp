@@ -41,7 +41,6 @@ UICreation::MainViewPort* mainViewport;
 std::vector<UICreation::ComponentWindow*> componentWindows{};
 
 bool showDemoWindow{false};
-unsigned int mainCamera{0};
 bool dragging{1};
 
 using namespace UICreation;
@@ -74,14 +73,6 @@ void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engi
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
-
-    mainCamera = registry.addEntity();
-    registry.createComponent<Engine::TagComponent>(mainCamera, "Modeler Camera");
-    auto transform = registry.createComponent<Engine::TransformComponent>(mainCamera);
-    transform->setRotation(M_PI, {0.0, 1.0, 0.0});
-    transform->update();
-    auto camera = registry.createComponent<Engine::CameraComponent>(mainCamera, registry);
-    registry.updated<Engine::CameraComponent>(mainCamera);
 
     UIUtil::initFileBrowserIcons();
 
@@ -357,7 +348,7 @@ void UI::render(Engine::Registry &registry)
                     GLFWwindow *window = Window::getWindow();
                     glfwGetFramebufferSize(window, &width, &height);
                     camera->updateAspect((float)width / (float)height);
-                    registry.updated<Engine::CameraComponent>(mainCamera);
+                    registry.updated<Engine::CameraComponent>(selectedEntity);
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Ambient Light"))
                 {
