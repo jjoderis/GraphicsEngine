@@ -89,50 +89,64 @@ int addEntity(Engine::Registry &registry,
     if (node.find("mesh") != node.end())
     {
         auto mesh = j["meshes"].at(node["mesh"].get<int>());
+        int count = 0;
 
-        if (mesh.find("material") != mesh.end())
-        {
-            auto material = j["materials"].at(mesh["material"].get<int>());
+        for (auto &primitive : mesh["primitives"]) {
+            std::string name{"Primitive " + std::to_string(count++)};
 
-            if (material.find("pbrMetallicRoughness") != material.end())
+            auto primitiveEntity{registry.addEntity()};
+
+            auto tag{registry.createComponent<Engine::TagComponent>(primitiveEntity, name)};
+
+            if (primitive.find("material") != primitive.end())
             {
-                if (material["pbrMetallicRoughness"].find("baseColorTexture") != material["pbrMetallicRoughness"].end())
+                auto material = j["materials"].at(primitive["material"].get<int>());
+
+                if (material.find("pbrMetallicRoughness") != material.end())
                 {
-                    int textureI = material["pbrMetallicRoughness"]["baseColorTexture"]["index"];
-                    int imageIndex = j["textures"].at(textureI)["source"];
-                    std::string imagePath = j["images"].at(imageIndex)["uri"];
-                    auto fullPath = path;
-                    fullPath.remove_filename();
-                    fullPath.append(imagePath);
-                    registry.createComponent<Engine::OpenGLTextureComponent>(entityIndex)
-                        ->addTexture(textureIndex.needTexture(fullPath, GL_TEXTURE_2D));
-                }
-            }
-
-            if (material.find("extras") != material.end())
-            {
-                json extras = material["extras"];
-
-                if (extras.find("shader") != extras.end())
-                {
-                    std::string shaderPath = extras["shader"]["path"];
-                    registry.addComponent<Engine::OpenGLShaderComponent>(entityIndex,
-                                                                         std::get<2>(meshData).at(shaderPath));
-
-                    if (extras["shader"]["active"].get<bool>())
+                    if (material["pbrMetallicRoughness"].find("baseColorTexture") != material["pbrMetallicRoughness"].end())
                     {
-                        registry.createComponent<Engine::RenderComponent>(entityIndex);
+                        int textureI = material["pbrMetallicRoughness"]["baseColorTexture"]["index"];
+                        int imageIndex = j["textures"].at(textureI)["source"];
+                        std::string imagePath = j["images"].at(imageIndex)["uri"];
+                        auto fullPath = path;
+                        fullPath.remove_filename();
+                        fullPath.append(imagePath);
+                        registry.createComponent<Engine::OpenGLTextureComponent>(primitiveEntity)
+                            ->addTexture(textureIndex.needTexture(fullPath, GL_TEXTURE_2D));
                     }
                 }
 
-                extras.erase("shader");
+                if (material.find("extras") != material.end())
+                {
+                    json extras = material["extras"];
 
-                registry.addComponent<Engine::OpenGLMaterialComponent>(entityIndex, std::get<1>(meshData).at(extras));
+                    if (extras.find("shader") != extras.end())
+                    {
+                        std::string shaderPath = extras["shader"]["path"];
+                        registry.addComponent<Engine::OpenGLShaderComponent>(primitiveEntity,
+                                                                            std::get<2>(meshData).at(shaderPath));
+
+                        if (extras["shader"]["active"].get<bool>())
+                        {
+                            registry.createComponent<Engine::RenderComponent>(primitiveEntity);
+                        }
+                    }
+
+                    extras.erase("shader");
+
+                    registry.addComponent<Engine::OpenGLMaterialComponent>(primitiveEntity, std::get<1>(meshData).at(extras));
+                }
             }
-        }
-        mesh.erase("material");
+            primitive.erase("material");
 
-        registry.addComponent<Engine::GeometryComponent>(entityIndex, std::get<0>(meshData).at(mesh));
+            // TODO: set entityIndex as parent
+            auto hierarchy{registry.createComponent<Engine::HierarchyComponent>(primitiveEntity)};
+            hierarchy->setParent(entityIndex);
+            registry.updated<Engine::HierarchyComponent>(primitiveEntity);
+
+            registry.addComponent<Engine::GeometryComponent>(primitiveEntity, std::get<0>(meshData).at(primitive));
+        }
     }
 
     if (node.find("camera") != node.end())
@@ -390,40 +404,41 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
 
         for (auto &mesh : j["meshes"])
         {
-            json geometryPart = mesh;
-            geometryPart.erase("material");
+            for (auto &primitive: mesh["primitives"]) {
+                json geometryPart = primitive;
+                geometryPart.erase("material");
 
-            if (geometries.find(geometryPart) != geometries.end())
-            {
-                continue;
+                if (geometries.find(geometryPart) != geometries.end())
+                {
+                    continue;
+                }
+
+                auto geometry = std::make_shared<Engine::GeometryComponent>();
+
+                if (primitive.find("indices") != primitive.end())
+                {
+                    loadData(j, buffers, primitive["indices"], geometry->getFaces(), path);
+                }
+
+                auto &attributes = primitive["attributes"];
+
+                if (attributes.find("POSITION") != attributes.end())
+                {
+                    loadData(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
+                }
+
+                if (attributes.find("NORMAL") != attributes.end())
+                {
+                    loadData(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
+                }
+
+                if (attributes.find("TEXCOORD_0") != attributes.end())
+                {
+                    loadData(j, buffers, attributes["TEXCOORD_0"], geometry->getTexCoords(), path);
+                }
+
+                geometries.emplace(geometryPart, geometry);
             }
-
-            auto geometry = std::make_shared<Engine::GeometryComponent>();
-            auto &primitives = mesh["primitives"][0];
-
-            if (primitives.find("indices") != primitives.end())
-            {
-                loadData(j, buffers, primitives["indices"], geometry->getFaces(), path);
-            }
-
-            auto &attributes = primitives["attributes"];
-
-            if (attributes.find("POSITION") != attributes.end())
-            {
-                loadData(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
-            }
-
-            if (attributes.find("NORMAL") != attributes.end())
-            {
-                loadData(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
-            }
-
-            if (attributes.find("TEXCOORD_0") != attributes.end())
-            {
-                loadData(j, buffers, attributes["TEXCOORD_0"], geometry->getTexCoords(), path);
-            }
-
-            geometries.emplace(geometryPart, geometry);
         }
     }
 

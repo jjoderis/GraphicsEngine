@@ -187,7 +187,7 @@ int addEntity(unsigned int entity,
                 nodeMap.emplace(materialNode, materialIndex);
             }
 
-            mesh["material"] = materialIndex;
+            mesh["primitives"][0]["material"] = materialIndex;
         }
 
         int meshIndex;
