@@ -9,47 +9,30 @@
 #include <imgui.h>
 #include <vector>
 
-bool showWindow{false};
-int width{0};
-int height{0};
-
-unsigned int texture{0};
-
-void UICreation::showRaytracingWindow(Engine::Registry &registry)
+UICreation::RaytracingViewport::RaytracingViewport(Engine::Registry &registry)
+    : ImGuiWindow("Raytracing Viewport") ,m_registry{registry}
 {
-    if (texture)
-    {
-        glDeleteTextures(1, &texture);
-        texture = 0;
-    }
-
-    auto viewport = ImGui::GetMainViewport();
-    auto viewportMin = viewport->Pos;
-    auto viewportMax = ImVec2(viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y);
-    width = viewportMax.x - viewportMin.x;
-    height = viewportMax.y - viewportMin.y;
-
-    std::vector<float> pixelColors = raytraceScene(registry, width, height);
-
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, pixelColors.data());
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    showWindow = true;
+    glGenTextures(1, &m_texture);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_size.at(0), m_size.at(1), 0, GL_RGB, GL_FLOAT, NULL);
+    glGenerateMipmap(GL_TEXTURE_2D); 
 }
 
-void UICreation::hideRaytracingWindow() { showWindow = false; }
+void UICreation::RaytracingViewport::main() {
+    ImGui::Image((void *)m_texture, ImVec2{m_size.at(0), m_size.at(1)});
+}
 
-void UICreation::drawRaytracingWindow()
-{
-    if (showWindow)
+void UICreation::RaytracingViewport::newFrame() {
+    std::vector<float> pixelColors = Engine::raytraceScene(m_registry, m_size.at(0), m_size.at(1));
+
+    if (m_texture)
     {
-        ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
-        if (ImGui::Begin("Raytracing Window", &showWindow))
-        {
-            ImGui::Image((void *)texture, ImVec2{width, height});
-            ImGui::End();
-        }
+        glDeleteTextures(1, &m_texture);
+        m_texture = 0;
     }
+
+    glGenTextures(1, &m_texture);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_size.at(0), m_size.at(1), 0, GL_RGB, GL_FLOAT, pixelColors.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
 }

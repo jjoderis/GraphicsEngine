@@ -37,6 +37,7 @@
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
 UICreation::MainViewPort* mainViewport;
+UICreation::RaytracingViewport* raytracingViewport;
 
 std::vector<UICreation::ComponentWindow*> componentWindows{};
 
@@ -77,6 +78,7 @@ void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engi
     UIUtil::initFileBrowserIcons();
 
     mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity};
+    raytracingViewport = new UICreation::RaytracingViewport{registry};
 
     componentWindows.emplace_back(new TransformComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
@@ -222,7 +224,7 @@ void UI::render(Engine::Registry &registry)
 
         if (ImGui::Button("Raytrace"))
         {
-            UICreation::showRaytracingWindow(registry);
+            raytracingViewport->newFrame();
         }
 
         if (ImGui::Button("Export Scene"))
@@ -384,7 +386,7 @@ void UI::render(Engine::Registry &registry)
 
     UIUtil::drawFileBrowser();
 
-    UICreation::drawRaytracingWindow();
+    raytracingViewport->render();
 
     ImGui::Render();
 }

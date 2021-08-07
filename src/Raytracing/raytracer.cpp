@@ -95,6 +95,8 @@ void raytraceScenePart(Engine::Registry &registry,
 {
     unsigned int activeCameraEntity = registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
     auto camera = registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+    Engine::CameraComponent adjustedCamera{*camera};
+    adjustedCamera.setAspect((float)width/(float)height);
 
     Engine::Math::Vector4 color;
 
@@ -102,7 +104,7 @@ void raytraceScenePart(Engine::Registry &registry,
     {
         for (int x = startX; x < endX; ++x)
         {
-            Engine::Util::Ray cameraRay = camera->getCameraRay({x, y}, {width, height});
+            Engine::Util::Ray cameraRay = adjustedCamera.getCameraRay({x, y}, {width, height});
 
             color = calculateColor(registry, cameraRay);
 
