@@ -165,7 +165,8 @@ void calculateTriangleIntersections(Engine::Util::Ray &ray, Engine::GeometryComp
             auto intersection = (1 - b1 - b2) * p0 + b1 * p1 + b2 * p2;
 
             intersection = transform.getModelMatrix() * Engine::Math::Vector4{intersection, 1};
-            float distance = (intersection - ray.getOrigin()).norm();
+            Engine::Math::Vector3 rayWorldOrigin{transform.getModelMatrix() * Engine::Math::Vector4{origin, 1}};
+            float distance = (intersection - rayWorldOrigin).norm();
 
             intersections.emplace(
                 Engine::Util::RayIntersection{intersection, distance, entity, startIndex, Engine::Math::Vector2{b1, b2}});
