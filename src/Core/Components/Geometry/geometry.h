@@ -10,6 +10,37 @@
 
 namespace Engine
 {
+class GeometryComponent;
+
+class AccelerationStructure {
+
+public:
+
+    AccelerationStructure();
+    AccelerationStructure(AccelerationStructure *parent, int start, int end, GeometryComponent *geometry);
+    AccelerationStructure &operator=(const AccelerationStructure& other);
+
+    Engine::Math::Vector3 &getMin();
+    Engine::Math::Vector3 &getMax();
+    std::vector<int> &getTriangles();
+    std::vector<AccelerationStructure> &getChildren();
+
+private:
+
+    AccelerationStructure* m_parent{nullptr};
+    Engine::Math::Vector3 m_min{};
+    Engine::Math::Vector3 m_max{};
+    int m_startIndex{0};
+    int m_endIndex{0};
+    std::vector<int> m_triangles{};
+    std::vector<AccelerationStructure> m_children{};
+    GeometryComponent *m_geometry;
+    int m_maxVertices{50};
+
+    void subdivide(std::vector<int> &vertexRef);
+    bool assignTriangle(int index, const Engine::Math::Vector3 &min, const Engine::Math::Vector3 &max);
+};
+
 class GeometryComponent
 {
 private:
@@ -17,6 +48,8 @@ private:
     std::vector<Math::Vector3> m_normals;
     std::vector<Math::Vector2> m_texCoords;
     std::vector<unsigned int> m_faces;
+
+    AccelerationStructure m_bounding{};
 
 public:
     GeometryComponent();
@@ -30,6 +63,8 @@ public:
     std::vector<Math::Vector2> &getTexCoords();
     std::vector<unsigned int> &getFaces();
 
+    AccelerationStructure& getAccStructure();
+
     // adds a single vertex
     void addVertex(Math::Vector3 &&newVertex);
 
@@ -37,6 +72,7 @@ public:
     void addFace(unsigned int a, unsigned int b, unsigned int c);
 
     void calculateNormals();
+    void calculateBoundingBox();
 };
 
 /**

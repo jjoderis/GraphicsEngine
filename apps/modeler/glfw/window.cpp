@@ -29,7 +29,7 @@ void Window::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    m_window = glfwCreateWindow(1280, 960, "Simple example", NULL, NULL);
+    m_window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
 
     if (!m_window)
     {

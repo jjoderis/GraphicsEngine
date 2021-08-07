@@ -1,6 +1,5 @@
 #include "raycaster.h"
 
-#include "../../Components/BoundingBox/boundingBox.h"
 #include "../../Components/Geometry/geometry.h"
 #include "../../Components/Render/render.h"
 #include "../../Components/Transform/transform.h"
@@ -40,7 +39,7 @@ const Engine::Math::Vector3 &Engine::Util::RayIntersection::getIntersection() co
 int Engine::Util::RayIntersection::getFace() const { return m_face; }
 const Engine::Math::Vector2 &Engine::Util::RayIntersection::getBaryParams() const { return m_baryParams; }
 
-bool hasBoundingIntersection(unsigned int entity, Engine::Util::Ray &ray, Engine::Registry &registry);
+void calculateBoundingIntersection(Engine::Util::Ray &ray, Engine::AccelerationStructure &acc, Engine::GeometryComponent &geo, Engine::TransformComponent &transform, std::set<Engine::Util::RayIntersection> &intersections, unsigned int entity);
 
 void calculateGeometryIntersections(unsigned int entity,
                                     Engine::Util::Ray &ray,
@@ -59,13 +58,6 @@ std::set<Engine::Util::RayIntersection> Engine::Util::castRay(Engine::Util::Ray 
     {
         for (auto entity : entities)
         {
-            // use bounding volume if available
-            if (registry.hasComponent<Engine::BoundingBoxComponent>(entity) &&
-                !hasBoundingIntersection(entity, ray, registry))
-            {
-                continue;
-            }
-
             calculateGeometryIntersections(entity, ray, registry, intersections);
         }
     }
@@ -84,41 +76,8 @@ void calculateGeometryIntersections(unsigned int entity,
 
     // transform the ray into model space for following geometry comparisons
     Engine::Util::Ray transformedRay = transform->getModelMatrixInverse() * ray;
-    Engine::Math::Vector3 origin = transformedRay.getOrigin();
-    Engine::Math::Vector3 direction = transformedRay.getDirection();
 
-    auto &faces = geometry->getFaces();
-    auto &vertices = geometry->getVertices();
-    if (faces.size())
-    {
-        for (int i = 0; i < faces.size(); i += 3)
-        {
-            Engine::Math::Vector3 p0{vertices[faces[i]]};
-            Engine::Math::Vector3 p1{vertices[faces[i + 1]]};
-            Engine::Math::Vector3 p2{vertices[faces[i + 2]]};
-            Engine::Math::Vector3 e1{p1 - p0};
-            Engine::Math::Vector3 e2{p2 - p0};
-            Engine::Math::Vector3 s{origin - p0};
-
-            float tripleProduct{1 / dot(cross(direction, e2), e1)};
-
-            float t = tripleProduct * dot(cross(s, e1), e2);
-            float b1 = tripleProduct * dot(cross(direction, e2), s);
-            float b2 = tripleProduct * dot(cross(s, e1), direction);
-
-            // check if intersection with triangle plane is inside triangle and the triangle is in front of the ray
-            if (b1 > 0 && b2 > 0 && b1 + b2 < 1 && t > 0)
-            {
-                auto intersection = (1 - b1 - b2) * p0 + b1 * p1 + b2 * p2;
-
-                intersection = transform->getModelMatrix() * Engine::Math::Vector4{intersection, 1};
-                float distance = (intersection - ray.getOrigin()).norm();
-
-                intersections.emplace(
-                    Engine::Util::RayIntersection{intersection, distance, entity, i, Engine::Math::Vector2{b1, b2}});
-            }
-        }
-    }
+    calculateBoundingIntersection(transformedRay, geometry->getAccStructure(), *geometry, *transform, intersections, entity);
 }
 
 void sortMinMax(float &a, float &b)
@@ -131,20 +90,17 @@ void sortMinMax(float &a, float &b)
     }
 }
 
+void calculateTriangleIntersections(Engine::Util::Ray &ray, Engine::GeometryComponent &geo, std::vector<int> &triangles, Engine::TransformComponent &transform, std::set<Engine::Util::RayIntersection> &intersections, unsigned int entity);
+
 // based on:
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
-bool hasBoundingIntersection(unsigned int entity, Engine::Util::Ray &ray, Engine::Registry &registry)
+void calculateBoundingIntersection(Engine::Util::Ray &ray, Engine::AccelerationStructure &acc, Engine::GeometryComponent &geo, Engine::TransformComponent &transform, std::set<Engine::Util::RayIntersection> &intersections, unsigned int entity)
 {
-    auto box = registry.getComponent<Engine::BoundingBoxComponent>(entity);
-    auto transform = registry.getComponent<Engine::TransformComponent>(entity);
+    Engine::Math::Vector3 origin = ray.getOrigin();
+    Engine::Math::Vector3 direction = ray.getDirection();
 
-    // transform the ray into model space for following geometry comparisons
-    Engine::Util::Ray transformedRay = transform->getModelMatrixInverse() * ray;
-    Engine::Math::Vector3 origin = transformedRay.getOrigin();
-    Engine::Math::Vector3 direction = transformedRay.getDirection();
-
-    auto &min{box->getMin()};
-    auto &max{box->getMax()};
+    auto &min{acc.getMin()};
+    auto &max{acc.getMax()};
 
     float t0x = (min.at(0) - origin.at(0)) / direction.at(0);
     float t1x = (max.at(0) - origin.at(0)) / direction.at(0);
@@ -158,7 +114,7 @@ bool hasBoundingIntersection(unsigned int entity, Engine::Util::Ray &ray, Engine
 
     if (t0x > t1y || t0y > t1x)
     {
-        return false;
+        return;
     }
 
     float tmin = (t0x > t0y) ? t0x : t0y;
@@ -171,8 +127,48 @@ bool hasBoundingIntersection(unsigned int entity, Engine::Util::Ray &ray, Engine
 
     if (tmin > t1z || t0z > tmax)
     {
-        return false;
+        return;
     }
 
-    return true;
+    calculateTriangleIntersections(ray, geo, acc.getTriangles(), transform, intersections, entity);
+
+    for (auto &child : acc.getChildren()) {
+        calculateBoundingIntersection(ray, child, geo, transform, intersections, entity);
+    }
+}
+
+void calculateTriangleIntersections(Engine::Util::Ray &ray, Engine::GeometryComponent &geo, std::vector<int> &triangles, Engine::TransformComponent &transform, std::set<Engine::Util::RayIntersection> &intersections, unsigned int entity) {
+    auto &faces = geo.getFaces();
+    auto &vertices = geo.getVertices();
+
+    const auto &origin{ray.getOrigin()};
+    const auto &direction{ray.getDirection()};
+
+    for (auto &startIndex : triangles)
+    {
+        Engine::Math::Vector3 p0{vertices[faces[startIndex]]};
+        Engine::Math::Vector3 p1{vertices[faces[startIndex + 1]]};
+        Engine::Math::Vector3 p2{vertices[faces[startIndex + 2]]};
+        Engine::Math::Vector3 e1{p1 - p0};
+        Engine::Math::Vector3 e2{p2 - p0};
+        Engine::Math::Vector3 s{origin - p0};
+
+        float tripleProduct{1 / dot(cross(direction, e2), e1)};
+
+        float t = tripleProduct * dot(cross(s, e1), e2);
+        float b1 = tripleProduct * dot(cross(direction, e2), s);
+        float b2 = tripleProduct * dot(cross(s, e1), direction);
+
+        // check if intersection with triangle plane is inside triangle and the triangle is in front of the ray
+        if (b1 > 0 && b2 > 0 && b1 + b2 < 1 && t > 0)
+        {
+            auto intersection = (1 - b1 - b2) * p0 + b1 * p1 + b2 * p2;
+
+            intersection = transform.getModelMatrix() * Engine::Math::Vector4{intersection, 1};
+            float distance = (intersection - ray.getOrigin()).norm();
+
+            intersections.emplace(
+                Engine::Util::RayIntersection{intersection, distance, entity, startIndex, Engine::Math::Vector2{b1, b2}});
+        }
+    }
 }

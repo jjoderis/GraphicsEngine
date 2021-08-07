@@ -437,6 +437,8 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
                     loadData(j, buffers, attributes["TEXCOORD_0"], geometry->getTexCoords(), path);
                 }
 
+                geometry->calculateBoundingBox();
+
                 geometries.emplace(geometryPart, geometry);
             }
         }

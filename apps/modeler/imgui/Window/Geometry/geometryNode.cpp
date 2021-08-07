@@ -1,5 +1,4 @@
 #include "geometryNode.h"
-#include <Core/Components/BoundingBox/boundingBox.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
 #include <imgui.h>
@@ -124,11 +123,8 @@ void UICreation::GeometryComponentWindow::main() {
         }
     }
 
-    if (!m_registry.hasComponent<Engine::BoundingBoxComponent>(m_selectedEntity))
+    if (ImGui::Button("Calculate Bounding Box"))
     {
-        if (ImGui::Button("Add Bounding Box"))
-        {
-            m_registry.createComponent<Engine::BoundingBoxComponent>(m_selectedEntity, *m_component.get());
-        }
+        m_component->calculateBoundingBox();
     }
 }

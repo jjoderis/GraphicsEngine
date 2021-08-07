@@ -13,7 +13,6 @@ set(CORE_HEADERS
     Core/Components/Light/light.h
     Core/Components/Hierarchy/hierarchy.h
     Core/Components/Render/render.h
-    Core/Components/BoundingBox/boundingBox.h
     Core/Systems/HierarchyTracker/hierarchyTracker.h
 )
 
@@ -28,7 +27,6 @@ set(CORE_SOURCES
     Core/Components/Light/light.cpp
     Core/Components/Hierarchy/hierarchy.cpp
     Core/Components/Render/render.cpp
-    Core/Components/BoundingBox/boundingBox.cpp
     Core/Systems/HierarchyTracker/hierarchyTracker.cpp
 )
 add_subdirectory("${EXTERN_DIR}/mathlib" "${BUILD_DIR}/external/mathlib")
