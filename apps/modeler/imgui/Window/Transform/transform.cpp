@@ -4,12 +4,17 @@
 
 extern bool dragging;
 
+bool blockCallback = false;
+
 UICreation::TransformComponentWindow::TransformComponentWindow(int &currentEntity, Engine::Registry &registry)
     : TemplatedComponentWindow<Engine::TransformComponent>{"Transform", currentEntity, registry}
 {
     m_transformChangeCallback = registry.onUpdate<Engine::TransformComponent>([this](unsigned int entity, std::weak_ptr<Engine::TransformComponent> transform) {
         if (this->m_component == transform.lock()) {
-            this->updateInternals();
+            if (!blockCallback) {
+              this->updateInternals();
+            }
+            blockCallback = false;
         }
     });
 }
@@ -89,6 +94,7 @@ void UICreation::TransformComponentWindow::drawEuler() {
         auto rad = MathLib::Util::degToRad(m_euler);
         m_component->setRotation(rad);
         m_component->update();
+        blockCallback = true;
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
 }
@@ -103,6 +109,7 @@ void UICreation::TransformComponentWindow::drawAngleAxis() {
     if (wasUpdated) {
         m_component->setRotation(Engine::Math::Quaternion{}.setRotation(m_axisAngle, MathLib::Util::degToRad(m_axisAngle.at(3))));
         m_component->update();
+        blockCallback = true;
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
 }
@@ -117,6 +124,7 @@ void UICreation::TransformComponentWindow::drawQuaternion() {
     if (wasUpdated) {
         m_component->setRotation(m_quat);
         m_component->update();
+        blockCallback = true;
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
     }
 }
