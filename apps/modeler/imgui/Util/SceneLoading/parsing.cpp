@@ -72,6 +72,8 @@ int addEntity(Engine::Registry &registry,
         registry.createComponent<Engine::TagComponent>(entityIndex, "Entity " + std::to_string(entityIndex));
     }
 
+    addTransform(registry, node, entityIndex);
+
     if (node.find("children") != node.end())
     {
         for (auto &child : node["children"])
@@ -84,19 +86,24 @@ int addEntity(Engine::Registry &registry,
         }
     }
 
-    addTransform(registry, node, entityIndex);
-
     if (node.find("mesh") != node.end())
     {
         auto mesh = j["meshes"].at(node["mesh"].get<int>());
         int count = 0;
 
         for (auto &primitive : mesh["primitives"]) {
-            std::string name{"Primitive " + std::to_string(count++)};
+            int primitiveEntity;
 
-            auto primitiveEntity{registry.addEntity()};
-
-            auto tag{registry.createComponent<Engine::TagComponent>(primitiveEntity, name)};
+            if (mesh["primitives"].size() == 1) {
+                primitiveEntity = entityIndex;
+            } else {
+                std::string name{"Primitive " + std::to_string(count++)};
+                primitiveEntity = registry.addEntity();
+                registry.createComponent<Engine::TagComponent>(primitiveEntity, name);
+                auto hierarchy{registry.createComponent<Engine::HierarchyComponent>(primitiveEntity)};
+                hierarchy->setParent(entityIndex);
+                registry.updated<Engine::HierarchyComponent>(primitiveEntity);
+            }
 
             if (primitive.find("material") != primitive.end())
             {
@@ -119,7 +126,7 @@ int addEntity(Engine::Registry &registry,
 
                 if (material.find("extras") != material.end())
                 {
-                    json extras = material["extras"];
+                    json extras = material["extras"];            
 
                     if (extras.find("shader") != extras.end())
                     {
@@ -138,12 +145,7 @@ int addEntity(Engine::Registry &registry,
                     registry.addComponent<Engine::OpenGLMaterialComponent>(primitiveEntity, std::get<1>(meshData).at(extras));
                 }
             }
-            primitive.erase("material");
-
-            // TODO: set entityIndex as parent
-            auto hierarchy{registry.createComponent<Engine::HierarchyComponent>(primitiveEntity)};
-            hierarchy->setParent(entityIndex);
-            registry.updated<Engine::HierarchyComponent>(primitiveEntity);
+            primitive.erase("material");            
 
             registry.addComponent<Engine::GeometryComponent>(primitiveEntity, std::get<0>(meshData).at(primitive));
         }
@@ -514,6 +516,8 @@ parseMaterial(json &materialNode, json &j, const std::filesystem::path &path)
             material->getMaterialData().first = dataOffset;
         }
     }
+
+    material->update();
 
     return material;
 }

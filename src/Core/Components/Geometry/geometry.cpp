@@ -47,6 +47,7 @@ void Engine::GeometryComponent::addFace(unsigned int a, unsigned int b, unsigned
 
 void Engine::GeometryComponent::calculateNormals()
 {
+    m_normals.clear();
     m_normals.resize(m_vertices.size(), Math::Vector3{0.0, 0.0, 0.0});
 
     // the normal of a vertex is the normalized average of the normals of its adjacent faces (keep track how many faces

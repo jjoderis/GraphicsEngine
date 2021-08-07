@@ -1,6 +1,7 @@
 #include "geometryNode.h"
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
+#include <Components/Render/render.h>
 #include <imgui.h>
 #include "../helpers.h"
 
@@ -14,6 +15,10 @@ UICreation::GeometryComponentWindow::GeometryComponentWindow(int &currentEntity,
 void UICreation::GeometryComponentWindow::main() {
     ImGui::Button("Start Drag");
     createImGuiComponentDragSource<Engine::GeometryComponent>(m_component);
+    ImGui::SameLine();
+    if (!m_registry.hasComponent<Engine::RenderComponent>(m_selectedEntity) && ImGui::Button("Remove")) {
+        m_registry.removeComponent<Engine::GeometryComponent>(m_selectedEntity);
+    }
 
     if (ImGui::TreeNode("Vertices"))
     {

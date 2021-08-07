@@ -215,6 +215,7 @@ void UI::render(Engine::Registry &registry)
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
+    raytracingViewport->render();
     mainViewport->render();
 
     {
@@ -385,8 +386,6 @@ void UI::render(Engine::Registry &registry)
     }
 
     UIUtil::drawFileBrowser();
-
-    raytracingViewport->render();
 
     ImGui::Render();
 }
