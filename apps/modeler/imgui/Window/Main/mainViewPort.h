@@ -5,6 +5,7 @@
 #include <OpenGL/Systems/RenderTracker/renderTracker.h>
 #include <OpenGL/Renderer/renderer.h>
 #include <Core/Math/math.h>
+#include "postProcesser.h"
 
 namespace Engine {
   class Registry;
@@ -33,6 +34,8 @@ private:
   std::vector<unsigned int> m_renderables{};
   Engine::Systems::OpenGLRenderTracker m_renderTracker;
   Engine::OpenGLFramebuffer m_framebuffer{};
+  
+  ModelerUtil::PostProcesser m_postProcesser{};
 
   unsigned int m_cameraEntity{0};
   std::shared_ptr<Engine::CameraComponent> m_camera{};

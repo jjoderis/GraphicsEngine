@@ -90,8 +90,10 @@ void UICreation::MainViewPort::main() {
       m_currentPoint += direction;
     }
   }
+
+  m_postProcesser.postProcess(m_framebuffer.getTexture());
         
-  ImGui::GetWindowDrawList()->AddImage((void *)m_framebuffer.getTexture(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), {0, 1}, {1, 0});
+  ImGui::GetWindowDrawList()->AddImage((void *)m_postProcesser.getFramebuffer().getTexture(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), {0, 1}, {1, 0});
 }
 
 void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel) {
@@ -158,6 +160,7 @@ void UICreation::MainViewPort::onResize() {
   int height = m_size.at(1);
 
   m_framebuffer.resize(width, height);
+  m_postProcesser.resize(width, height);
 
   std::vector<std::shared_ptr<Engine::CameraComponent>> cameras = m_registry.getComponents<Engine::CameraComponent>();
 

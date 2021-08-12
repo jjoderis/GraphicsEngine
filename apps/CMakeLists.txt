@@ -27,6 +27,7 @@ add_library(modelerLib
     modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
     modeler/imgui/Window/Main/mainViewPort.cpp
+    modeler/imgui/Window/Main/postProcesser.cpp
     modeler/imgui/Window/Raytracing/raytracingWindow.cpp
     modeler/imgui/Window/Templates/imguiWindow.cpp
     modeler/imgui/Window/Templates/componentWindow.cpp
