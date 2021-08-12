@@ -9,7 +9,12 @@
 #include <Components/Tag/tag.h>
 
 UICreation::MainViewPort::MainViewPort(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, int &selectedEntity) 
-  : ImGuiWindow{"Main Viewport"} ,m_registry{registry}, m_selectedEntity{selectedEntity}, m_renderer{renderer}, m_renderTracker{m_registry, m_renderables}
+  : ImGuiWindow{"Main Viewport"},
+    m_registry{registry},
+    m_selectedEntity{selectedEntity},
+    m_renderer{renderer},
+    m_renderTracker{m_registry, m_renderables},
+    m_framebuffer{{GL_RGB}}
 {
   m_cameraEntity = registry.addEntity();
   registry.createComponent<Engine::TagComponent>(m_cameraEntity, "Modeler Camera");

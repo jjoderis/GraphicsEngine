@@ -3,11 +3,14 @@
 
 #include "../Templates/imguiWindow.h"
 #include <OpenGL/Systems/RenderTracker/renderTracker.h>
-#include <OpenGL/Renderer/renderer.h>
 #include <Core/Math/math.h>
+#include <OpenGL/Framebuffer/framebuffer.h>
 
 namespace Engine {
   class Registry;
+  class OpenGLRenderer;
+  class CameraComponent;
+  class ActiveCameraComponent;
 
   namespace Util {
     class Ray;
@@ -32,7 +35,7 @@ private:
   Engine::OpenGLRenderer &m_renderer;
   std::vector<unsigned int> m_renderables{};
   Engine::Systems::OpenGLRenderTracker m_renderTracker;
-  Engine::OpenGLFramebuffer m_framebuffer{};
+  Engine::OpenGLFramebuffer m_framebuffer;
 
   unsigned int m_cameraEntity{0};
   std::shared_ptr<Engine::CameraComponent> m_camera{};
