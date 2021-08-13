@@ -22,6 +22,8 @@ public:
 
     ShaderMaterialData getMaterialProperties();
 
+    int getLocation(const char* name);
+
 private:
     Engine::OpenGLProgram m_program; // the shader program to use
     void setupUniforms();

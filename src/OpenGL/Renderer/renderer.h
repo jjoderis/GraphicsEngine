@@ -31,6 +31,8 @@ public:
     OpenGLRenderer(Registry &registry);
     ~OpenGLRenderer();
 
+    unsigned int &getCameraUBO();
+
     void render(const std::vector<unsigned int> &renderables);
 };
 } // namespace Engine

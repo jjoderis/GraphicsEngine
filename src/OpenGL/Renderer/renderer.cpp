@@ -35,7 +35,10 @@ void Engine::OpenGLRenderer::render(const std::vector<unsigned int> &renderables
 
     for (auto entity : renderables)
     {
-        m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)->useShader();
+        auto shader{m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)};
+        shader->useShader();
+        glUniform1i(shader->getLocation("fIndex"), entity);
+
         m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
 
         m_registry.getComponent<Engine::OpenGLTransformComponent>(entity)->bind();
@@ -47,4 +50,8 @@ void Engine::OpenGLRenderer::render(const std::vector<unsigned int> &renderables
     }
 
     glUseProgram(0);
+}
+
+unsigned int &Engine::OpenGLRenderer::getCameraUBO() {
+    return m_activeCameraUBO;
 }

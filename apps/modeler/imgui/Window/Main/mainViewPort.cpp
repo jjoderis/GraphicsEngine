@@ -14,8 +14,9 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry, Engine::OpenG
     m_selectedEntity{selectedEntity},
     m_renderer{renderer},
     m_renderTracker{m_registry, m_renderables},
-    m_framebuffer{{GL_RGB}}
+    m_framebuffer{{{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}, {GL_R16I, GL_RED_INTEGER, GL_INT}, {GL_RGB32F, GL_RGB, GL_FLOAT}}}
 {
+  m_framebuffer.setClearColorI({-1, -1, -1, -1}, 1);
   m_cameraEntity = registry.addEntity();
   registry.createComponent<Engine::TagComponent>(m_cameraEntity, "Modeler Camera");
   auto transform = registry.createComponent<Engine::TransformComponent>(m_cameraEntity);
@@ -45,19 +46,20 @@ void UICreation::MainViewPort::main() {
     Engine::Math::IVector2 mousePos{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 
     Engine::Math::IVector2 pixelPosition{mousePos - m_pos};
-    
-    unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-    auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-    Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, m_size);
+  
+    int index{};
+    m_framebuffer.getPixel(&index, pixelPosition(0), m_size(1) - pixelPosition(1), GL_RED_INTEGER, GL_INT, GL_COLOR_ATTACHMENT1);
 
-    auto intersections = Engine::Util::castRay(cameraRay, m_registry);
-
-    if (intersections.size())
+    if (index > -1)
     {
-        m_selectedEntity = intersections.begin()->getEntity();
+        m_selectedEntity = index;
         m_grabbedEntity = m_selectedEntity;
-        m_currentPoint = intersections.begin()->getIntersection();
+        m_framebuffer.getPixel(m_currentPoint.raw(), pixelPosition(0), m_size(1) - pixelPosition(1), GL_RGB, GL_FLOAT, GL_COLOR_ATTACHMENT2);
     } else if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+      unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
+      auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+      Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, m_size);
+     
       Engine::Math::Vector3 direction = camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
       m_currentPoint = (direction / direction.at(2)) * camera->getFar();
     }

@@ -157,6 +157,7 @@ void Engine::OpenGLProgram::rollback()
 void Engine::OpenGLProgram::updateProgram(std::vector<OpenGLShader> newShaders)
 {
     int compiled{0};
+    m_uniformLocation.clear();
 
     for (OpenGLShader &newShader : newShaders)
     {
@@ -319,6 +320,16 @@ std::vector<Engine::OpenGLShader> Engine::OpenGLProgram::getShaders()
     }
 
     return shaders;
+}
+
+int Engine::OpenGLProgram::getLocation(const char* name) {
+    if (m_uniformLocation.find(name) != m_uniformLocation.end()) {
+        return m_uniformLocation.at(name);
+    } else {
+        int location{glGetUniformLocation(m_program, name)};
+        m_uniformLocation.emplace(name, location);
+        return location;
+    }
 }
 
 void Engine::saveShader(const filesystem::path &path, const OpenGLShader &shader)

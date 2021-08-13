@@ -150,7 +150,12 @@ vec3 calculateDirectionalLightColors(vec3 fNormal, vec3 viewDirection, vec3 diff
     return accColor;
 }
 
-out vec4 FragColor;
+uniform int fIndex;
+
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out int index;
+layout (location = 2) out vec3 worldPos;
+
 void main()
 {
     vec3 fNormal = normalize(normal);
@@ -163,4 +168,6 @@ void main()
     vec3 accColor = calculateAmbientLightColors(diffuse) + calculateDirectionalLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculatePointLightColors(fNormal, viewDirection, diffuse, specular, specularExp) + calculateSpotLightColors(fNormal, viewDirection, diffuse, specular, specularExp);
     
     FragColor = vec4(accColor  , 1.0);
+    index = fIndex;
+    worldPos = position;
 }
