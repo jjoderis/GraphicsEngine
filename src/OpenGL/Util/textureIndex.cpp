@@ -53,10 +53,11 @@ unsigned int Engine::Util::OpenGLTextureHandler::getWrapT() const { return std::
 
 Engine::Util::OpenGLTextureIndex::~OpenGLTextureIndex()
 {
-    for (auto &textureData : m_textures)
-    {
-        glDeleteTextures(1, &textureData.second.first);
-    }
+    // Disabled due to OpenGL Context not being accessible anymore when this is called
+    // for (auto &textureData : m_textures)
+    // {
+    //     glDeleteTextures(1, &textureData.second.first);
+    // }
 }
 
 Engine::Util::OpenGLTextureHandler Engine::Util::OpenGLTextureIndex::needTexture(const std::filesystem::path &path,

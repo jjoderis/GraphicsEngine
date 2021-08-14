@@ -1,18 +1,18 @@
 #include "imgui.h"
 
 #include "./Util/SceneLoading/sceneLoader.h"
-#include "Window/Main/mainViewPort.h"
+#include "OpenGL/Components/Texture/texture.h"
+#include "Util/errorModal.h"
+#include "Util/fileBrowser.h"
 #include "Window/Camera/camera.h"
 #include "Window/Entity/entity.h"
 #include "Window/Geometry/geometryNode.h"
 #include "Window/Light/light.h"
+#include "Window/Main/mainViewPort.h"
 #include "Window/OpenGLMaterial/openGLMaterial.h"
+#include "Window/Raytracing/raytracingWindow.h"
 #include "Window/Transform/transform.h"
 #include "Window/helpers.h"
-#include "OpenGL/Components/Texture/texture.h"
-#include "Util/errorModal.h"
-#include "Util/fileBrowser.h"
-#include "Window/Raytracing/raytracingWindow.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Hierarchy/hierarchy.h>
@@ -21,13 +21,13 @@
 #include <Core/Components/Transform/transform.h>
 #include <Core/ECS/util.h>
 #include <Core/Math/math.h>
-#include <OpenGL/Renderer/renderer.h>
 #include <OpenGL/Components/Shader/shader.h>
+#include <OpenGL/Renderer/renderer.h>
+#include <OpenGL/Util/textureIndex.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Util/fileHandling.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 #include <imgui.h>
 
@@ -36,10 +36,10 @@
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
-UICreation::MainViewPort* mainViewport;
-UICreation::RaytracingViewport* raytracingViewport;
+UICreation::MainViewPort *mainViewport;
+UICreation::RaytracingViewport *raytracingViewport;
 
-std::vector<UICreation::ComponentWindow*> componentWindows{};
+std::vector<UICreation::ComponentWindow *> componentWindows{};
 
 bool showDemoWindow{false};
 bool dragging{1};
@@ -51,7 +51,9 @@ int possible_component_current = 0;
 Engine::Math::Vector3 debugOrigin{0, 0, 0};
 Engine::Math::Vector3 debugDirection{0, 0, 0};
 
-void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engine::Util::OpenGLTextureIndex &textureIndex)
+void UI::init(Engine::Registry &registry,
+              Engine::OpenGLRenderer &renderer,
+              Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     // setup imgui context
     IMGUI_CHECKVERSION();
@@ -374,8 +376,9 @@ void UI::render(Engine::Registry &registry)
             drawGeometryTypeSelection(registry);
             drawShaderTypeSelection(registry);
 
-            for (auto componentWindow : componentWindows) {
-               componentWindow->render();
+            for (auto componentWindow : componentWindows)
+            {
+                componentWindow->render();
             }
         }
 
