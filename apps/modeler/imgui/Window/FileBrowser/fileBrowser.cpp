@@ -7,6 +7,8 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+namespace fs = std::filesystem;
+
 UICreation::FileBrowser::FileBrowser(Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &textureIndex)
     : ImGuiWindow{"File Browser"}, m_registry{registry}, m_textureIndex{textureIndex},
       m_directoryIcon{textureIndex.needTexture("../../data/icons/directory-icon.png", GL_TEXTURE_2D, GL_RGBA)},
@@ -18,7 +20,7 @@ UICreation::FileBrowser::FileBrowser(Engine::Registry &registry, Engine::Util::O
 void UICreation::FileBrowser::changeDirectory(const char *subPath)
 {
     m_currentPath /= subPath;
-    m_currentPath = std::filesystem::canonical(m_currentPath);
+    m_currentPath = fs::canonical(m_currentPath);
     m_fileInput.clear();
 
     loadDirectoryContent();
@@ -28,7 +30,7 @@ void UICreation::FileBrowser::loadDirectoryContent()
 {
     m_directoryContents.clear();
 
-    for (const auto &entry : std::filesystem::directory_iterator(m_currentPath.c_str()))
+    for (const auto &entry : fs::directory_iterator(m_currentPath.c_str()))
     {
         if (entry.is_directory() || entry.is_regular_file())
         {
@@ -43,8 +45,20 @@ void UICreation::FileBrowser::loadDirectoryContent()
     // sort directory contents in lexicographic order
     std::sort(m_directoryContents.begin(),
               m_directoryContents.end(),
-              [](std::filesystem::path a, std::filesystem::path b)
+              [](fs::path a, fs::path b)
               {
+                  bool aIsDirectory{fs::is_directory(a)};
+                  bool bIsDirectory{fs::is_directory(b)};
+
+                  if (aIsDirectory && !bIsDirectory)
+                  {
+                      return true;
+                  }
+                  else if (bIsDirectory && !aIsDirectory)
+                  {
+                      return false;
+                  }
+
                   auto aString{a.filename().string()};
                   auto bString{b.filename().string()};
 
@@ -96,9 +110,9 @@ void UICreation::FileBrowser::main()
     }
 }
 
-unsigned int UICreation::FileBrowser::getIcon(const std::filesystem::path &path)
+unsigned int UICreation::FileBrowser::getIcon(const fs::path &path)
 {
-    if (std::filesystem::is_directory(path))
+    if (fs::is_directory(path))
     {
         return m_directoryIcon.getTexture();
     }
@@ -126,13 +140,13 @@ void UICreation::FileBrowser::drawEntries()
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
-            ImGui::SetDragDropPayload("system_path_payload", &entry, sizeof(std::filesystem::path));
+            ImGui::SetDragDropPayload("system_path_payload", &entry, sizeof(fs::path));
 
             ImGui::Text(entry.c_str());
             ImGui::EndDragDropSource();
         }
 
-        if (std::filesystem::is_directory(entry))
+        if (fs::is_directory(entry))
         {
             if (createImGuiHighlightedDropTarget<bool>("scene_payload", [this](const bool &a) { return true; }))
             {
@@ -153,7 +167,7 @@ void UICreation::FileBrowser::drawEntries()
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
         {
-            if (std::filesystem::is_directory(entry))
+            if (fs::is_directory(entry))
             {
                 ImGui::PopID();
                 changeDirectory(entry.filename().c_str());
@@ -173,11 +187,11 @@ void UICreation::FileBrowser::drawEntries()
     }
 }
 
-void UICreation::FileBrowser::addDirectory(const std::filesystem::path &path)
+void UICreation::FileBrowser::addDirectory(const fs::path &path)
 {
     if (!path.has_extension())
     {
-        std::filesystem::create_directories(path);
+        fs::create_directories(path);
         changeDirectory(path.filename().c_str());
     }
 }
