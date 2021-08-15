@@ -34,6 +34,7 @@ add_library(modelerLib
     modeler/imgui/Window/Camera/camera.cpp
     modeler/imgui/Window/Geometry/geometryNode.cpp
     modeler/imgui/Window/OpenGLMaterial/openGLMaterial.cpp
+    modeler/imgui/Window/OpenGLMaterial/shaderWindow.cpp
     modeler/imgui/Window/Transform/transform.cpp
     modeler/imgui/Window/Light/light.cpp
 )
