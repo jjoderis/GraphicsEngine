@@ -25,6 +25,9 @@ textureInfo loadTexture(const std::filesystem::path &path,
                         unsigned int wrapS = GL_REPEAT,
                         unsigned int wrapT = GL_REPEAT);
 
+void invertTextureOnImportOn();
+void invertTextureOnImportOff();
+
 } // namespace Util
 
 } // namespace Engine

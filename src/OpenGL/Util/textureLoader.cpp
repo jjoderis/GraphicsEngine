@@ -12,7 +12,7 @@ Engine::Util::textureInfo Engine::Util::loadTexture(const std::filesystem::path 
                                                     unsigned int wrapT)
 {
     int width, height, n;
-    stbi_set_flip_vertically_on_load(true);
+
     unsigned char *data = stbi_load(path.c_str(), &width, &height, &n, 0);
 
     if (data == NULL)
@@ -55,3 +55,7 @@ Engine::Util::textureInfo Engine::Util::loadTexture(const std::filesystem::path 
 
     return {width, height, texture};
 }
+
+void Engine::Util::invertTextureOnImportOn() { stbi_set_flip_vertically_on_load(true); }
+
+void Engine::Util::invertTextureOnImportOff() { stbi_set_flip_vertically_on_load(false); }

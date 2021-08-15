@@ -21,6 +21,7 @@
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Renderer/renderer.h>
 #include <OpenGL/Util/textureIndex.h>
+#include <OpenGL/Util/textureLoader.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Util/fileHandling.h>
 #include <backends/imgui_impl_glfw.h>
@@ -66,6 +67,8 @@ void UI::init(Engine::Registry &registry,
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
     // io.ConfigViewportsNoAutoMerge = true;
     // io.ConfigViewportsNoTaskBarIcon = true;
+
+    Engine::Util::invertTextureOnImportOn();
 
     ImGui::StyleColorsDark();
 
