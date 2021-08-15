@@ -1,49 +1,61 @@
-#include "../helpers.h"
 #include "openGLMaterial.h"
-#include <OpenGL/Components/Material/material.h>
-#include <Raytracing/Components/Material/raytracingMaterial.h>
-#include <glad/glad.h>
-#include <Core/ECS/registry.h>
-#include <Components/Render/render.h>
+
 #include "../../Util/errorModal.h"
-#include "../../Util/fileBrowser.h"
+#include "../helpers.h"
+#include <Components/Render/render.h>
+#include <Core/ECS/registry.h>
+#include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Texture/texture.h>
 #include <OpenGL/Util/textureIndex.h>
+#include <Raytracing/Components/Material/raytracingMaterial.h>
+#include <filesystem>
+#include <glad/glad.h>
 #include <misc/cpp/imgui_stdlib.h>
+
+namespace fs = std::filesystem;
 
 extern bool dragging;
 
-UICreation::MaterialComponentWindow::MaterialComponentWindow(int &currentEntity, Engine::Registry &registry, Engine::Util::OpenGLTextureIndex &textureIndex)
+UICreation::MaterialComponentWindow::MaterialComponentWindow(int &currentEntity,
+                                                             Engine::Registry &registry,
+                                                             Engine::Util::OpenGLTextureIndex &textureIndex)
     : ComponentWindow{"Material", currentEntity, registry}, m_textureIndex{textureIndex}
 {
 }
 
-void UICreation::MaterialComponentWindow::onEntityChange(int oldEntity) {
+void UICreation::MaterialComponentWindow::onEntityChange(int oldEntity)
+{
     ComponentWindow::onEntityChange(oldEntity);
 
-    checkShaderChange();  
+    checkShaderChange();
 }
 
-void UICreation::MaterialComponentWindow::checkUpdates() {
+void UICreation::MaterialComponentWindow::checkUpdates()
+{
     ComponentWindow::checkUpdates();
 
     checkShaderChange();
 }
 
-void UICreation::MaterialComponentWindow::checkShaderChange() {
+void UICreation::MaterialComponentWindow::checkShaderChange()
+{
     auto currentShader{m_registry.getComponent<Engine::OpenGLShaderComponent>(m_currentEntity)};
-    if (currentShader != m_shader) {
-      m_shader = currentShader;
-      if (m_shader) {
-        loadShaders(m_shader->getShaders());
-      }
+    if (currentShader != m_shader)
+    {
+        m_shader = currentShader;
+        if (m_shader)
+        {
+            loadShaders(m_shader->getShaders());
+        }
     }
 }
 
-void UICreation::MaterialComponentWindow::render() {
+void UICreation::MaterialComponentWindow::render()
+{
     bool hasOpenGLShader = m_registry.hasComponent<Engine::OpenGLShaderComponent>(m_selectedEntity);
     bool hasRaytraceMaterial = m_registry.hasComponent<Engine::RaytracingMaterial>(m_selectedEntity);
-    if (hasOpenGLShader || hasRaytraceMaterial) {
+    if (hasOpenGLShader || hasRaytraceMaterial)
+    {
         ComponentWindow::render();
     }
 }
@@ -53,6 +65,38 @@ bool isImage(const fs::path &path)
     fs::path extension{path.extension().c_str()};
 
     return extension == ".jpg" || extension == ".jpeg" || extension == ".png";
+}
+
+bool isShaderFile(const fs::path &path)
+{
+    try
+    {
+        Engine::shaderPathToType(path);
+    }
+    catch (Engine::ShaderException &err)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool isShaderDirectory(const fs::path &path)
+{
+    if (!fs::is_directory(path))
+    {
+        return false;
+    }
+
+    for (const auto &entry : fs::directory_iterator(path.c_str()))
+    {
+        if (!isShaderFile(entry))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void UICreation::MaterialComponentWindow::loadShader(const Engine::OpenGLShader &shader)
@@ -108,9 +152,8 @@ void UICreation::MaterialComponentWindow::loadShaders(const std::vector<Engine::
     }
 }
 
-void UICreation::MaterialComponentWindow::drawShaderEditModal(unsigned int entity,
-                         Engine::Registry &registry,
-                         const std::shared_ptr<Engine::OpenGLShaderComponent> &shader)
+void UICreation::MaterialComponentWindow::drawShaderEditModal(
+    unsigned int entity, Engine::Registry &registry, const std::shared_ptr<Engine::OpenGLShaderComponent> &shader)
 {
     if (!m_modalOpen)
     {
@@ -121,57 +164,41 @@ void UICreation::MaterialComponentWindow::drawShaderEditModal(unsigned int entit
     {
         ImGui::Combo("##shader_type", &m_currentShader, m_shaderTypes.data(), m_shaderTypes.size());
 
-        ImGui::SameLine();
-        if (ImGui::Button("Import##single_shader"))
-        {
-            UIUtil::can_open_function = [this](const fs::path &path) -> bool
-            {
-                // we can import the file if the path corresponds to a file that has the correct fileExtension for the
-                // shader type
-                GLenum fileType;
-
-                try
-                {
-                    fileType = Engine::shaderPathToType(path);
-                }
-                catch (Engine::ShaderException &err)
-                {
-                    fileType = GL_NONE;
-                }
-
-                return (fs::is_regular_file(path) && m_shaders[m_currentShader].m_type == fileType);
-            };
-            UIUtil::open_function = [this](const fs::path &path, const std::string &fileName)
-            { loadShader(Engine::loadShader(path)); };
-            UIUtil::openFileBrowser();
-        }
-
         ImVec2 pos{ImGui::GetWindowContentRegionMin()};
         ImVec2 end{ImGui::GetWindowContentRegionMax()};
         ImVec2 textSize{pos.x + end.x, pos.y + end.y - 100};
 
         ImGui::InputTextMultiline("##shader_source_input", &m_shaders[m_currentShader].m_source, textSize);
 
+        if (auto path = createImGuiHighlightedDropTarget<fs::path>(
+                "system_path_payload",
+                [](const fs::path &path) { return (isShaderFile(path) || isShaderDirectory(path)); }))
+        {
+            if (fs::is_directory(*path))
+            {
+                loadShaders(Engine::loadShaders(path->c_str()));
+            }
+            else
+            {
+                loadShader(Engine::loadShader(*path));
+            }
+        }
+
         if (ImGui::Button("Close", ImVec2(120, 0)))
         {
             m_modalOpen = 0;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Import##multi_shader", ImVec2(120, 0)))
+        ImGui::Button("Export##multi_shader", ImVec2(120, 0));
+
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
-            UIUtil::open_function = [this](const fs::path &path, const std::string &fileName)
-            { loadShaders(Engine::loadShaders(path.c_str())); };
-            UIUtil::openFileBrowser();
+            ImGui::SetDragDropPayload("shaders_payload", &m_shaders, sizeof(std::vector<Engine::OpenGLShader>));
+
+            ImGui::Text("Shaders");
+            ImGui::EndDragDropSource();
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Export##mulit_shader", ImVec2(120, 0)))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
-            UIUtil::open_function = [this](const fs::path &path, const std::string &fileName)
-            { Engine::saveShaders(path, m_shaders); };
-            UIUtil::openFileBrowser();
-        }
+
         ImGui::SameLine();
         if (ImGui::Button("Use", ImVec2(120, 0)))
         {
@@ -188,21 +215,24 @@ void UICreation::MaterialComponentWindow::drawShaderEditModal(unsigned int entit
         }
 
         UIUtil::drawErrorModal(errorMessage);
-
     }
     ImGui::End();
 }
 
-void UICreation::MaterialComponentWindow::main() {
+void UICreation::MaterialComponentWindow::main()
+{
 
-    if (auto shader{m_registry.getComponent<Engine::OpenGLShaderComponent>(m_currentEntity)}) {
+    if (auto shader{m_registry.getComponent<Engine::OpenGLShaderComponent>(m_currentEntity)})
+    {
         ImGui::Text("OpenGL Shader");
         ImGui::SameLine();
         ImGui::Button("Drag##OpenGLShader");
         createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(m_shader);
-        if (!m_registry.hasComponent<Engine::RenderComponent>(m_currentEntity)) {
+        if (!m_registry.hasComponent<Engine::RenderComponent>(m_currentEntity))
+        {
             ImGui::SameLine();
-            if (ImGui::Button("x##OpenGLShader")) {
+            if (ImGui::Button("x##OpenGLShader"))
+            {
                 m_registry.removeComponent<Engine::OpenGLShaderComponent>(m_currentEntity);
             }
         }
@@ -233,11 +263,12 @@ void UICreation::MaterialComponentWindow::main() {
             }
         }
 
-        if (auto material{m_registry.getComponent<Engine::OpenGLMaterialComponent>(m_currentEntity)}) {
+        if (auto material{m_registry.getComponent<Engine::OpenGLMaterialComponent>(m_currentEntity)})
+        {
             ImGui::Text("Shader Material");
             ImGui::SameLine();
             ImGui::Button("Drag##OpenGLMaterial");
-            createImGuiComponentDragSource<Engine::OpenGLMaterialComponent>(material);            
+            createImGuiComponentDragSource<Engine::OpenGLMaterialComponent>(material);
 
             std::vector<Engine::MaterialUniformData> &materialsData{material->getMaterialData().second};
 
@@ -277,7 +308,8 @@ void UICreation::MaterialComponentWindow::main() {
             }
         }
 
-        if (auto texture{m_registry.getComponent<Engine::OpenGLTextureComponent>(m_currentEntity)}) {
+        if (auto texture{m_registry.getComponent<Engine::OpenGLTextureComponent>(m_currentEntity)})
+        {
             ImGui::Text("Texture");
             ImGui::SameLine();
             ImGui::Button("Drag##OpenGLTexture");
@@ -285,33 +317,42 @@ void UICreation::MaterialComponentWindow::main() {
 
             auto &textures{texture->getTextures()};
 
+            int size = ImGui::GetWindowContentRegionMin().x + ImGui::GetWindowContentRegionMax().x;
+            size = std::min(128, size);
+
             int index{0};
             for (auto &data : textures)
             {
-                int size = ImGui::GetWindowContentRegionMin().x + ImGui::GetWindowContentRegionMax().x;
-                size = std::min(128, size);
                 ImGui::Image((void *)data.getTexture(), ImVec2{(float)size, (float)size}, ImVec2{0, 1}, ImVec2{1, 0});
-                if (ImGui::IsItemClicked(0))
+
+                if (auto path = createImGuiHighlightedDropTarget<fs::path>(
+                        "system_path_payload",
+                        [](const fs::path &path) { return (fs::is_regular_file(path) && isImage(path)); }))
                 {
-                    UIUtil::can_open_function = [](const fs::path &path) -> bool
-                    { return (fs::is_regular_file(path) && isImage(path)); };
-                    UIUtil::open_function = [this, index, texture](const fs::path &path, const std::string &fileName)
-                    { 
-                        auto test = m_textureIndex.needTexture(path, GL_TEXTURE_2D);
-                        texture->editTexture(index, test); 
-                    };
-                    UIUtil::openFileBrowser();
+                    auto test = m_textureIndex.needTexture(*path, GL_TEXTURE_2D);
+                    texture->editTexture(index, test);
                 }
+
                 ++index;
             }
 
-            if (ImGui::Button("Add##new_texture"))
+            auto context{ImGui::GetCurrentContext()};
+            auto payload{context->DragDropPayload};
+
+            if (context->DragDropActive && payload.IsDataType("system_path_payload"))
             {
-                UIUtil::can_open_function = [](const fs::path &path) -> bool
-                { return (fs::is_regular_file(path) && isImage(path)); };
-                UIUtil::open_function = [this, texture](const fs::path &path, const std::string &fileName)
-                { texture->addTexture(m_textureIndex.needTexture(path, GL_TEXTURE_2D)); };
-                UIUtil::openFileBrowser();
+                auto path{(fs::path *)payload.Data};
+
+                if (isImage(*path))
+                {
+                    ImGui::ColorButton("##New Texture", {1, 1, 1, 1}, 0, {(float)size, (float)size});
+
+                    if (createImGuiHighlightedDropTarget<fs::path>("system_path_payload",
+                                                                   [](const fs::path &path) { return true; }))
+                    {
+                        texture->addTexture(m_textureIndex.needTexture(*path, GL_TEXTURE_2D));
+                    }
+                }
             }
         }
         ImGui::Separator();
@@ -321,7 +362,8 @@ void UICreation::MaterialComponentWindow::main() {
     {
         ImGui::Text("Raytracing Material");
         ImGui::SameLine();
-        if (ImGui::Button("x##Raytrace")) {
+        if (ImGui::Button("x##Raytrace"))
+        {
             m_registry.removeComponent<Engine::RaytracingMaterial>(m_currentEntity);
         }
 

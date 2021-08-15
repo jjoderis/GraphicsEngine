@@ -24,8 +24,8 @@ add_library(modelerLib
     modeler/imgui/Util/SceneLoading/sceneLoader.cpp
     modeler/imgui/Util/SceneLoading/serialization.cpp
     modeler/imgui/Util/SceneLoading/parsing.cpp
-    modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
+    modeler/imgui/Window/FileBrowser/fileBrowser.cpp
     modeler/imgui/Window/Main/mainViewPort.cpp
     modeler/imgui/Window/Raytracing/raytracingWindow.cpp
     modeler/imgui/Window/Templates/imguiWindow.cpp

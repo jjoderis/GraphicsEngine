@@ -8,11 +8,10 @@
 #include "../Components/Texture/texture.h"
 
 Engine::OpenGLRenderer::OpenGLRenderer(Registry &registry)
-    : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry}, m_ambientLightsTracker{m_ambientLightsInfoUBO,
-                                                                                                 registry},
-      m_directionalLightsTracker{m_directionalLightsInfoUBO, registry}, m_pointLightsTracker{m_pointLightsInfoUBO,
-                                                                                             registry},
-      m_spotLightsTracker{m_spotLightsInfoUBO, registry}
+    : m_registry{registry}, m_cameraTracker{m_activeCameraUBO, registry},
+      m_ambientLightsTracker{m_ambientLightsInfoUBO, registry}, m_directionalLightsTracker{m_directionalLightsInfoUBO,
+                                                                                           registry},
+      m_pointLightsTracker{m_pointLightsInfoUBO, registry}, m_spotLightsTracker{m_spotLightsInfoUBO, registry}
 {
 }
 
@@ -37,7 +36,7 @@ void Engine::OpenGLRenderer::render(const std::vector<unsigned int> &renderables
     {
         auto shader{m_registry.getComponent<Engine::OpenGLShaderComponent>(entity)};
         shader->useShader();
-        glUniform1i(shader->getLocation("fIndex"), entity);
+        glUniform1i(shader->getLocation("fIndex"), (int)entity);
 
         m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
 
@@ -52,6 +51,4 @@ void Engine::OpenGLRenderer::render(const std::vector<unsigned int> &renderables
     glUseProgram(0);
 }
 
-unsigned int &Engine::OpenGLRenderer::getCameraUBO() {
-    return m_activeCameraUBO;
-}
+unsigned int &Engine::OpenGLRenderer::getCameraUBO() { return m_activeCameraUBO; }

@@ -1,20 +1,27 @@
 #include "mainViewPort.h"
 
+#include "../../Util/SceneLoading/sceneLoader.h"
+#include "../../Util/objectLoader.h"
+#include "../helpers.h"
 #include <Components/Camera/camera.h>
 #include <Components/Tag/tag.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
 #include <Core/Util/Raycaster/raycaster.h>
 #include <OpenGL/Renderer/renderer.h>
+#include <filesystem>
 #include <imgui.h>
+
+namespace fs = std::filesystem;
 
 UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
                                        Engine::OpenGLRenderer &renderer,
-                                       int &selectedEntity)
-    : ImGuiWindow{"Main Viewport"}, m_registry{registry}, m_selectedEntity{selectedEntity}, m_renderer{renderer},
-      m_renderTracker{m_registry, m_renderables}, m_framebuffer{{{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE},
-                                                                 {GL_R16I, GL_RED_INTEGER, GL_INT},
-                                                                 {GL_RGB32F, GL_RGB, GL_FLOAT}}}
+                                       int &selectedEntity,
+                                       Engine::Util::OpenGLTextureIndex &textureIndex)
+    : ImGuiWindow{"Main Viewport"}, m_registry{registry}, m_textureIndex{textureIndex},
+      m_selectedEntity{selectedEntity}, m_renderer{renderer}, m_renderTracker{m_registry, m_renderables},
+      m_framebuffer{
+          {{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}, {GL_R16I, GL_RED_INTEGER, GL_INT}, {GL_RGB32F, GL_RGB, GL_FLOAT}}}
 {
     m_framebuffer.setClearColorI({-1, -1, -1, -1}, 1);
     m_cameraEntity = registry.addEntity();
@@ -43,6 +50,22 @@ void UICreation::MainViewPort::main()
     auto size = ImGui::GetContentRegionAvail();
     ImGui::InvisibleButton(
         "main viewport", {size.x, size.y}, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+
+    if (auto path = UICreation::createImGuiHighlightedDropTarget<fs::path>(
+            "system_path_payload",
+            [](const fs::path &path)
+            { return (fs::is_regular_file(path) && (path.extension() == ".gltf" || path.extension() == ".obj")); }))
+    {
+        if (path->extension() == ".gltf")
+        {
+            m_registry.clear();
+            Engine::Util::loadScene(*path, m_registry, m_textureIndex);
+        }
+        else if (path->extension() == ".obj")
+        {
+            Util::loadOBJFile(m_registry, *path, m_textureIndex);
+        }
+    }
 
     if (ImGui::IsItemClicked(ImGuiPopupFlags_MouseButtonLeft) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
     {
@@ -117,6 +140,17 @@ void UICreation::MainViewPort::main()
             m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 
             m_currentPoint += direction;
+        }
+
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity < 0 &&
+            ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+        {
+            bool p{true};
+
+            ImGui::SetDragDropPayload("scene_payload", &p, sizeof(bool));
+
+            ImGui::Text("Scene");
+            ImGui::EndDragDropSource();
         }
     }
 

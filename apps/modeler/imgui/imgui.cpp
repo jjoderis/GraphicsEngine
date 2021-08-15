@@ -1,9 +1,7 @@
 #include "imgui.h"
 
-#include "./Util/SceneLoading/sceneLoader.h"
-#include "OpenGL/Components/Texture/texture.h"
+#include "./Window/FileBrowser/fileBrowser.h"
 #include "Util/errorModal.h"
-#include "Util/fileBrowser.h"
 #include "Window/Camera/camera.h"
 #include "Window/Entity/entity.h"
 #include "Window/Geometry/geometryNode.h"
@@ -12,7 +10,6 @@
 #include "Window/OpenGLMaterial/openGLMaterial.h"
 #include "Window/Raytracing/raytracingWindow.h"
 #include "Window/Transform/transform.h"
-#include "Window/helpers.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Hierarchy/hierarchy.h>
@@ -39,11 +36,14 @@ extern Engine::Util::OpenGLTextureIndex textureIndex;
 UICreation::MainViewPort *mainViewport;
 UICreation::RaytracingViewport *raytracingViewport;
 
+UICreation::FileBrowser *fileBrowser;
+
 std::vector<UICreation::ComponentWindow *> componentWindows{};
 
 bool showDemoWindow{false};
 bool dragging{1};
 
+namespace fs = std::filesystem;
 using namespace UICreation;
 int selectedEntity = -1;
 int possible_component_current = 0;
@@ -77,10 +77,9 @@ void UI::init(Engine::Registry &registry,
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    UIUtil::initFileBrowserIcons();
-
-    mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity};
+    mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity, textureIndex};
     raytracingViewport = new UICreation::RaytracingViewport{registry};
+    fileBrowser = new UICreation::FileBrowser{registry, textureIndex};
 
     componentWindows.emplace_back(new TransformComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
@@ -101,19 +100,6 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
 {
     if (ImGui::BeginPopup("Select Geometry Type"))
     {
-        if (ImGui::Button("Import##Geometry"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool
-            {
-                // we can import the file if it has an .off extension
-                GLenum fileType;
-
-                return (fs::is_regular_file(path) && path.extension().string() == ".off");
-            };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            { registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::loadOffFile(path)); };
-            UIUtil::openFileBrowser();
-        }
         if (ImGui::Button("Blank"))
         {
             registry.createComponent<Engine::GeometryComponent>(selectedEntity);
@@ -228,26 +214,6 @@ void UI::render(Engine::Registry &registry)
         if (ImGui::Button("Raytrace"))
         {
             raytracingViewport->newFrame();
-        }
-
-        if (ImGui::Button("Export Scene"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            { Engine::Util::saveScene(path, registry, textureIndex); };
-            UIUtil::openFileBrowser();
-        }
-
-        if (ImGui::Button("Import Scene"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool
-            { return fs::is_regular_file(path) && path.extension().string() == ".gltf"; };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            {
-                registry.clear();
-                Engine::Util::loadScene(path, registry, textureIndex);
-            };
-            UIUtil::openFileBrowser();
         }
 
         UICreation::drawEntitiesNode(registry);
@@ -388,7 +354,9 @@ void UI::render(Engine::Registry &registry)
         ImGui::End();
     }
 
-    UIUtil::drawFileBrowser();
+    // UIUtil::drawFileBrowser();
+
+    fileBrowser->render();
 
     ImGui::Render();
 }

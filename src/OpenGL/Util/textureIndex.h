@@ -51,7 +51,7 @@ public:
     ~OpenGLTextureIndex();
 
     Engine::Util::OpenGLTextureHandler needTexture(const std::filesystem::path &path,
-                                                   unsigned int type,
+                                                   unsigned int type = GL_TEXTURE_2D,
                                                    unsigned int pixelType = GL_RGB,
                                                    unsigned int minFilter = GL_LINEAR,
                                                    unsigned int magFilter = GL_LINEAR,

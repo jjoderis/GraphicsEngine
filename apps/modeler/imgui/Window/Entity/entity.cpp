@@ -1,7 +1,5 @@
 #include "entity.h"
 
-#include "../../Util/SceneLoading/sceneLoader.h"
-#include "../../Util/fileBrowser.h"
 #include "../../Util/objectLoader.h"
 #include "../helpers.h"
 #include <Core/Components/Camera/camera.h>
@@ -21,13 +19,37 @@
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
-void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry)
+namespace fs = std::filesystem;
+
+bool isCyclic(int entity, int currEntity, Engine::Registry &registry)
+{
+    if (currEntity == -1)
+    {
+        return false;
+    }
+
+    if (entity == currEntity)
+    {
+        return true;
+    }
+
+    auto hierarchy{registry.getComponent<Engine::HierarchyComponent>(currEntity)};
+
+    if (!hierarchy)
+    {
+        return false;
+    }
+
+    return isCyclic(entity, hierarchy->getParent(), registry);
+};
+
+void createHierarchyDragAndDrop(int entity, Engine::Registry &registry)
 {
     // create logic for when an entity is started to be dragged
-    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    if (entity > -1 && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
     {
         // carry the entity id as payload
-        ImGui::SetDragDropPayload("hierarchy_drag", &entity, sizeof(unsigned int));
+        ImGui::SetDragDropPayload("hierarchy_drag", &entity, sizeof(int));
 
         std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity);
 
@@ -35,27 +57,23 @@ void createHierarchyDragAndDrop(unsigned int &entity, Engine::Registry &registry
 
         ImGui::EndDragDropSource();
     }
-    // create logic for when an entity is dropped onto a new parent
-    if (ImGui::BeginDragDropTarget())
+
+    if (auto dragEntity = UICreation::createImGuiHighlightedDropTarget<int>(
+            "hierarchy_drag",
+            [&registry, entity](const int &dragEntity) { return !isCyclic(dragEntity, entity, registry); }))
     {
-        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("hierarchy_drag"))
+        std::shared_ptr<Engine::HierarchyComponent> hierarchy =
+            registry.getComponent<Engine::HierarchyComponent>(*dragEntity);
+        if (!hierarchy)
         {
-            IM_ASSERT(payload->DataSize == sizeof(unsigned int));
-            unsigned int dropEntity = *(const unsigned int *)payload->Data;
-            std::shared_ptr<Engine::HierarchyComponent> hierarchy =
-                registry.getComponent<Engine::HierarchyComponent>(dropEntity);
-            if (!hierarchy)
-            {
-                hierarchy = registry.createComponent<Engine::HierarchyComponent>(dropEntity);
-            }
-            // see if we assigned a new parent and change hierarchy component if we did
-            if (entity != hierarchy->getParent())
-            {
-                hierarchy->setParent(entity);
-                registry.updated<Engine::HierarchyComponent>(dropEntity);
-            }
+            hierarchy = registry.createComponent<Engine::HierarchyComponent>(*dragEntity);
         }
-        ImGui::EndDragDropTarget();
+        // see if we assigned a new parent and change hierarchy component if we did
+        if (entity != hierarchy->getParent())
+        {
+            hierarchy->setParent(entity);
+            registry.updated<Engine::HierarchyComponent>(*dragEntity);
+        }
     }
 }
 
@@ -78,6 +96,24 @@ void removeWithChildren(Engine::Registry &registry, unsigned int entity)
     registry.removeEntity(entity);
 }
 
+template <typename ComponentType>
+void createComponentDrop(unsigned int entity, Engine::Registry &registry)
+{
+    char dragDropType[256]{};
+    sprintf(dragDropType, "Component_Drag_%u", Engine::type_index<ComponentType>::value());
+    if (auto component = UICreation::createImGuiHighlightedDropTarget<std::shared_ptr<ComponentType>>(
+            dragDropType,
+            [&registry, entity](const std::shared_ptr<ComponentType> &component)
+            {
+                auto entityComponent{registry.getComponent<ComponentType>(entity)};
+
+                return entityComponent != component;
+            }))
+    {
+        registry.addComponent<ComponentType>(entity, *component);
+    }
+}
+
 void drawEntityNode(unsigned int entity, Engine::Registry &registry)
 {
     if (std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity))
@@ -90,19 +126,21 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             possible_component_current = 0;
         }
         createHierarchyDragAndDrop(entity, registry);
-        if (auto material{UICreation::createImGuiComponentDropTarget<Engine::OpenGLMaterialComponent>()}) {
-            registry.addComponent<Engine::OpenGLMaterialComponent>(entity, material);
+        createComponentDrop<Engine::OpenGLMaterialComponent>(entity, registry);
+        createComponentDrop<Engine::GeometryComponent>(entity, registry);
+        createComponentDrop<Engine::OpenGLShaderComponent>(entity, registry);
+        createComponentDrop<Engine::OpenGLTextureComponent>(entity, registry);
+
+        if (auto path = UICreation::createImGuiHighlightedDropTarget<fs::path>(
+                "system_path_payload",
+                [](const fs::path &path) { return fs::is_regular_file(path) && (path.extension() == ".off"); }))
+        {
+            if (path->extension() == ".off")
+            {
+                registry.addComponent<Engine::GeometryComponent>(entity, Engine::loadOffFile(*path));
+            }
         }
-        if (auto geometry{UICreation::createImGuiComponentDropTarget<Engine::GeometryComponent>()}) {
-            registry.addComponent<Engine::GeometryComponent>(entity, geometry);
-        }
-        if (auto shader{UICreation::createImGuiComponentDropTarget<Engine::OpenGLShaderComponent>()}) {
-            registry.addComponent<Engine::OpenGLShaderComponent>(entity, shader);
-        }
-        if (auto texture{UICreation::createImGuiComponentDropTarget<Engine::OpenGLTextureComponent>()}) {
-            registry.addComponent<Engine::OpenGLTextureComponent>(entity, texture);
-        }
-        
+
         ImGui::SameLine();
         std::string id{"x##"};
         id.append(std::to_string(entity));
@@ -159,6 +197,8 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
 
     if (ImGui::CollapsingHeader("Entities"))
     {
+        createHierarchyDragAndDrop(-1, registry);
+
         for (unsigned int entity : entities)
         {
             std::shared_ptr<Engine::HierarchyComponent> hierarchy =
@@ -172,23 +212,6 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
         if (ImGui::Button("Add Entity"))
         {
             ImGui::OpenPopup("entity_add_popup");
-        }
-        if (ImGui::Button("Import Entity"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool
-            { return (fs::is_regular_file(path) && (path.extension() == ".obj" || path.extension() == ".gltf")); };
-            UIUtil::open_function = [&](const fs::path &path, const std::string &fileName)
-            {
-                if (path.extension() == ".obj")
-                {
-                    Util::loadOBJFile(registry, path, textureIndex);
-                }
-                else if (path.extension() == ".gltf")
-                {
-                    Engine::Util::loadScene(path, registry, textureIndex);
-                }
-            };
-            UIUtil::openFileBrowser();
         }
         if (ImGui::BeginPopup("entity_add_popup"))
         {
