@@ -60,6 +60,8 @@ void UICreation::MainViewPort::main()
         {
             m_registry.clear();
             Engine::Util::loadScene(*path, m_registry, m_textureIndex);
+            m_camera->updateAspect((float)m_size(0) / (float)m_size(1));
+            m_registry.updated<Engine::CameraComponent>(m_cameraEntity);
         }
         else if (path->extension() == ".obj")
         {
