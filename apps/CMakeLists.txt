@@ -24,8 +24,8 @@ add_library(modelerLib
     modeler/imgui/Util/SceneLoading/sceneLoader.cpp
     modeler/imgui/Util/SceneLoading/serialization.cpp
     modeler/imgui/Util/SceneLoading/parsing.cpp
-    modeler/imgui/Util/fileBrowser.cpp
     modeler/imgui/Util/errorModal.cpp
+    modeler/imgui/Window/FileBrowser/fileBrowser.cpp
     modeler/imgui/Window/Main/mainViewPort.cpp
     modeler/imgui/Window/Main/postProcesser.cpp
     modeler/imgui/Window/Raytracing/raytracingWindow.cpp
@@ -35,6 +35,7 @@ add_library(modelerLib
     modeler/imgui/Window/Camera/camera.cpp
     modeler/imgui/Window/Geometry/geometryNode.cpp
     modeler/imgui/Window/OpenGLMaterial/openGLMaterial.cpp
+    modeler/imgui/Window/OpenGLMaterial/shaderWindow.cpp
     modeler/imgui/Window/Transform/transform.cpp
     modeler/imgui/Window/Light/light.cpp
 )

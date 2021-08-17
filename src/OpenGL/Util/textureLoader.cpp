@@ -11,9 +11,8 @@ Engine::Util::textureInfo Engine::Util::loadTexture(const std::filesystem::path 
                                                     unsigned int wrapS,
                                                     unsigned int wrapT)
 {
-    // TODO: create texture with given type
     int width, height, n;
-    stbi_set_flip_vertically_on_load(true);
+
     unsigned char *data = stbi_load(path.c_str(), &width, &height, &n, 0);
 
     if (data == NULL)
@@ -44,15 +43,19 @@ Engine::Util::textureInfo Engine::Util::loadTexture(const std::filesystem::path 
     unsigned int texture;
 
     glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-    glTexImage2D(GL_TEXTURE_2D, 0, pixelType, width, height, 0, colorType, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(type, texture);
+    glTexParameteri(type, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(type, GL_TEXTURE_WRAP_T, wrapT);
+    glTexParameteri(type, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(type, GL_TEXTURE_MAG_FILTER, magFilter);
+    glTexImage2D(type, 0, pixelType, width, height, 0, colorType, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(type);
 
     stbi_image_free(data);
 
     return {width, height, texture};
 }
+
+void Engine::Util::invertTextureOnImportOn() { stbi_set_flip_vertically_on_load(true); }
+
+void Engine::Util::invertTextureOnImportOff() { stbi_set_flip_vertically_on_load(false); }

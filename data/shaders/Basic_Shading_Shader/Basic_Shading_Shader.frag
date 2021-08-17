@@ -1,8 +1,6 @@
 #version 330 core
 uniform Material{
     vec4 diffuseColor;
-    vec4 specularColor;
-    float specularExponent;
 };
 
 struct AmbientLightProperties {
@@ -56,7 +54,11 @@ layout (std140) uniform SpotLights{
 in vec3 position;
 in vec3 normal;
 
-out vec4 FragColor;
+uniform int fIndex;
+
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out int index;
+layout (location = 2) out vec3 worldPos;
 
 vec3 calculateAmbientLightColors() {
     vec3 accColor = vec3(0.0, 0.0, 0.0);
@@ -137,4 +139,6 @@ void main()
     vec3 accColor = calculateAmbientLightColors() + calculateDirectionalLightColors(fNormal) + calculatePointLightColors(fNormal) + calculateSpotLightColors(fNormal);
     
     FragColor = vec4(accColor, 1.0);
+    index = fIndex;
+    worldPos = position;
 }

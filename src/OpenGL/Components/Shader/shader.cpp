@@ -68,6 +68,10 @@ void Engine::OpenGLShaderComponent::setupUniforms()
     }
 }
 
+int Engine::OpenGLShaderComponent::getLocation(const char* name) {
+    return m_program.getLocation(name);
+}
+
 Engine::ShaderMaterialData Engine::OpenGLShaderComponent::getMaterialProperties()
 {
     // get block index and check if there is a Materials block in use

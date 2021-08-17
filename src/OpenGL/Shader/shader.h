@@ -40,6 +40,8 @@ private:
     GLuint m_program{0};
     std::map<GLenum, OpenGLShader> m_shaders{};
 
+    std::map<std::string, int> m_uniformLocation{};
+
     void linkProgram();
     void cleanupShaders();
     void rollback();
@@ -50,6 +52,8 @@ public:
     void use();
     GLuint getBlockIndex(const char *blockName);
     GLuint getProgram();
+
+    int getLocation(const char* name);
 
     std::vector<OpenGLShader> getShaders();
 

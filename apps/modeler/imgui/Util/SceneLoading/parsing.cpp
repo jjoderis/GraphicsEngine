@@ -11,6 +11,7 @@
 #include <Components/Texture/texture.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
+#include <OpenGL/Util/textureLoader.h>
 #include <Util/textureIndex.h>
 #include <glad/glad.h>
 #include <imgui.h>
@@ -39,6 +40,7 @@ void SceneUtil::parseScene(Engine::Registry &registry,
                            const std::filesystem::path &path,
                            Engine::Util::OpenGLTextureIndex &textureIndex)
 {
+    Engine::Util::invertTextureOnImportOff();
     GeometryMap geometries = parseGeometries(j, path);
     MaterialMap materials = parseMaterials(j, path);
     ShaderMap shaders = parseShaders(j, path);
@@ -50,6 +52,8 @@ void SceneUtil::parseScene(Engine::Registry &registry,
         unsigned int nodeIndex = node.get<unsigned int>();
         addEntity(registry, path, j, j["nodes"][nodeIndex], meshData, textureIndex);
     }
+
+    Engine::Util::invertTextureOnImportOn();
 }
 
 void addTransform(Engine::Registry &registry, json &node, int entityIndex);
@@ -91,12 +95,16 @@ int addEntity(Engine::Registry &registry,
         auto mesh = j["meshes"].at(node["mesh"].get<int>());
         int count = 0;
 
-        for (auto &primitive : mesh["primitives"]) {
+        for (auto &primitive : mesh["primitives"])
+        {
             int primitiveEntity;
 
-            if (mesh["primitives"].size() == 1) {
+            if (mesh["primitives"].size() == 1)
+            {
                 primitiveEntity = entityIndex;
-            } else {
+            }
+            else
+            {
                 std::string name{"Primitive " + std::to_string(count++)};
                 primitiveEntity = registry.addEntity();
                 registry.createComponent<Engine::TagComponent>(primitiveEntity, name);
@@ -111,7 +119,8 @@ int addEntity(Engine::Registry &registry,
 
                 if (material.find("pbrMetallicRoughness") != material.end())
                 {
-                    if (material["pbrMetallicRoughness"].find("baseColorTexture") != material["pbrMetallicRoughness"].end())
+                    if (material["pbrMetallicRoughness"].find("baseColorTexture") !=
+                        material["pbrMetallicRoughness"].end())
                     {
                         int textureI = material["pbrMetallicRoughness"]["baseColorTexture"]["index"];
                         int imageIndex = j["textures"].at(textureI)["source"];
@@ -126,13 +135,13 @@ int addEntity(Engine::Registry &registry,
 
                 if (material.find("extras") != material.end())
                 {
-                    json extras = material["extras"];            
+                    json extras = material["extras"];
 
                     if (extras.find("shader") != extras.end())
                     {
                         std::string shaderPath = extras["shader"]["path"];
                         registry.addComponent<Engine::OpenGLShaderComponent>(primitiveEntity,
-                                                                            std::get<2>(meshData).at(shaderPath));
+                                                                             std::get<2>(meshData).at(shaderPath));
 
                         if (extras["shader"]["active"].get<bool>())
                         {
@@ -142,10 +151,11 @@ int addEntity(Engine::Registry &registry,
 
                     extras.erase("shader");
 
-                    registry.addComponent<Engine::OpenGLMaterialComponent>(primitiveEntity, std::get<1>(meshData).at(extras));
+                    registry.addComponent<Engine::OpenGLMaterialComponent>(primitiveEntity,
+                                                                           std::get<1>(meshData).at(extras));
                 }
             }
-            primitive.erase("material");            
+            primitive.erase("material");
 
             registry.addComponent<Engine::GeometryComponent>(primitiveEntity, std::get<0>(meshData).at(primitive));
         }
@@ -233,12 +243,10 @@ void addTransform(Engine::Registry &registry, json &node, int entityIndex)
         auto transform = registry.createComponent<Engine::TransformComponent>(entityIndex);
         if (hasRotation)
         {
-            Engine::Math::Quaternion q{
-                node["rotation"][0].get<float>(),
-                node["rotation"][1].get<float>(),
-                node["rotation"][2].get<float>(),
-                node["rotation"][3].get<float>()
-            };
+            Engine::Math::Quaternion q{node["rotation"][0].get<float>(),
+                                       node["rotation"][1].get<float>(),
+                                       node["rotation"][2].get<float>(),
+                                       node["rotation"][3].get<float>()};
             transform->setRotation(q);
         }
         if (hasTranslation)
@@ -286,6 +294,17 @@ std::vector<char> &getBuffer(json &j, BufferMap &buffers, int bufferIndex, std::
 template <typename T>
 void loadData(json &j, BufferMap &buffers, int accessorIndex, T &target, const std::filesystem::path &path);
 
+template <typename T>
+void castData(T *data, std::vector<unsigned int> &target, int numElements)
+{
+    target.reserve(numElements);
+
+    for (int i = 0; i < numElements; ++i)
+    {
+        target.emplace_back(data[i]);
+    }
+}
+
 template <>
 void loadData<std::vector<unsigned int>>(json &j,
                                          BufferMap &buffers,
@@ -313,12 +332,20 @@ void loadData<std::vector<unsigned int>>(json &j,
 
     int start = accessorOffset + viewOffset;
     int numElements = accessor["count"];
-    unsigned int *data = (unsigned int *)(buffer.data() + start);
-    target.reserve(numElements);
 
-    for (int i = 0; i < numElements; ++i)
+    switch (accessor["componentType"].get<int>())
     {
-        target.emplace_back(data[i]);
+    case GL_SHORT:
+        castData<short>((short *)(buffer.data() + start), target, numElements);
+        break;
+    case GL_UNSIGNED_SHORT:
+        castData<unsigned short>((unsigned short *)(buffer.data() + start), target, numElements);
+        break;
+    case GL_UNSIGNED_INT:
+        castData<unsigned int>((unsigned int *)(buffer.data() + start), target, numElements);
+        break;
+    default:
+        throw "Unsuported type for face";
     }
 }
 
@@ -406,7 +433,8 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
 
         for (auto &mesh : j["meshes"])
         {
-            for (auto &primitive: mesh["primitives"]) {
+            for (auto &primitive : mesh["primitives"])
+            {
                 json geometryPart = primitive;
                 geometryPart.erase("material");
 

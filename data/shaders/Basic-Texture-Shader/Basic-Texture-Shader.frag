@@ -59,7 +59,11 @@ in vec2 iTexCoord;
 
 uniform sampler2D texture1;
 
-out vec4 FragColor;
+uniform int fIndex;
+
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out int index;
+layout (location = 2) out vec3 worldPos;
 
 vec3 calculateAmbientLightColors(vec3 dColor) {
     vec3 accColor = vec3(0.0, 0.0, 0.0);
@@ -141,4 +145,6 @@ void main()
     vec3 accColor = calculateAmbientLightColors(dColor) + calculateDirectionalLightColors(fNormal, dColor) + calculatePointLightColors(fNormal, dColor) + calculateSpotLightColors(fNormal, dColor);    
 
     FragColor = vec4(accColor, 1.0);
+    index = fIndex;
+    worldPos = position;
 }

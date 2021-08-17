@@ -286,7 +286,7 @@ void addTypeData(json &accessor);
 template <>
 void addTypeData<unsigned int>(json &accessor)
 {
-    accessor["componentType"] = GL_UNSIGNED_SHORT;
+    accessor["componentType"] = GL_UNSIGNED_INT;
     accessor["type"] = "SCALAR";
 }
 template <>

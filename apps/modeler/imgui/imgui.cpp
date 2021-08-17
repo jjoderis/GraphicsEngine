@@ -1,18 +1,15 @@
 #include "imgui.h"
 
-#include "./Util/SceneLoading/sceneLoader.h"
-#include "Window/Main/mainViewPort.h"
+#include "./Window/FileBrowser/fileBrowser.h"
+#include "Util/errorModal.h"
 #include "Window/Camera/camera.h"
 #include "Window/Entity/entity.h"
 #include "Window/Geometry/geometryNode.h"
 #include "Window/Light/light.h"
+#include "Window/Main/mainViewPort.h"
 #include "Window/OpenGLMaterial/openGLMaterial.h"
-#include "Window/Transform/transform.h"
-#include "Window/helpers.h"
-#include "OpenGL/Components/Texture/texture.h"
-#include "Util/errorModal.h"
-#include "Util/fileBrowser.h"
 #include "Window/Raytracing/raytracingWindow.h"
+#include "Window/Transform/transform.h"
 #include <Core/Components/Camera/camera.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <Core/Components/Hierarchy/hierarchy.h>
@@ -21,13 +18,14 @@
 #include <Core/Components/Transform/transform.h>
 #include <Core/ECS/util.h>
 #include <Core/Math/math.h>
-#include <OpenGL/Renderer/renderer.h>
 #include <OpenGL/Components/Shader/shader.h>
+#include <OpenGL/Renderer/renderer.h>
+#include <OpenGL/Util/textureIndex.h>
+#include <OpenGL/Util/textureLoader.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Util/fileHandling.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 #include <imgui.h>
 
@@ -36,14 +34,17 @@
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
-UICreation::MainViewPort* mainViewport;
-UICreation::RaytracingViewport* raytracingViewport;
+UICreation::MainViewPort *mainViewport;
+UICreation::RaytracingViewport *raytracingViewport;
 
-std::vector<UICreation::ComponentWindow*> componentWindows{};
+UICreation::FileBrowser *fileBrowser;
+
+std::vector<UICreation::ComponentWindow *> componentWindows{};
 
 bool showDemoWindow{false};
 bool dragging{1};
 
+namespace fs = std::filesystem;
 using namespace UICreation;
 int selectedEntity = -1;
 int possible_component_current = 0;
@@ -51,7 +52,9 @@ int possible_component_current = 0;
 Engine::Math::Vector3 debugOrigin{0, 0, 0};
 Engine::Math::Vector3 debugDirection{0, 0, 0};
 
-void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engine::Util::OpenGLTextureIndex &textureIndex)
+void UI::init(Engine::Registry &registry,
+              Engine::OpenGLRenderer &renderer,
+              Engine::Util::OpenGLTextureIndex &textureIndex)
 {
     // setup imgui context
     IMGUI_CHECKVERSION();
@@ -65,6 +68,8 @@ void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engi
     // io.ConfigViewportsNoAutoMerge = true;
     // io.ConfigViewportsNoTaskBarIcon = true;
 
+    Engine::Util::invertTextureOnImportOn();
+
     ImGui::StyleColorsDark();
 
     GLFWwindow *window = Window::getWindow();
@@ -75,10 +80,9 @@ void UI::init(Engine::Registry &registry, Engine::OpenGLRenderer &renderer, Engi
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    UIUtil::initFileBrowserIcons();
-
-    mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity};
+    mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity, textureIndex};
     raytracingViewport = new UICreation::RaytracingViewport{registry};
+    fileBrowser = new UICreation::FileBrowser{registry, textureIndex};
 
     componentWindows.emplace_back(new TransformComponentWindow{selectedEntity, registry});
     componentWindows.emplace_back(new CameraComponentWindow{selectedEntity, registry});
@@ -99,19 +103,6 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
 {
     if (ImGui::BeginPopup("Select Geometry Type"))
     {
-        if (ImGui::Button("Import##Geometry"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool
-            {
-                // we can import the file if it has an .off extension
-                GLenum fileType;
-
-                return (fs::is_regular_file(path) && path.extension().string() == ".off");
-            };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            { registry.addComponent<Engine::GeometryComponent>(selectedEntity, Engine::loadOffFile(path)); };
-            UIUtil::openFileBrowser();
-        }
         if (ImGui::Button("Blank"))
         {
             registry.createComponent<Engine::GeometryComponent>(selectedEntity);
@@ -226,26 +217,6 @@ void UI::render(Engine::Registry &registry)
         if (ImGui::Button("Raytrace"))
         {
             raytracingViewport->newFrame();
-        }
-
-        if (ImGui::Button("Export Scene"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool { return fs::is_directory(path); };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            { Engine::Util::saveScene(path, registry, textureIndex); };
-            UIUtil::openFileBrowser();
-        }
-
-        if (ImGui::Button("Import Scene"))
-        {
-            UIUtil::can_open_function = [](const fs::path &path) -> bool
-            { return fs::is_regular_file(path) && path.extension().string() == ".gltf"; };
-            UIUtil::open_function = [&registry](const fs::path &path, const std::string &fileName)
-            {
-                registry.clear();
-                Engine::Util::loadScene(path, registry, textureIndex);
-            };
-            UIUtil::openFileBrowser();
         }
 
         UICreation::drawEntitiesNode(registry);
@@ -374,8 +345,9 @@ void UI::render(Engine::Registry &registry)
             drawGeometryTypeSelection(registry);
             drawShaderTypeSelection(registry);
 
-            for (auto componentWindow : componentWindows) {
-               componentWindow->render();
+            for (auto componentWindow : componentWindows)
+            {
+                componentWindow->render();
             }
         }
 
@@ -385,7 +357,9 @@ void UI::render(Engine::Registry &registry)
         ImGui::End();
     }
 
-    UIUtil::drawFileBrowser();
+    // UIUtil::drawFileBrowser();
+
+    fileBrowser->render();
 
     ImGui::Render();
 }

@@ -48,6 +48,7 @@ set(OPENGL_HEADERS
     OpenGL/Components/OpenGLGeometry/openGLGeometry.h
     OpenGL/Components/OpenGLTransform/openGLTransform.h
     OpenGL/Shader/shader.h
+    OpenGL/Framebuffer/framebuffer.h
     OpenGL/Renderer/renderer.h
     OpenGL/Systems/CameraTracker/cameraTracker.h
     OpenGL/Systems/LightsTracker/lightsTracker.h
@@ -67,6 +68,7 @@ set(OPENGL_SOURCES
     OpenGL/Components/OpenGLGeometry/openGLGeometry.cpp
     OpenGL/Components/OpenGLTransform/openGLTransform.cpp
     OpenGL/Shader/shader.cpp
+    OpenGL/Framebuffer/framebuffer.cpp
     OpenGL/Renderer/renderer.cpp
     OpenGL/Systems/CameraTracker/cameraTracker.cpp
     OpenGL/Systems/LightsTracker/lightsTracker.cpp
