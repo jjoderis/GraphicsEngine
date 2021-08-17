@@ -41,7 +41,7 @@ void Window::init()
 
     glfwMakeContextCurrent(m_window);
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 }
 
 GLFWwindow *Window::getWindow() { return m_window; }

@@ -18,7 +18,8 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
                                        Engine::OpenGLRenderer &renderer,
                                        int &selectedEntity,
                                        Engine::Util::OpenGLTextureIndex &textureIndex)
-    : ImGuiWindow{"Main Viewport"}, m_registry{registry}, m_textureIndex{textureIndex},
+    : ImGuiWindow{"Main Viewport"}, m_registry{registry}, m_textureIndex{textureIndex}, m_postProcesser{registry,
+                                                                                                        selectedEntity},
       m_selectedEntity{selectedEntity}, m_renderer{renderer}, m_renderTracker{m_registry, m_renderables},
       m_framebuffer{
           {{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE}, {GL_R16I, GL_RED_INTEGER, GL_INT}, {GL_RGB32F, GL_RGB, GL_FLOAT}}}
@@ -108,7 +109,7 @@ void UICreation::MainViewPort::main()
         ImGui::EndDragDropSource();
     }
 
-    m_postProcesser.postProcess(m_framebuffer.getTexture(), m_framebuffer.getTexture(1), m_selectedEntity);
+    m_postProcesser.postProcess(m_framebuffer.getTexture());
 
     ImGui::GetWindowDrawList()->AddImage((void *)m_postProcesser.getFramebuffer().getTexture(),
                                          ImGui::GetItemRectMin(),

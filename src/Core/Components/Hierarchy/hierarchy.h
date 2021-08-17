@@ -5,6 +5,7 @@
 
 namespace Engine
 {
+class Registry;
 
 class HierarchyComponent
 {
@@ -21,6 +22,8 @@ public:
     void removeChild(unsigned int child);
     bool hasChild(unsigned int child) const;
     const std::vector<unsigned int> &getChildren();
+
+    void getDecendants(std::vector<unsigned int> &decendants, Engine::Registry &registry);
 
 private:
     int m_parent{-1};

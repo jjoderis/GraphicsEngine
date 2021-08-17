@@ -1,5 +1,7 @@
 #include "hierarchy.h"
 
+#include "../../ECS/registry.h"
+
 void Engine::HierarchyComponent::setParent(int parent) { m_parent = parent; }
 void Engine::HierarchyComponent::unsetParent() { m_parent = -1; }
 int Engine::HierarchyComponent::getParent() const { return m_parent; }
@@ -43,3 +45,16 @@ bool Engine::HierarchyComponent::hasChild(unsigned int child) const
     return false;
 }
 const std::vector<unsigned int> &Engine::HierarchyComponent::getChildren() { return m_children; }
+
+void Engine::HierarchyComponent::getDecendants(std::vector<unsigned int> &decendants, Engine::Registry &registry)
+{
+    for (auto child : m_children)
+    {
+        decendants.emplace_back(child);
+
+        if (auto childHierarchy{registry.getComponent<Engine::HierarchyComponent>(child)})
+        {
+            childHierarchy->getDecendants(decendants, registry);
+        }
+    }
+}
