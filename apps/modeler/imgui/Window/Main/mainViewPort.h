@@ -2,6 +2,7 @@
 #define APPS_MODELER_IMGUI_WINDOW_MAIN
 
 #include "../Templates/imguiWindow.h"
+#include "postProcesser.h"
 #include <Core/Math/math.h>
 #include <OpenGL/Framebuffer/framebuffer.h>
 #include <OpenGL/Systems/RenderTracker/renderTracker.h>
@@ -45,6 +46,8 @@ private:
     std::vector<unsigned int> m_renderables{};
     Engine::Systems::OpenGLRenderTracker m_renderTracker;
     Engine::OpenGLFramebuffer m_framebuffer;
+
+    ModelerUtil::PostProcesser m_postProcesser{};
 
     unsigned int m_cameraEntity{0};
     std::shared_ptr<Engine::CameraComponent> m_camera{};

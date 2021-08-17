@@ -108,8 +108,13 @@ void UICreation::MainViewPort::main()
         ImGui::EndDragDropSource();
     }
 
-    ImGui::GetWindowDrawList()->AddImage(
-        (void *)m_framebuffer.getTexture(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), {0, 1}, {1, 0});
+    m_postProcesser.postProcess(m_framebuffer.getTexture(), m_framebuffer.getTexture(1), m_selectedEntity);
+
+    ImGui::GetWindowDrawList()->AddImage((void *)m_postProcesser.getFramebuffer().getTexture(),
+                                         ImGui::GetItemRectMin(),
+                                         ImGui::GetItemRectMax(),
+                                         {0, 1},
+                                         {1, 0});
 }
 
 void UICreation::MainViewPort::onMouseClick()
@@ -293,6 +298,7 @@ void UICreation::MainViewPort::onResize()
     int height = m_size.at(1);
 
     m_framebuffer.resize(width, height);
+    m_postProcesser.resize(width, height);
 
     std::vector<std::shared_ptr<Engine::CameraComponent>> cameras = m_registry.getComponents<Engine::CameraComponent>();
 
