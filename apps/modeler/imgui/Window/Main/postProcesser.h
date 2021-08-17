@@ -14,14 +14,14 @@ public:
 
     void resize(int width, int height);
 
-    void postProcess(unsigned int renderedScene);
+    void postProcess(unsigned int renderedScene, unsigned int entityTexture, int selectedEntity);
 
     Engine::OpenGLFramebuffer &getFramebuffer();
 
 private:
     // Trying out kernels based on https://learnopengl.com/Advanced-OpenGL/Framebuffers
 
-    const char *vertexShader = "#version 330 core\n"
+    const char *vertexShader = "#version 420 core\n"
                                "layout (location = 0) in vec3 pos;\n"
                                "layout (location = 1) in vec2 tex;\n"
                                "out vec2 texCoord;"
@@ -30,10 +30,12 @@ private:
                                "  gl_Position = vec4(pos, 1);\n"
                                "}\n";
 
-    const char *fragmentShader = "#version 330 core\n"
+    const char *fragmentShader = "#version 420 core\n"
                                  "out vec4 FragColor;\n"
                                  "in vec2 texCoord;\n"
-                                 "uniform sampler2D texture1;\n"
+                                 "uniform int selectedEntity;"
+                                 "layout (binding = 0) uniform sampler2D sceneTexture;\n"
+                                 "layout (binding = 1) uniform isampler2D entityTexture;\n"
                                  "const float offset = 1.0 / 300.0;\n"
 
                                  "void main()\n"
@@ -56,22 +58,32 @@ private:
                                  "    1, 1, 1 \n"
                                  "  );"
 
-                                 "  vec3 sampleTex[9];\n"
+                                 "  int indices[9];\n"
                                  "  for(int i = 0; i < 9; i++)\n"
                                  "  {\n"
-                                 "    sampleTex[i] = vec3(texture(texture1, texCoord.st + offsets[i]));\n"
+                                 "    indices[i] = texture(entityTexture, texCoord.st + offsets[i]).r;\n"
                                  "  }\n"
                                  "  vec3 col = vec3(0.0);\n"
-                                 "  for(int i = 0; i < 9; i++)\n"
-                                 "    col += sampleTex[i] * kernel[i];\n"
+                                 "  for(int i = 0; i < 9; i++) {\n"
+                                 "    if (indices[i] == selectedEntity) {\n"
+                                 "      col += vec3(1.0, 1.0, 0.0) * kernel[i];\n"
+                                 "    } else {\n"
+                                 "      col += vec3(0.0, 0.0, 0.0);\n"
+                                 "    }"
+                                 "  }"
 
-                                 "  FragColor = vec4(col, 1.0);\n"
+                                 "  if (col.x > 0.001 || col.y > 0.001) {"
+                                 "    FragColor = vec4(col, 1.0);"
+                                 "  } else {"
+                                 "    FragColor = texture(sceneTexture, texCoord);"
+                                 "  }"
                                  "}";
 
     Engine::OpenGLFramebuffer m_frameBuffer{};
     unsigned int m_VBO{0};
     unsigned int m_EBO{0};
     unsigned int m_VAO{0};
+    int m_indexPosition{-1};
     Engine::OpenGLProgram m_program{{{GL_VERTEX_SHADER, vertexShader}, {GL_FRAGMENT_SHADER, fragmentShader}}};
 };
 

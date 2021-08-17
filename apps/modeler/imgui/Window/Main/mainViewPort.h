@@ -37,6 +37,7 @@ private:
     Engine::Registry &m_registry;
     Engine::Util::OpenGLTextureIndex &m_textureIndex;
     int &m_selectedEntity;
+    int m_clickedEntity{-1};
     int m_grabbedEntity{-1};
     Engine::Math::IVector2 m_currentPixel{0, 0};
     Engine::Math::Vector3 m_currentPoint{0, 0, 0};
@@ -55,6 +56,14 @@ private:
 
     virtual void main();
     virtual void onResize();
+
+    void onMouseClick();
+    void onLeftClick(const Engine::Math::IVector2 &clickedPixel);
+    void onRightClick(const Engine::Math::IVector2 &clickedPixel);
+
+    void onMouseDrag(const Engine::Math::IVector2 &dragDelta);
+
+    void onMouseScroll(float scroll);
 
     void dragEntity(const Engine::Math::IVector2 &newPixel);
     void dragCamera(const Engine::Math::IVector2 &newPixel);

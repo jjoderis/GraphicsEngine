@@ -42,15 +42,18 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
 
 void UICreation::MainViewPort::main()
 {
+    // render the scene into a separate frame buffer
     m_framebuffer.clear();
     m_framebuffer.bind();
     m_renderer.render(m_renderables);
     m_framebuffer.unbind();
 
+    // create invisible button that spans the whole viewport to handle click events on it
     auto size = ImGui::GetContentRegionAvail();
     ImGui::InvisibleButton(
         "main viewport", {size.x, size.y}, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
 
+    // allow objects to be imported when a gltf or obj file is dropped onto the main viewport
     if (auto path = UICreation::createImGuiHighlightedDropTarget<fs::path>(
             "system_path_payload",
             [](const fs::path &path)
@@ -71,98 +74,122 @@ void UICreation::MainViewPort::main()
 
     if (ImGui::IsItemClicked(ImGuiPopupFlags_MouseButtonLeft) || ImGui::IsItemClicked(ImGuiMouseButton_Right))
     {
-        m_grabbedEntity = -1;
-
-        Engine::Math::IVector2 mousePos{ImGui::GetMousePos().x, ImGui::GetMousePos().y};
-
-        Engine::Math::IVector2 pixelPosition{mousePos - m_pos};
-
-        int index{};
-        m_framebuffer.getPixel(
-            &index, pixelPosition(0), m_size(1) - pixelPosition(1), GL_RED_INTEGER, GL_INT, GL_COLOR_ATTACHMENT1);
-
-        if (index > -1)
-        {
-            m_selectedEntity = index;
-            m_grabbedEntity = m_selectedEntity;
-            m_framebuffer.getPixel(m_currentPoint.raw(),
-                                   pixelPosition(0),
-                                   m_size(1) - pixelPosition(1),
-                                   GL_RGB,
-                                   GL_FLOAT,
-                                   GL_COLOR_ATTACHMENT2);
-        }
-        else if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-        {
-            unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-            auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-            Engine::Util::Ray cameraRay = camera->getCameraRay(pixelPosition, m_size);
-
-            Engine::Math::Vector3 direction =
-                camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
-            m_currentPoint = (direction / direction.at(2)) * camera->getFar();
-        }
-        m_currentPixel = pixelPosition;
+        onMouseClick();
     }
 
-    if (ImGui::IsItemActive())
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     {
-        auto mouseDelta = ImGui::GetIO().MouseDelta;
-        auto scrolling = ImGui::GetIO().MouseWheel;
-
-        if (mouseDelta.x || mouseDelta.y)
-        {
-            auto newPixel = m_currentPixel + Engine::Math::IVector2{mouseDelta.x, mouseDelta.y};
-            auto invertXPixel = m_currentPixel + Engine::Math::IVector2{-mouseDelta.x, mouseDelta.y};
-
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity > -1)
-            {
-                dragEntity(newPixel);
-            }
-            else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
-            {
-                dragCamera(newPixel);
-            }
-            m_currentPixel = newPixel;
-        }
-
-        if (scrolling)
-        {
-            Engine::Math::Vector3 cameraSpacePosition =
-                m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
-            cameraSpacePosition.normalize();
-            auto cameraSpaceDirection = cameraSpacePosition * scrolling * 0.1;
-            Engine::Math::Vector3 direction =
-                m_camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
-
-            auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
-
-            translation->translate(direction);
-            translation->update();
-            m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
-
-            m_currentPoint += direction;
-        }
-
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity < 0 &&
-            ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-        {
-            bool p{true};
-
-            ImGui::SetDragDropPayload("scene_payload", &p, sizeof(bool));
-
-            ImGui::Text("Scene");
-            ImGui::EndDragDropSource();
-        }
+        m_grabbedEntity = -1;
     }
 
-    m_postProcesser.postProcess(m_framebuffer.getTexture());
+    if (ImGui::IsMouseDragging(ImGuiPopupFlags_MouseButtonLeft) || ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+    {
+        auto mouseDelta = Engine::Math::IVector2{ImGui::GetIO().MouseDelta.x, ImGui::GetIO().MouseDelta.y};
+
+        onMouseDrag(mouseDelta);
+    }
+
+    auto scrolling = ImGui::GetIO().MouseWheel;
+
+    if (scrolling)
+    {
+        onMouseScroll(scrolling);
+    }
+
+    // allow export of scene (as gltf) by dragging into file browser
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity < 0 &&
+        ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    {
+        bool p{true};
+
+        ImGui::SetDragDropPayload("scene_payload", &p, sizeof(bool));
+
+        ImGui::Text("Scene");
+        ImGui::EndDragDropSource();
+    }
+
+    m_postProcesser.postProcess(m_framebuffer.getTexture(), m_framebuffer.getTexture(1), m_selectedEntity);
 
     ImGui::GetWindowDrawList()->AddImage((void *)m_postProcesser.getFramebuffer().getTexture(),
                                          ImGui::GetItemRectMin(),
                                          ImGui::GetItemRectMax(),
                                          {0, 1},
                                          {1, 0});
+}
+
+void UICreation::MainViewPort::onMouseClick()
+{
+    m_grabbedEntity = -1;
+    m_clickedEntity = -1;
+
+    Engine::Math::IVector2 mousePos{ImGui::GetMousePos().x, ImGui::GetMousePos().y};
+
+    Engine::Math::IVector2 pixelPosition{mousePos - m_pos};
+
+    int index{};
+    m_framebuffer.getPixel(
+        &index, pixelPosition(0), m_size(1) - pixelPosition(1), GL_RED_INTEGER, GL_INT, GL_COLOR_ATTACHMENT1);
+
+    if (index > -1)
+    {
+        m_clickedEntity = index;
+        m_framebuffer.getPixel(m_currentPoint.raw(),
+                               pixelPosition(0),
+                               m_size(1) - pixelPosition(1),
+                               GL_RGB,
+                               GL_FLOAT,
+                               GL_COLOR_ATTACHMENT2);
+    }
+
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+    {
+        onLeftClick(pixelPosition);
+    }
+
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+    {
+        onRightClick(pixelPosition);
+    }
+
+    m_currentPixel = pixelPosition;
+}
+void UICreation::MainViewPort::onLeftClick(const Engine::Math::IVector2 &clickedPixel)
+{
+    m_grabbedEntity = m_clickedEntity;
+
+    if (m_clickedEntity > -1)
+    {
+        m_selectedEntity = m_clickedEntity;
+    }
+}
+void UICreation::MainViewPort::onRightClick(const Engine::Math::IVector2 &clickedPixel)
+{
+    unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
+    auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
+    Engine::Util::Ray cameraRay = camera->getCameraRay(clickedPixel, m_size);
+
+    Engine::Math::Vector3 direction =
+        camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
+
+    if (m_clickedEntity < -1)
+    {
+        m_currentPoint = (direction / direction.at(2)) * camera->getFar();
+    }
+}
+
+void UICreation::MainViewPort::onMouseDrag(const Engine::Math::IVector2 &dragDelta)
+{
+    auto newPixel = m_currentPixel + dragDelta;
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity > -1)
+    {
+        dragEntity(newPixel);
+    }
+    else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+    {
+        dragCamera(newPixel);
+    }
+    m_currentPixel = newPixel;
 }
 
 void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel)
@@ -229,6 +256,37 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
         transform->translate(-t);
         transform->update();
         m_registry.updated<Engine::TransformComponent>(m_cameraEntity);
+    }
+}
+
+void UICreation::MainViewPort::onMouseScroll(float scroll)
+{
+    // just move the camera if nothing is grabbed
+    if (m_grabbedEntity < 0)
+    {
+        auto direction{m_camera->getViewMatrixInverse() * (Engine::Math::Vector4{0, 0, -1, 0} * scroll * 0.1)};
+        auto transform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
+        transform->translate(direction);
+        transform->update();
+        m_registry.updated<Engine::TransformComponent>(m_cameraEntity);
+    }
+    // move the grabbed entity towards the camera
+    else
+    {
+        Engine::Math::Vector3 cameraSpacePosition =
+            m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+        cameraSpacePosition.normalize();
+        auto cameraSpaceDirection = cameraSpacePosition * scroll * 0.1;
+        Engine::Math::Vector3 direction =
+            m_camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
+
+        auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
+
+        translation->translate(direction);
+        translation->update();
+        m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
+
+        m_currentPoint += direction;
     }
 }
 
