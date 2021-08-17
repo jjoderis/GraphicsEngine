@@ -47,7 +47,7 @@ private:
     Engine::Systems::OpenGLRenderTracker m_renderTracker;
     Engine::OpenGLFramebuffer m_framebuffer;
 
-    ModelerUtil::PostProcesser m_postProcesser{};
+    ModelerUtil::PostProcesser m_postProcesser;
 
     unsigned int m_cameraEntity{0};
     std::shared_ptr<Engine::CameraComponent> m_camera{};

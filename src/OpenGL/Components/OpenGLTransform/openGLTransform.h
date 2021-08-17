@@ -12,7 +12,7 @@ public:
     ~OpenGLTransformComponent();
 
     void update(TransformComponent *transform);
-    void bind();
+    void bind(int index);
 
 private:
     unsigned int m_UBO{0};
