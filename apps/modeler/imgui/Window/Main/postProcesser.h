@@ -50,12 +50,13 @@ private:
     const char *selectedFragmentShader = "#version 420 core\n"
                                          "out vec4 FragColor;\n"
                                          "uniform int isSelected;"
+                                         "uniform int entityId;"
                                          "void main()\n"
                                          "{\n"
                                          "  if (isSelected == 1) {"
                                          "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);"
                                          "  } else {"
-                                         "    FragColor = vec4(0.0, 1.0, 0.0, 1.0);"
+                                         "    FragColor = vec4(0.0, float(entityId+1) / 1000, 0.0, 1.0);"
                                          "  }"
                                          "}";
 
@@ -66,6 +67,7 @@ private:
     int m_cameraIndex{0};
     int m_transformIndex{1};
     int m_isSelectedIndex{-1};
+    int m_entityIdIndex{-1};
     Engine::Systems::OpenGLCameraTracker m_cameraTracker;
 
     const char *vertexShader = "#version 420 core\n"
@@ -115,8 +117,10 @@ private:
                                  "      col += preCol[i] * kernel[i];\n"
                                  "  }"
 
-                                 "  if (col.x > 0.001 || col.y > 0.001 || col.z > 0.001) {"
-                                 "    FragColor = vec4(col, 1.0);"
+                                 "  if (col.x > 0.001) {"
+                                 "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);"
+                                 "  } else if (col.y > 0.00001) {"
+                                 "    FragColor = vec4(1.0, 0.6, 0, 1);"
                                  "  } else {"
                                  "    FragColor = texture(sceneTexture, texCoord);"
                                  "  }"

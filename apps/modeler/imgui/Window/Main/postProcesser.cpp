@@ -36,6 +36,7 @@ ModelerUtil::PostProcesser::PostProcesser(Engine::Registry &registry, int &selec
     glUniformBlockBinding(
         m_selectedProgram.getProgram(), m_selectedProgram.getBlockIndex("Transform"), m_transformIndex);
     m_isSelectedIndex = m_selectedProgram.getLocation("isSelected");
+    m_entityIdIndex = m_selectedProgram.getLocation("entityId");
 }
 
 void ModelerUtil::PostProcesser::postProcess(unsigned int renderedScene)
@@ -53,6 +54,10 @@ void ModelerUtil::PostProcesser::postProcess(unsigned int renderedScene)
             hierarchy->getDecendants(renderableGroupedEntities, m_registry);
         }
 
+        glEnable(GL_BLEND);
+        glDisable(GL_DEPTH_TEST);
+        glBlendFunc(GL_ONE, GL_ONE);
+
         for (unsigned int entity : renderableGroupedEntities)
         {
             if (m_registry.hasComponent<Engine::RenderComponent>(entity))
@@ -61,12 +66,16 @@ void ModelerUtil::PostProcesser::postProcess(unsigned int renderedScene)
                 glBindBufferBase(GL_UNIFORM_BUFFER, m_cameraIndex, m_activeCameraUBO);
                 m_selectedProgram.use();
                 glUniform1i(m_isSelectedIndex, (entity == m_selectedEntity) ? 1 : 0);
+                glUniform1i(m_entityIdIndex, (int)entity);
                 m_registry.getComponent<Engine::OpenGLTransformComponent>(entity)->bind(m_transformIndex);
                 m_registry.getComponent<Engine::OpenGLGeometryComponent>(entity)->draw();
                 m_selectedFramebuffer.unbind();
                 glUseProgram(0);
             }
         }
+
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
     }
 
     m_frameBuffer.clear();
