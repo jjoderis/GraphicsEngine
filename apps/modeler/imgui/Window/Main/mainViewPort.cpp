@@ -229,12 +229,12 @@ void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel
 {
     auto newRay = m_camera->getCameraSpaceRay(newPixel, m_size);
 
-    Engine::Math::Vector3 cameraSpacePosition =
-        m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
+    Engine::Math::Vector3 cameraSpacePosition{m_cameraTransform->getViewMatrixWorld() *
+                                              Engine::Math::Vector4{m_currentPoint, 1}};
 
-    auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
+    auto newCameraSpacePosition{(newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2)};
 
-    auto t = newCameraSpacePosition - cameraSpacePosition;
+    auto t{newCameraSpacePosition - cameraSpacePosition};
 
     t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{t, 0};
 
@@ -244,9 +244,12 @@ void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel
     }
     else
     {
-        auto transform = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
+        auto transform{m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity)};
 
-        transform->translate(t);
+        Engine::Math::Vector3 parentSpaceT{transform->getModelMatrix() * transform->getMatrixWorldInverse() *
+                                           Engine::Math::Vector4{t, 0}};
+
+        transform->translate(parentSpaceT);
         transform->update();
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 
@@ -305,7 +308,7 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
         transform->update();
         m_registry.updated<Engine::TransformComponent>(m_cameraEntity);
     }
-    // move the grabbed entity towards the camera
+    // move the grabbed entity along the cameras z axis
     else
     {
         Engine::Math::Vector3 cameraSpacePosition =
@@ -315,10 +318,11 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
         Engine::Math::Vector3 direction =
             m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
 
-        auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
+        auto transform = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
 
-        translation->translate(direction);
-        translation->update();
+        transform->translate(transform->getModelMatrix() * transform->getMatrixWorldInverse() *
+                             Engine::Math::Vector4{direction, 0});
+        transform->update();
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 
         m_currentPoint += direction;
