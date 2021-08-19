@@ -57,6 +57,8 @@ private:
     virtual void main();
     virtual void onResize();
 
+    void onKeyPress(char input);
+
     void onMouseClick();
     void onLeftClick(const Engine::Math::IVector2 &clickedPixel);
     void onRightClick(const Engine::Math::IVector2 &clickedPixel);

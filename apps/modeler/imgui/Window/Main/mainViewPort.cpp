@@ -4,6 +4,7 @@
 #include "../../Util/objectLoader.h"
 #include "../helpers.h"
 #include <Components/Camera/camera.h>
+#include <Components/Hierarchy/hierarchy.h>
 #include <Components/Tag/tag.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
@@ -48,6 +49,11 @@ void UICreation::MainViewPort::main()
     m_framebuffer.bind();
     m_renderer.render(m_renderables);
     m_framebuffer.unbind();
+
+    if (ImGui::GetIO().InputQueueCharacters.size())
+    {
+        onKeyPress(ImGui::GetIO().InputQueueCharacters[0]);
+    }
 
     // create invisible button that spans the whole viewport to handle click events on it
     auto size = ImGui::GetContentRegionAvail();
@@ -288,6 +294,49 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 
         m_currentPoint += direction;
+    }
+}
+
+void UICreation::MainViewPort::onKeyPress(char input)
+{
+    if (input == 'w' || input == 'a' || input == 's' || input == 'd')
+    {
+        auto hierarchy{m_registry.getComponent<Engine::HierarchyComponent>(m_selectedEntity)};
+        if (hierarchy)
+        {
+            if (input == 'w' || input == 'a' || input == 'd' && hierarchy->getParent() > -1)
+            {
+                if (input == 'w')
+                {
+                    auto parent{hierarchy->getParent()};
+                    if (parent > -1)
+                    {
+                        m_selectedEntity = parent;
+                    }
+                }
+                else if (auto parentHierarchy{
+                             m_registry.getComponent<Engine::HierarchyComponent>(hierarchy->getParent())})
+                {
+                    auto &children{parentHierarchy->getChildren()};
+                    int index{std::find(children.begin(), children.end(), m_selectedEntity) - children.begin()};
+
+                    int offset{1};
+
+                    offset = (input == 'a') ? -1 : 1;
+
+                    m_selectedEntity = children[((index + offset) + children.size()) % children.size()];
+                }
+            }
+            else if (input == 's' && hierarchy->getChildren().size())
+            {
+                m_selectedEntity = hierarchy->getChildren()[0];
+            }
+        }
+
+        if (m_grabbedEntity > -1)
+        {
+            m_grabbedEntity = m_selectedEntity;
+        }
     }
 }
 
