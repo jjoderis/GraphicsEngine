@@ -1,6 +1,7 @@
 #include "cameraTracker.h"
 
 #include "../../../Core/Components/Camera/camera.h"
+#include "../../../Core/Components/Transform/transform.h"
 #include "../../../Core/ECS/registry.h"
 
 const float baseCameraTransforms[48]{
@@ -23,14 +24,23 @@ Engine::Systems::OpenGLCameraTracker::OpenGLCameraTracker(unsigned int &cameraUB
     m_changeActive = m_registry.onAdded<ActiveCameraComponent>(
         [this](unsigned int entity, std::weak_ptr<ActiveCameraComponent> active)
         {
-            std::shared_ptr<CameraComponent> camera{this->m_registry.getComponent<CameraComponent>(entity)};
-
-            if (camera)
+            if (auto camera{this->m_registry.getComponent<CameraComponent>(entity)})
             {
                 // camera can only be activated if it is a camera
                 this->m_currentActiveCamera = entity;
                 this->updateCameraBuffer(camera);
                 this->createUpdateActiveCB();
+
+                if (auto transform{this->m_registry.getComponent<Engine::TransformComponent>(entity)})
+                {
+                    this->updateCameraBufferTransform(transform->getViewMatrixWorld(),
+                                                      transform->getViewMatrixWorldInverse());
+                }
+                else
+                {
+                    this->updateCameraBufferTransform(Engine::Math::Matrix4{}.setIdentity(),
+                                                      Engine::Math::Matrix4{}.setIdentity());
+                }
             }
 
             // make active token unique for currently active camera (no other entity is allowed to hold a active camera
@@ -49,6 +59,36 @@ Engine::Systems::OpenGLCameraTracker::OpenGLCameraTracker(unsigned int &cameraUB
                 glBufferData(GL_UNIFORM_BUFFER, sizeof(baseCameraTransforms), baseCameraTransforms, GL_DYNAMIC_DRAW);
                 this->m_currentActiveCamera = -1;
                 this->createInitActiveCB();
+            }
+        });
+
+    m_addTransformCB = m_registry.onAdded<TransformComponent>(
+        [this](unsigned int entity, std::weak_ptr<TransformComponent> transform)
+        {
+            if (this->m_currentActiveCamera == entity)
+            {
+                auto locked{transform.lock()};
+                this->updateCameraBufferTransform(locked->getViewMatrixWorld(), locked->getViewMatrixWorldInverse());
+            }
+        });
+
+    m_updateTransformCB = m_registry.onUpdate<TransformComponent>(
+        [this](unsigned int entity, std::weak_ptr<TransformComponent> transform)
+        {
+            if (this->m_currentActiveCamera == entity)
+            {
+                auto locked{transform.lock()};
+                this->updateCameraBufferTransform(locked->getViewMatrixWorld(), locked->getViewMatrixWorldInverse());
+            }
+        });
+
+    m_removeTransformCB = m_registry.onRemove<TransformComponent>(
+        [this](unsigned int entity, std::weak_ptr<TransformComponent> transform)
+        {
+            if (this->m_currentActiveCamera == entity)
+            {
+                this->updateCameraBufferTransform(Engine::Math::Matrix4{}.setIdentity(),
+                                                  Engine::Math::Matrix4{}.setIdentity());
             }
         });
 }
@@ -103,7 +143,13 @@ void Engine::Systems::OpenGLCameraTracker::makeActiveUnique()
 void Engine::Systems::OpenGLCameraTracker::updateCameraBuffer(const std::shared_ptr<CameraComponent> &camera)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, m_cameraUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), camera->getViewMatrix().raw());
-    glBufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), camera->getViewMatrixInverse().raw());
     glBufferSubData(GL_UNIFORM_BUFFER, 32 * sizeof(float), 16 * sizeof(float), camera->getProjectionMatrix().raw());
+}
+
+void Engine::Systems::OpenGLCameraTracker::updateCameraBufferTransform(Engine::Math::Matrix4 &viewMatrix,
+                                                                       Engine::Math::Matrix4 &viewMatrixInverse)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, m_cameraUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), viewMatrix.raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, 16 * sizeof(float), 16 * sizeof(float), viewMatrixInverse.raw());
 }

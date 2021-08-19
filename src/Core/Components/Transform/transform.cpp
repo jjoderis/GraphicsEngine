@@ -4,7 +4,21 @@ Engine::TransformComponent::TransformComponent()
 {
     m_modelMatrix.setIdentity();
     m_modelMatrixInverse.setIdentity();
+
+    m_matrixWorld.setIdentity();
+    m_matrixWorldInverse.setIdentity();
+
     m_normalMatrix.setIdentity();
+    m_normalMatrixInverse.setIdentity();
+
+    m_normalMatrixWorld.setIdentity();
+    m_normalMatrixWorldInverse.setIdentity();
+
+    m_viewMatrix.setIdentity();
+    m_viewMatrixInverse.setIdentity();
+
+    m_viewMatrixWorld.setIdentity();
+    m_viewMatrixWorldInverse.setIdentity();
 }
 
 void Engine::TransformComponent::translate(const Math::Vector3 &translation) { m_translation += translation; }
@@ -66,6 +80,12 @@ void Engine::TransformComponent::update()
 
     m_normalMatrixWorld = m_normalMatrix;
     m_normalMatrixWorldInverse = m_normalMatrixInverse;
+
+    m_viewMatrix = Math::getRotation(m_rotation.getInverse()) * Math::getTranslation(-m_translation);
+    m_viewMatrixInverse = Math::getTranslation(m_translation) * Math::getRotation(m_rotation);
+
+    m_viewMatrixWorld = m_viewMatrix;
+    m_viewMatrixWorldInverse = m_viewMatrixInverse;
 }
 
 Engine::Math::Matrix4 &Engine::TransformComponent::getModelMatrix() { return m_modelMatrix; }
@@ -79,3 +99,9 @@ Engine::Math::Matrix4 &Engine::TransformComponent::getNormalMatrixInverse() { re
 
 Engine::Math::Matrix4 &Engine::TransformComponent::getNormalMatrixWorld() { return m_normalMatrixWorld; }
 Engine::Math::Matrix4 &Engine::TransformComponent::getNormalMatrixWorldInverse() { return m_normalMatrixWorldInverse; }
+
+Engine::Math::Matrix4 &Engine::TransformComponent::getViewMatrix() { return m_viewMatrix; }
+Engine::Math::Matrix4 &Engine::TransformComponent::getViewMatrixInverse() { return m_viewMatrixInverse; }
+
+Engine::Math::Matrix4 &Engine::TransformComponent::getViewMatrixWorld() { return m_viewMatrixWorld; }
+Engine::Math::Matrix4 &Engine::TransformComponent::getViewMatrixWorldInverse() { return m_viewMatrixWorldInverse; }

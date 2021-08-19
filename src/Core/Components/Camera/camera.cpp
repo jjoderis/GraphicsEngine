@@ -6,8 +6,6 @@
 
 Engine::CameraComponent::CameraComponent(Registry &registry) : m_registry{registry}
 {
-    // sets basics; camera at (0,0,0); projection project on x-y plane
-    m_viewMatrix.setIdentity();
     calculateProjection();
 
     m_associateCallback = m_registry.onAdded<CameraComponent>(
@@ -15,7 +13,7 @@ Engine::CameraComponent::CameraComponent(Registry &registry) : m_registry{regist
         {
             if (this == camera.lock().get())
             {
-                this->registerEntity(entity);
+                this->m_entity = entity;
             }
         });
 }
@@ -54,71 +52,6 @@ void Engine::CameraComponent::calculateProjection()
     }
 }
 
-void Engine::CameraComponent::registerEntity(unsigned int entity)
-{
-    std::shared_ptr<TransformComponent> transform{m_registry.getComponent<TransformComponent>(entity)};
-
-    if (transform)
-    {
-        update(entity, transform);
-        setupUpdateCallback(entity);
-    }
-    else
-    {
-        awaitTransformComponent(entity);
-    }
-}
-
-void Engine::CameraComponent::setupUpdateCallback(unsigned int entity)
-{
-    m_transformUpdateCallback = m_registry.onUpdate<TransformComponent>(
-        entity,
-        [=](unsigned int updateEntity, std::weak_ptr<TransformComponent> updatedTransform)
-        {
-            if (entity == updateEntity)
-            {
-                this->update(updateEntity, updatedTransform.lock());
-            }
-        });
-
-    m_removeTransformCallback = m_registry.onRemove<TransformComponent>(
-        [=](unsigned int removeEntity, std::weak_ptr<TransformComponent> removedTransform)
-        {
-            if (entity == removeEntity)
-            {
-                m_viewMatrix.setIdentity();
-                m_projectionMatrix.setIdentity();
-                awaitTransformComponent(entity);
-            }
-        });
-}
-
-void Engine::CameraComponent::awaitTransformComponent(unsigned int entity)
-{
-    m_transformUpdateCallback = m_registry.onAdded<TransformComponent>(
-        [=](unsigned int addEntity, std::weak_ptr<TransformComponent> addedTransform)
-        {
-            if (entity == addEntity)
-            {
-                this->update(addEntity, addedTransform.lock());
-                this->setupUpdateCallback(addEntity);
-            }
-        });
-}
-
-void Engine::CameraComponent::update(unsigned int entity, const std::shared_ptr<TransformComponent> &transform)
-{
-    auto rotation = transform->getRotation();
-    m_viewMatrix = Math::getRotation(rotation.getInverse()) * Math::getTranslation(-transform->getTranslation());
-    m_viewMatrixInverse =
-        Math::getTranslation(transform->getTranslation()) * Math::getRotation(rotation);
-    m_registry.updated<CameraComponent>(entity);
-}
-
-const Engine::Math::Matrix4 &Engine::CameraComponent::getViewMatrix() { return m_viewMatrix; }
-
-const Engine::Math::Matrix4 &Engine::CameraComponent::getViewMatrixInverse() { return m_viewMatrixInverse; }
-
 const Engine::Math::Matrix4 &Engine::CameraComponent::getProjectionMatrix() { return m_projectionMatrix; }
 
 float &Engine::CameraComponent::getNear() { return m_near; }
@@ -148,7 +81,9 @@ void Engine::CameraComponent::setAspect(float aspect) { m_aspect = aspect; }
 bool Engine::CameraComponent::isPerspective() { return m_projection == ProjectionType::Perspective; }
 bool Engine::CameraComponent::isOrtographic() { return m_projection == ProjectionType::Ortographic; }
 
-Engine::Util::Ray Engine::CameraComponent::getCameraSpaceRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize) {
+Engine::Util::Ray Engine::CameraComponent::getCameraSpaceRay(const Math::IVector2 &pixelPosition,
+                                                             const Math::IVector2 &screenSize)
+{
     float normalizedX = 2 * ((pixelPosition(0) + 0.5) / screenSize(0)) - 1;
     float normalizedY = 1 - 2 * ((pixelPosition(1) + 0.5) / screenSize(1));
 
@@ -163,5 +98,14 @@ Engine::Util::Ray Engine::CameraComponent::getCameraSpaceRay(const Math::IVector
 Engine::Util::Ray Engine::CameraComponent::getCameraRay(const Math::IVector2 &pixelPosition,
                                                         const Math::IVector2 &screenSize)
 {
-    return m_viewMatrixInverse * getCameraSpaceRay(pixelPosition, screenSize);
+    Engine::Util::Ray ray{getCameraSpaceRay(pixelPosition, screenSize)};
+
+    if (auto transform{m_registry.getComponent<Engine::TransformComponent>(m_entity)})
+    {
+        return transform->getViewMatrixWorldInverse() * ray;
+    }
+    else
+    {
+        return ray;
+    }
 }

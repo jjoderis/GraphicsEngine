@@ -43,6 +43,12 @@ public:
     Math::Matrix4 &getNormalMatrixWorld();
     Math::Matrix4 &getNormalMatrixWorldInverse();
 
+    Math::Matrix4 &getViewMatrix();
+    Math::Matrix4 &getViewMatrixInverse();
+
+    Math::Matrix4 &getViewMatrixWorld();
+    Math::Matrix4 &getViewMatrixWorldInverse();
+
 private:
     Math::Vector3 m_translation{0.0f, 0.0f, 0.0f};
     Math::Vector3 m_scaling{1.0f, 1.0f, 1.0f};
@@ -59,6 +65,12 @@ private:
 
     Math::Matrix4 m_normalMatrixWorld{};
     Math::Matrix4 m_normalMatrixWorldInverse{};
+
+    Math::Matrix4 m_viewMatrix{};
+    Math::Matrix4 m_viewMatrixInverse{};
+
+    Math::Matrix4 m_viewMatrixWorld{};
+    Math::Matrix4 m_viewMatrixWorldInverse{};
 };
 } // namespace Engine
 

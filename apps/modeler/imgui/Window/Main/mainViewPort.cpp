@@ -31,6 +31,7 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
     auto transform = registry.createComponent<Engine::TransformComponent>(m_cameraEntity);
     transform->setRotation(M_PI, {0.0, 1.0, 0.0});
     transform->update();
+    m_cameraTransform = transform;
     m_camera = registry.createComponent<Engine::CameraComponent>(m_cameraEntity, registry);
     registry.updated<Engine::CameraComponent>(m_cameraEntity);
 
@@ -39,6 +40,33 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
         {
             this->m_cameraEntity = entity;
             this->m_camera = registry.getComponent<Engine::CameraComponent>(entity);
+
+            if (auto transform{registry.getComponent<Engine::TransformComponent>(entity)})
+            {
+                this->m_cameraTransform = transform;
+            }
+            else
+            {
+                this->m_cameraTransform = std::make_shared<Engine::TransformComponent>();
+            }
+        });
+
+    m_addTransformCB = m_registry.onAdded<Engine::TransformComponent>(
+        [this](unsigned int entity, std::weak_ptr<Engine::TransformComponent> transform)
+        {
+            if (this->m_cameraEntity == entity)
+            {
+                this->m_cameraTransform = transform.lock();
+            }
+        });
+
+    m_removeTransformCB = m_registry.onRemove<Engine::TransformComponent>(
+        [this](unsigned int entity, std::weak_ptr<Engine::TransformComponent> transform)
+        {
+            if (this->m_cameraEntity == entity)
+            {
+                this->m_cameraTransform = std::make_shared<Engine::TransformComponent>();
+            }
         });
 }
 
@@ -171,16 +199,14 @@ void UICreation::MainViewPort::onLeftClick(const Engine::Math::IVector2 &clicked
 }
 void UICreation::MainViewPort::onRightClick(const Engine::Math::IVector2 &clickedPixel)
 {
-    unsigned int activeCameraEntity = m_registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
-    auto camera = m_registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
-    Engine::Util::Ray cameraRay = camera->getCameraRay(clickedPixel, m_size);
+    Engine::Util::Ray cameraRay = m_camera->getCameraRay(clickedPixel, m_size);
 
     Engine::Math::Vector3 direction =
-        camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
+        m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
 
     if (m_clickedEntity < -1)
     {
-        m_currentPoint = (direction / direction.at(2)) * camera->getFar();
+        m_currentPoint = (direction / direction.at(2)) * m_camera->getFar();
     }
 }
 
@@ -203,13 +229,14 @@ void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel
 {
     auto newRay = m_camera->getCameraSpaceRay(newPixel, m_size);
 
-    Engine::Math::Vector3 cameraSpacePosition = m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+    Engine::Math::Vector3 cameraSpacePosition =
+        m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
 
     auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
 
     auto t = newCameraSpacePosition - cameraSpacePosition;
 
-    t = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{t, 0};
+    t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{t, 0};
 
     if (ImGui::IsKeyDown(82))
     {
@@ -235,7 +262,7 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
     {
         float angle{acos(dot(oldRay.getDirection(), newRay.getDirection()))};
         auto axis{cross(oldRay.getDirection(), newRay.getDirection())};
-        axis = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{axis, 0};
+        axis = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{axis, 0};
         axis.normalize();
 
         auto cameraTransform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
@@ -245,13 +272,13 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
     else
     {
         Engine::Math::Vector3 cameraSpacePosition =
-            m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+            m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
 
         auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
 
         auto t = newCameraSpacePosition - cameraSpacePosition;
 
-        t = m_camera->getViewMatrixInverse() * Engine::Math::Vector4{t, 0};
+        t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{t, 0};
 
         if (t.norm() > 200)
         {
@@ -271,7 +298,8 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
     // just move the camera if nothing is grabbed
     if (m_grabbedEntity < 0)
     {
-        auto direction{m_camera->getViewMatrixInverse() * (Engine::Math::Vector4{0, 0, -1, 0} * scroll * 0.1)};
+        auto direction{m_cameraTransform->getViewMatrixWorldInverse() *
+                       (Engine::Math::Vector4{0, 0, -1, 0} * scroll * 0.1)};
         auto transform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
         transform->translate(direction);
         transform->update();
@@ -281,11 +309,11 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
     else
     {
         Engine::Math::Vector3 cameraSpacePosition =
-            m_camera->getViewMatrix() * Engine::Math::Vector4{m_currentPoint, 1};
+            m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
         cameraSpacePosition.normalize();
         auto cameraSpaceDirection = cameraSpacePosition * scroll * 0.1;
         Engine::Math::Vector3 direction =
-            m_camera->getViewMatrixInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
+            m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
 
         auto translation = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
 

@@ -73,7 +73,7 @@ int main()
                                    std::vector<Engine::MaterialUniformData>{{"diffuseColor", GL_FLOAT_VEC4, 0},
                                                                             {"specularColor", GL_FLOAT_VEC4, 16},
                                                                             {"specularExponent", GL_FLOAT, 32}}});
-    float defaultData[48]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0};
+    float defaultData[48]{1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 100.0, 0.0, 0.0, 0.0};
     float *properties{material->getProperty<float>(0)};
     std::memcpy(properties, defaultData, 9 * sizeof(float));
     registry.createComponent<Engine::OpenGLTextureComponent>(object1)->addTexture(
@@ -83,6 +83,7 @@ int main()
 
     auto transform = registry.createComponent<Engine::TransformComponent>(object1);
     transform->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
+    transform->rotate(MathLib::Util::degToRad(-90), {0, 1, 0});
     transform->update();
     auto geometry = registry.addComponent<Engine::GeometryComponent>(object1, sphereGeometry);
     registry.createComponent<Engine::OpenGLShaderComponent>(
@@ -91,6 +92,16 @@ int main()
 
     unsigned int object2{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(object2, "Object 2");
+    registry.addComponent<Engine::GeometryComponent>(object2, geometry);
+    auto transform2{registry.createComponent<Engine::TransformComponent>(object2)};
+    transform2->translate({0, 0, -1.5});
+    transform2->scale({0.2, 0.2, 0.2});
+    transform2->update();
+    registry.updated<Engine::TransformComponent>(object2);
+    registry.addComponent<Engine::OpenGLMaterialComponent>(object2, material);
+    registry.createComponent<Engine::OpenGLShaderComponent>(object2,
+                                                            Engine::loadShaders("../../data/shaders/Phong_Shading"));
+    registry.createComponent<Engine::RenderComponent>(object2);
     auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(object2);
     hierarchy->setParent(object1);
     registry.updated<Engine::HierarchyComponent>(object2);

@@ -42,14 +42,21 @@ void updateWorldMatrices(Engine::Registry &registry, unsigned int entity, int pa
             trans->getMatrixWorldInverse() = trans->getModelMatrixInverse();
             trans->getNormalMatrixWorld() = trans->getNormalMatrix();
             trans->getNormalMatrixWorldInverse() = trans->getNormalMatrixInverse();
+            trans->getViewMatrixWorld() = trans->getViewMatrix();
+            trans->getViewMatrixWorldInverse() = trans->getViewMatrixInverse();
         }
         else
         {
             trans->getMatrixWorld() = parentTrans->getMatrixWorld() * trans->getModelMatrix();
             trans->getMatrixWorldInverse() = trans->getModelMatrixInverse() * parentTrans->getMatrixWorldInverse();
+
             trans->getNormalMatrixWorld() = parentTrans->getNormalMatrixWorld() * trans->getNormalMatrix();
             trans->getNormalMatrixWorldInverse() =
                 trans->getNormalMatrixInverse() * parentTrans->getNormalMatrixWorldInverse();
+
+            trans->getViewMatrixWorld() = trans->getViewMatrix() * parentTrans->getViewMatrixWorld();
+            trans->getViewMatrixWorldInverse() =
+                parentTrans->getViewMatrixWorldInverse() * trans->getViewMatrixInverse();
         }
 
         if (!noUpdate)

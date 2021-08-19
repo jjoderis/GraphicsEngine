@@ -1,6 +1,7 @@
 #ifndef ENGINE_OPENGL_SYSTEMS_CAMERATRACKER
 #define ENGINE_OPENGL_SYSTEMS_CAMERATRACKER
 
+#include "../../../Core/Math/math.h"
 #include <functional>
 #include <glad/glad.h>
 #include <memory>
@@ -10,6 +11,7 @@ namespace Engine
 class Registry;
 class CameraComponent;
 class ActiveCameraComponent;
+class TransformComponent;
 namespace Systems
 {
 class OpenGLCameraTracker
@@ -27,6 +29,10 @@ private:
     std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<ActiveCameraComponent> activeCamera)>>
         m_removeActive;
 
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>> m_addTransformCB;
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>> m_updateTransformCB;
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<TransformComponent>)>> m_removeTransformCB;
+
     int m_currentActiveCamera{-1};
 
     Registry &m_registry;
@@ -35,7 +41,12 @@ private:
     void createInitActiveCB();
     void createUpdateActiveCB();
 
+    void awaitTransform();
+    void setupTransformUpdateCallback();
+
     void updateCameraBuffer(const std::shared_ptr<CameraComponent> &camera);
+
+    void updateCameraBufferTransform(Engine::Math::Matrix4 &viewMatrix, Engine::Math::Matrix4 &viewMatrixInverse);
 
 public:
     OpenGLCameraTracker() = delete;

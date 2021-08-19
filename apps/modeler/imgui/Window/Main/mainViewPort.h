@@ -13,6 +13,7 @@ class Registry;
 class OpenGLRenderer;
 class CameraComponent;
 class ActiveCameraComponent;
+class TransformComponent;
 
 namespace Util
 {
@@ -51,8 +52,12 @@ private:
 
     unsigned int m_cameraEntity{0};
     std::shared_ptr<Engine::CameraComponent> m_camera{};
+    std::shared_ptr<Engine::TransformComponent> m_cameraTransform{};
     std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::ActiveCameraComponent>)>>
         m_cameraChangeCallback;
+
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::TransformComponent>)>> m_addTransformCB;
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::TransformComponent>)>> m_removeTransformCB;
 
     virtual void main();
     virtual void onResize();
