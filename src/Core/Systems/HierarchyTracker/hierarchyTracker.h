@@ -52,8 +52,6 @@ private:
     void awaitTransform(unsigned int entity);
     void removeTransform(unsigned int entity);
 
-    // update transform based on parent
-    void updateTransform(unsigned int entity, int parent);
     // update transforms of all children
     void updateChildren(unsigned int entity);
 };

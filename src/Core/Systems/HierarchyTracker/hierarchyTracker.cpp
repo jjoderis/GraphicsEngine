@@ -25,6 +25,40 @@ Engine::Systems::HierarchyTracker::HierarchyTracker(Registry &registry) : m_regi
         });
 }
 
+void updateWorldMatrices(Engine::Registry &registry, unsigned int entity, int parent, bool noUpdate = false)
+{
+    if (auto trans{registry.getComponent<Engine::TransformComponent>(entity)})
+    {
+        std::shared_ptr<Engine::TransformComponent> parentTrans{};
+
+        if (parent > -1)
+        {
+            parentTrans = registry.getComponent<Engine::TransformComponent>(parent);
+        }
+
+        if (parent < 0 || !parentTrans)
+        {
+            trans->getMatrixWorld() = trans->getModelMatrix();
+            trans->getMatrixWorldInverse() = trans->getModelMatrixInverse();
+            trans->getNormalMatrixWorld() = trans->getNormalMatrix();
+            trans->getNormalMatrixWorldInverse() = trans->getNormalMatrixInverse();
+        }
+        else
+        {
+            trans->getMatrixWorld() = parentTrans->getMatrixWorld() * trans->getModelMatrix();
+            trans->getMatrixWorldInverse() = trans->getModelMatrixInverse() * parentTrans->getMatrixWorldInverse();
+            trans->getNormalMatrixWorld() = parentTrans->getNormalMatrixWorld() * trans->getNormalMatrix();
+            trans->getNormalMatrixWorldInverse() =
+                trans->getNormalMatrixInverse() * parentTrans->getNormalMatrixWorldInverse();
+        }
+
+        if (!noUpdate)
+        {
+            registry.updated<Engine::TransformComponent>(entity);
+        }
+    }
+}
+
 void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
 {
     meta_data &meta{m_entityData.at(entity)};
@@ -67,12 +101,7 @@ void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
                 }
 
                 std::get<0>(meta) = newParent;
-                std::shared_ptr<TransformComponent> trans = m_registry.getComponent<TransformComponent>(entity);
-                if (trans)
-                {
-                    trans->update();
-                    m_registry.updated<TransformComponent>(entity);
-                }
+                updateWorldMatrices(this->m_registry, entity, newParent);
             }
         });
 
@@ -91,12 +120,7 @@ void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
 
                     parentHierarchy->removeChild(entity);
 
-                    if (std::shared_ptr<TransformComponent> transform =
-                            m_registry.getComponent<TransformComponent>(entity))
-                    {
-                        transform->update();
-                        m_registry.updated<TransformComponent>(entity);
-                    }
+                    updateWorldMatrices(this->m_registry, entity, -1);
                 }
 
                 // remove as parent of each child
@@ -130,7 +154,15 @@ void Engine::Systems::HierarchyTracker::awaitTransform(unsigned int entity)
         {
             if (addEntity == entity)
             {
-                // TODO: calculate initial world matrix and update children
+                // calculate initial world matrix
+                if (auto hierarchy{this->m_registry.getComponent<HierarchyComponent>(entity)})
+                {
+                    updateWorldMatrices(this->m_registry, entity, hierarchy->getParent());
+                }
+                else
+                {
+                    updateWorldMatrices(this->m_registry, entity, -1);
+                }
 
                 handleTransformChanges(entity);
             }
@@ -146,13 +178,10 @@ void Engine::Systems::HierarchyTracker::handleTransformChanges(unsigned int enti
         entity,
         [&, entity](unsigned int updateEntity, std::weak_ptr<TransformComponent> transComp)
         {
-            std::shared_ptr<TransformComponent> trans{transComp.lock()};
-
             std::shared_ptr<HierarchyComponent> hierarchy{m_registry.getComponent<HierarchyComponent>(entity)};
-            // check if there is a parent if it has a transform and update
-            // accordingly
+            // update world matrix based on parent
             int parent = hierarchy->getParent();
-            updateTransform(entity, parent);
+            updateWorldMatrices(this->m_registry, entity, parent, true);
 
             updateChildren(entity);
         });
@@ -177,36 +206,6 @@ void Engine::Systems::HierarchyTracker::updateChildren(unsigned int entity)
 
     for (unsigned int child : hierarchy->getChildren())
     {
-        if (std::shared_ptr<TransformComponent> trans = m_registry.getComponent<TransformComponent>(child))
-        {
-            // calculate correct model matrix before signaling for world matrix update
-            trans->update();
-            m_registry.updated<TransformComponent>(child);
-        }
-    }
-}
-
-void Engine::Systems::HierarchyTracker::updateTransform(unsigned int entity, int parent)
-{
-    std::shared_ptr<TransformComponent> trans = m_registry.getComponent<TransformComponent>(entity);
-
-    if (!trans)
-    {
-        return;
-    }
-
-    if (parent > -1)
-    {
-        if (std::shared_ptr<TransformComponent> parentTrans = m_registry.getComponent<TransformComponent>(parent))
-        {
-            Math::Matrix4 &worldMatrix{trans->getModelMatrix()};
-            worldMatrix = parentTrans->getModelMatrix() * worldMatrix;
-
-            Math::Matrix4 &worldMatrixInverse{trans->getModelMatrixInverse()};
-            worldMatrixInverse = worldMatrixInverse * parentTrans->getModelMatrixInverse();
-
-            Math::Matrix4 &normalMatrix{trans->getNormalMatrix()};
-            normalMatrix = parentTrans->getNormalMatrix() * normalMatrix;
-        }
+        updateWorldMatrices(m_registry, child, entity);
     }
 }

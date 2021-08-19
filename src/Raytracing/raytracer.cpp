@@ -96,7 +96,7 @@ void raytraceScenePart(Engine::Registry &registry,
     unsigned int activeCameraEntity = registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
     auto camera = registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
     Engine::CameraComponent adjustedCamera{*camera};
-    adjustedCamera.setAspect((float)width/(float)height);
+    adjustedCamera.setAspect((float)width / (float)height);
 
     Engine::Math::Vector4 color;
 
@@ -212,7 +212,7 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
 
     if (auto lightTransform = registry.getComponent<Engine::TransformComponent>(entity))
     {
-        lighPosition = lightTransform->getModelMatrix() * Engine::Math::Vector4{lighPosition, 1};
+        lighPosition = lightTransform->getMatrixWorld() * Engine::Math::Vector4{lighPosition, 1};
     }
 
     unsigned int intersectionEntity = intersection.getEntity();
@@ -230,7 +230,7 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
                          baryParams(0) * vertexNormals[faces[intersectionFaceIndex + 1]] +
                          baryParams(1) * vertexNormals[faces[intersectionFaceIndex + 2]];
 
-    surfaceNormal = transform->getNormalMatrix() * Engine::Math::Vector4{surfaceNormal, 1};
+    surfaceNormal = transform->getNormalMatrixWorld() * Engine::Math::Vector4{surfaceNormal, 1};
     surfaceNormal.normalize();
 
     auto origin = intersection.getIntersection() + 10 * std::numeric_limits<float>::epsilon() * surfaceNormal;

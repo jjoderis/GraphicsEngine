@@ -21,8 +21,8 @@ void Engine::OpenGLTransformComponent::update(TransformComponent *transform)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, m_UBO);
 
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, matrixSize, transform->getModelMatrix().raw());
-    glBufferSubData(GL_UNIFORM_BUFFER, matrixSize, matrixSize, transform->getNormalMatrix().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, matrixSize, transform->getMatrixWorld().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, matrixSize, matrixSize, transform->getNormalMatrixWorld().raw());
 }
 
 void Engine::OpenGLTransformComponent::bind(int index) { glBindBufferBase(GL_UNIFORM_BUFFER, index, m_UBO); }

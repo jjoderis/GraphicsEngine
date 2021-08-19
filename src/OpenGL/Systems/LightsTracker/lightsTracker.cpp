@@ -356,7 +356,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::up
     std::shared_ptr<DirectionalLightComponent> light{m_registry.getComponent<DirectionalLightComponent>(entity)};
 
     // let the updateLightInfo function take care of this
-    light->setDirection(transform->getModelMatrix() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
+    light->setDirection(transform->getMatrixWorld() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
     m_registry.updated<DirectionalLightComponent>(entity);
 }
 
@@ -381,7 +381,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateTra
 
     // let the updateLightInfo function take care of this
     light->setPosition(transform->getTranslation());
-    light->setDirection(transform->getModelMatrix() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
+    light->setDirection(transform->getMatrixWorld() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
     m_registry.updated<SpotLightComponent>(entity);
 }
 
