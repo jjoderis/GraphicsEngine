@@ -3,6 +3,12 @@
 
 #include <OpenGL/Framebuffer/framebuffer.h>
 #include <OpenGL/Shader/shader.h>
+#include <OpenGL/Systems/CameraTracker/cameraTracker.h>
+
+namespace Engine
+{
+class Registry;
+}
 
 namespace ModelerUtil
 {
@@ -10,16 +16,59 @@ namespace ModelerUtil
 class PostProcesser
 {
 public:
-    PostProcesser();
+    PostProcesser() = delete;
+
+    PostProcesser(Engine::Registry &registry, int &selectedEntity);
 
     void resize(int width, int height);
 
-    void postProcess(unsigned int renderedScene, unsigned int entityTexture, int selectedEntity);
+    void postProcess(unsigned int renderedScene);
 
     Engine::OpenGLFramebuffer &getFramebuffer();
 
 private:
     // Trying out kernels based on https://learnopengl.com/Advanced-OpenGL/Framebuffers
+    Engine::Registry &m_registry;
+    int &m_selectedEntity;
+
+    const char *selectedVertexShader = "#version 420 core\n"
+                                       "layout (location = 0) in vec3 pos;\n"
+                                       "uniform Transform{"
+                                       "    mat4 modelMatrix;"
+                                       "    mat4 normalMatrix;"
+                                       " };"
+
+                                       " uniform Camera{"
+                                       "     mat4 viewMatrix;"
+                                       "     mat4 viewMatrixInverse;"
+                                       "     mat4 projectionMatrix;"
+                                       " };"
+                                       "void main () {\n"
+                                       "  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1);\n"
+                                       "}\n";
+
+    const char *selectedFragmentShader = "#version 420 core\n"
+                                         "out vec4 FragColor;\n"
+                                         "uniform int isSelected;"
+                                         "uniform int entityId;"
+                                         "void main()\n"
+                                         "{\n"
+                                         "  if (isSelected == 1) {"
+                                         "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);"
+                                         "  } else {"
+                                         "    FragColor = vec4(0.0, float(entityId+1) / 1000, 0.0, 1.0);"
+                                         "  }"
+                                         "}";
+
+    Engine::OpenGLProgram m_selectedProgram{
+        {{GL_VERTEX_SHADER, selectedVertexShader}, {GL_FRAGMENT_SHADER, selectedFragmentShader}}};
+    Engine::OpenGLFramebuffer m_selectedFramebuffer{};
+    unsigned int m_activeCameraUBO{};
+    int m_cameraIndex{0};
+    int m_transformIndex{1};
+    int m_isSelectedIndex{-1};
+    int m_entityIdIndex{-1};
+    Engine::Systems::OpenGLCameraTracker m_cameraTracker;
 
     const char *vertexShader = "#version 420 core\n"
                                "layout (location = 0) in vec3 pos;\n"
@@ -35,7 +84,7 @@ private:
                                  "in vec2 texCoord;\n"
                                  "uniform int selectedEntity;"
                                  "layout (binding = 0) uniform sampler2D sceneTexture;\n"
-                                 "layout (binding = 1) uniform isampler2D entityTexture;\n"
+                                 "layout (binding = 1) uniform sampler2D selectedTexture;\n"
                                  "const float offset = 1.0 / 300.0;\n"
 
                                  "void main()\n"
@@ -58,22 +107,20 @@ private:
                                  "    1, 1, 1 \n"
                                  "  );"
 
-                                 "  int indices[9];\n"
+                                 "  vec3 preCol[9];\n"
                                  "  for(int i = 0; i < 9; i++)\n"
                                  "  {\n"
-                                 "    indices[i] = texture(entityTexture, texCoord.st + offsets[i]).r;\n"
+                                 "    preCol[i] = vec3(texture(selectedTexture, texCoord.st + offsets[i]));\n"
                                  "  }\n"
                                  "  vec3 col = vec3(0.0);\n"
                                  "  for(int i = 0; i < 9; i++) {\n"
-                                 "    if (indices[i] == selectedEntity) {\n"
-                                 "      col += vec3(1.0, 1.0, 0.0) * kernel[i];\n"
-                                 "    } else {\n"
-                                 "      col += vec3(0.0, 0.0, 0.0);\n"
-                                 "    }"
+                                 "      col += preCol[i] * kernel[i];\n"
                                  "  }"
 
-                                 "  if (col.x > 0.001 || col.y > 0.001) {"
-                                 "    FragColor = vec4(col, 1.0);"
+                                 "  if (col.x > 0.001) {"
+                                 "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);"
+                                 "  } else if (col.y > 0.00001) {"
+                                 "    FragColor = vec4(1.0, 0.6, 0, 1);"
                                  "  } else {"
                                  "    FragColor = texture(sceneTexture, texCoord);"
                                  "  }"
@@ -83,7 +130,6 @@ private:
     unsigned int m_VBO{0};
     unsigned int m_EBO{0};
     unsigned int m_VAO{0};
-    int m_indexPosition{-1};
     Engine::OpenGLProgram m_program{{{GL_VERTEX_SHADER, vertexShader}, {GL_FRAGMENT_SHADER, fragmentShader}}};
 };
 

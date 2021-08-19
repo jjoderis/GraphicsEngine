@@ -40,7 +40,7 @@ void Engine::OpenGLRenderer::render(const std::vector<unsigned int> &renderables
 
         m_registry.getComponent<Engine::OpenGLMaterialComponent>(entity)->bind();
 
-        m_registry.getComponent<Engine::OpenGLTransformComponent>(entity)->bind();
+        m_registry.getComponent<Engine::OpenGLTransformComponent>(entity)->bind(1);
 
         auto texture = m_registry.getComponent<Engine::OpenGLTextureComponent>(entity);
         texture->bind();
