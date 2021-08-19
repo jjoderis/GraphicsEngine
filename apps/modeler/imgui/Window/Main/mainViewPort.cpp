@@ -78,7 +78,7 @@ void UICreation::MainViewPort::main()
     m_renderer.render(m_renderables);
     m_framebuffer.unbind();
 
-    if (ImGui::GetIO().InputQueueCharacters.size())
+    if (ImGui::GetIO().InputQueueCharacters.size() && m_selectedEntity > -1)
     {
         onKeyPress(ImGui::GetIO().InputQueueCharacters[0]);
     }
@@ -124,16 +124,18 @@ void UICreation::MainViewPort::main()
         onMouseDrag(mouseDelta);
     }
 
-    auto scrolling = ImGui::GetIO().MouseWheel;
-
-    if (scrolling)
+    if (ImGui::IsItemHovered())
     {
-        onMouseScroll(scrolling);
+        auto scrolling = ImGui::GetIO().MouseWheel;
+
+        if (scrolling)
+        {
+            onMouseScroll(scrolling);
+        }
     }
 
     // allow export of scene (as gltf) by dragging into file browser
-    if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_grabbedEntity < 0 &&
-        ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+    if (ImGui::GetIO().KeyCtrl && m_grabbedEntity < 0 && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
     {
         bool p{true};
 
@@ -156,6 +158,11 @@ void UICreation::MainViewPort::onMouseClick()
 {
     m_grabbedEntity = -1;
     m_clickedEntity = -1;
+
+    if (ImGui::GetIO().KeyCtrl)
+    {
+        return;
+    }
 
     Engine::Math::IVector2 mousePos{ImGui::GetMousePos().x, ImGui::GetMousePos().y};
 
@@ -336,7 +343,7 @@ void UICreation::MainViewPort::onKeyPress(char input)
         auto hierarchy{m_registry.getComponent<Engine::HierarchyComponent>(m_selectedEntity)};
         if (hierarchy)
         {
-            if (input == 'w' || input == 'a' || input == 'd' && hierarchy->getParent() > -1)
+            if ((input == 'w' || input == 'a' || input == 'd') && hierarchy->getParent() > -1)
             {
                 if (input == 'w')
                 {

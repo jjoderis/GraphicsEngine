@@ -34,6 +34,8 @@
 
 extern Engine::Util::OpenGLTextureIndex textureIndex;
 
+UICreation::EntityWindow *entityWindow;
+
 UICreation::MainViewPort *mainViewport;
 UICreation::RaytracingViewport *raytracingViewport;
 
@@ -79,6 +81,8 @@ void UI::init(Engine::Registry &registry,
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+
+    entityWindow = new UICreation::EntityWindow{registry};
 
     mainViewport = new UICreation::MainViewPort{registry, renderer, selectedEntity, textureIndex};
     raytracingViewport = new UICreation::RaytracingViewport{registry};
@@ -206,9 +210,6 @@ void UI::render(Engine::Registry &registry)
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
-    raytracingViewport->render();
-    mainViewport->render();
-
     {
         ImGui::Begin("Hello World!");
 
@@ -219,7 +220,7 @@ void UI::render(Engine::Registry &registry)
             raytracingViewport->newFrame();
         }
 
-        UICreation::drawEntitiesNode(registry);
+        entityWindow->render();
 
         if (selectedEntity > -1)
         {
@@ -356,6 +357,9 @@ void UI::render(Engine::Registry &registry)
                     ImGui::GetIO().Framerate);
         ImGui::End();
     }
+
+    raytracingViewport->render();
+    mainViewport->render();
 
     // UIUtil::drawFileBrowser();
 

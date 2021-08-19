@@ -12,14 +12,14 @@
 #include <OpenGL/Components/Material/material.h>
 #include <OpenGL/Components/Shader/shader.h>
 #include <OpenGL/Components/Texture/texture.h>
-#include <OpenGL/Util/textureIndex.h>
 #include <cstring>
 #include <imgui.h>
 #include <iostream>
-
-extern Engine::Util::OpenGLTextureIndex textureIndex;
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace fs = std::filesystem;
+
+UICreation::EntityWindow::EntityWindow(Engine::Registry &registry) : m_registry{registry} {}
 
 bool isCyclic(int entity, int currEntity, Engine::Registry &registry)
 {
@@ -114,22 +114,58 @@ void createComponentDrop(unsigned int entity, Engine::Registry &registry)
     }
 }
 
-void drawEntityNode(unsigned int entity, Engine::Registry &registry)
+void UICreation::EntityWindow::drawEntityNode(unsigned int entity)
 {
-    if (std::shared_ptr<Engine::TagComponent> tag = registry.getComponent<Engine::TagComponent>(entity))
+    if (std::shared_ptr<Engine::TagComponent> tag = m_registry.getComponent<Engine::TagComponent>(entity))
     {
-        bool isOpen = ImGui::TreeNode(tag->get().c_str());
+        if (m_changeNameEntity == entity)
+        {
+            if (ImGui::InputText("Edit Name##Entity", &m_currentName))
+            {
+                ImGui::GetIO().WantCaptureKeyboard = true;
+            }
+
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+            {
+                tag->set(m_currentName);
+                m_currentName.clear();
+                m_changeNameEntity = -1;
+            }
+
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+            {
+                m_currentName.clear();
+                m_changeNameEntity = -1;
+            }
+
+            return;
+        }
+
+        auto treeNodeFlags{ImGuiTreeNodeFlags_None};
+
+        if (entity == selectedEntity)
+        {
+            treeNodeFlags = ImGuiTreeNodeFlags_Selected;
+        }
+
+        bool isOpen = ImGui::TreeNodeEx(tag->get().c_str(), treeNodeFlags);
+
+        if (ImGui::IsItemClicked(0) && ImGui::IsMouseDoubleClicked(0))
+        {
+            m_currentName.clear();
+            m_changeNameEntity = entity;
+        }
 
         if (ImGui::IsItemClicked(2))
         {
             selectedEntity = entity;
             possible_component_current = 0;
         }
-        createHierarchyDragAndDrop(entity, registry);
-        createComponentDrop<Engine::OpenGLMaterialComponent>(entity, registry);
-        createComponentDrop<Engine::GeometryComponent>(entity, registry);
-        createComponentDrop<Engine::OpenGLShaderComponent>(entity, registry);
-        createComponentDrop<Engine::OpenGLTextureComponent>(entity, registry);
+        createHierarchyDragAndDrop(entity, m_registry);
+        createComponentDrop<Engine::OpenGLMaterialComponent>(entity, m_registry);
+        createComponentDrop<Engine::GeometryComponent>(entity, m_registry);
+        createComponentDrop<Engine::OpenGLShaderComponent>(entity, m_registry);
+        createComponentDrop<Engine::OpenGLTextureComponent>(entity, m_registry);
 
         if (auto path = UICreation::createImGuiHighlightedDropTarget<fs::path>(
                 "system_path_payload",
@@ -137,7 +173,7 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
         {
             if (path->extension() == ".off")
             {
-                registry.addComponent<Engine::GeometryComponent>(entity, Engine::loadOffFile(*path));
+                m_registry.addComponent<Engine::GeometryComponent>(entity, Engine::loadOffFile(*path));
             }
         }
 
@@ -149,11 +185,11 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
             if (ImGui::GetIO().KeyShift)
             {
                 // remove recursively if shift is pressed
-                removeWithChildren(registry, entity);
+                removeWithChildren(m_registry, entity);
             }
             else
             {
-                registry.removeEntity(entity);
+                m_registry.removeEntity(entity);
 
                 if (entity == selectedEntity)
                 {
@@ -163,12 +199,12 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
         }
 
         std::shared_ptr<Engine::HierarchyComponent> hierarchy =
-            registry.getComponent<Engine::HierarchyComponent>(entity);
+            m_registry.getComponent<Engine::HierarchyComponent>(entity);
         if (isOpen && hierarchy)
         {
             for (unsigned int child : hierarchy->getChildren())
             {
-                drawEntityNode(child, registry);
+                drawEntityNode(child);
             }
         }
 
@@ -179,13 +215,11 @@ void drawEntityNode(unsigned int entity, Engine::Registry &registry)
     }
 }
 
-char name[64];
-
-void UICreation::drawEntitiesNode(Engine::Registry &registry)
+void UICreation::EntityWindow::render()
 {
     if (selectedEntity > -1)
     {
-        const char *name = registry.getComponent<Engine::TagComponent>(selectedEntity)->get().c_str();
+        const char *name = m_registry.getComponent<Engine::TagComponent>(selectedEntity)->get().c_str();
         ImGui::Text("Selection: %s", name);
     }
     else
@@ -193,20 +227,20 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
         ImGui::Text("Selection: None selected!");
     }
 
-    std::list<unsigned int> entities{registry.getEntities()};
+    std::list<unsigned int> entities{m_registry.getEntities()};
 
     if (ImGui::CollapsingHeader("Entities"))
     {
-        createHierarchyDragAndDrop(-1, registry);
+        createHierarchyDragAndDrop(-1, m_registry);
 
         for (unsigned int entity : entities)
         {
             std::shared_ptr<Engine::HierarchyComponent> hierarchy =
-                registry.getComponent<Engine::HierarchyComponent>(entity);
+                m_registry.getComponent<Engine::HierarchyComponent>(entity);
             // only show top level entities in root of tree
             if (!hierarchy || hierarchy->getParent() < 0)
             {
-                drawEntityNode(entity, registry);
+                drawEntityNode(entity);
             }
         }
         if (ImGui::Button("Add Entity"))
@@ -215,20 +249,20 @@ void UICreation::drawEntitiesNode(Engine::Registry &registry)
         }
         if (ImGui::BeginPopup("entity_add_popup"))
         {
-            ImGui::InputTextWithHint("##name_input", "Enter a name", name, IM_ARRAYSIZE(name));
+            ImGui::InputTextWithHint("##name_input", "Enter a name", &m_currentName);
             ImGui::SameLine();
             if (ImGui::Button("+"))
             {
-                unsigned int newEntity = registry.addEntity();
-                if (!std::strlen(name))
+                unsigned int newEntity = m_registry.addEntity();
+                if (!m_currentName.size())
                 {
-                    registry.createComponent<Engine::TagComponent>(newEntity, "Unnamed Entity");
+                    m_registry.createComponent<Engine::TagComponent>(newEntity, "Unnamed Entity");
                 }
                 else
                 {
-                    registry.createComponent<Engine::TagComponent>(newEntity, name);
+                    m_registry.createComponent<Engine::TagComponent>(newEntity, m_currentName);
                 }
-                name[0] = '\0';
+                m_currentName.clear();
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
