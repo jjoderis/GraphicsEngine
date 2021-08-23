@@ -5,6 +5,7 @@
 #include <Components/Hierarchy/hierarchy.h>
 #include <Components/Light/light.h>
 #include <Components/Material/material.h>
+#include <Components/Material/raytracingMaterial.h>
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
@@ -130,6 +131,18 @@ int addEntity(Engine::Registry &registry,
                         fullPath.append(imagePath);
                         registry.createComponent<Engine::OpenGLTextureComponent>(primitiveEntity)
                             ->addTexture(textureIndex.needTexture(fullPath, GL_TEXTURE_2D));
+                    }
+
+                    if (material["pbrMetallicRoughness"].find("baseColorFactor") !=
+                        material["pbrMetallicRoughness"].end())
+                    {
+                        json &jColor{material["pbrMetallicRoughness"]["baseColorFactor"]};
+                        auto color{registry.createComponent<Engine::RaytracingMaterial>(primitiveEntity)};
+
+                        for (int i{0}; i < jColor.size(); ++i)
+                        {
+                            color->getColor()(i) = jColor[i];
+                        }
                     }
                 }
 

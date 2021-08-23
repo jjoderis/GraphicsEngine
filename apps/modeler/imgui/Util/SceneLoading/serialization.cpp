@@ -5,6 +5,7 @@
 #include <Components/Hierarchy/hierarchy.h>
 #include <Components/Light/light.h>
 #include <Components/Material/material.h>
+#include <Components/Material/raytracingMaterial.h>
 #include <Components/Render/render.h>
 #include <Components/Shader/shader.h>
 #include <Components/Tag/tag.h>
@@ -144,31 +145,45 @@ int addEntity(unsigned int entity,
                 }
             }
 
-            if (auto texture = registry.getComponent<Engine::OpenGLTextureComponent>(entity))
-            {
-                if (texture->getNumTextures())
-                {
-                    materialNode["pbrMetallicRoughness"] = json::object();
-                    materialNode["pbrMetallicRoughness"]["baseColorTexture"] = json::object();
+            auto texture{registry.getComponent<Engine::OpenGLTextureComponent>(entity)};
+            auto rtMaterial{registry.getComponent<Engine::RaytracingMaterial>(entity)};
 
-                    auto absPath = texture->getTexture(0).getPath();
-                    auto &textureMap = std::get<0>(textureData);
-                    if (textureMap.find(absPath) != textureMap.end())
+            if (texture || rtMaterial)
+            {
+                materialNode["pbrMetallicRoughness"] = json::object();
+
+                if (rtMaterial)
+                {
+                    auto &rtColor{rtMaterial->getColor()};
+                    materialNode["pbrMetallicRoughness"]["baseColorFactor"] = {
+                        rtColor(0), rtColor(1), rtColor(2), rtColor(2)};
+                }
+
+                if (texture)
+                {
+                    if (texture->getNumTextures())
                     {
-                        materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureMap.at(absPath);
-                    }
-                    else
-                    {
-                        // TODO: export samplers
-                        int index = j["images"].size();
-                        textureMap.emplace(absPath, index);
-                        std::string texturePath = "textures/" + absPath.filename().string();
-                        auto filePath{path};
-                        filePath.append(texturePath);
-                        j["images"].push_back({{"uri", texturePath}});
-                        std::filesystem::copy(absPath, filePath, std::filesystem::copy_options::overwrite_existing);
-                        j["textures"].push_back({{"source", index}});
-                        materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = index;
+                        materialNode["pbrMetallicRoughness"]["baseColorTexture"] = json::object();
+
+                        auto absPath = texture->getTexture(0).getPath();
+                        auto &textureMap = std::get<0>(textureData);
+                        if (textureMap.find(absPath) != textureMap.end())
+                        {
+                            materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureMap.at(absPath);
+                        }
+                        else
+                        {
+                            // TODO: export samplers
+                            int index = j["images"].size();
+                            textureMap.emplace(absPath, index);
+                            std::string texturePath = "textures/" + absPath.filename().string();
+                            auto filePath{path};
+                            filePath.append(texturePath);
+                            j["images"].push_back({{"uri", texturePath}});
+                            std::filesystem::copy(absPath, filePath, std::filesystem::copy_options::overwrite_existing);
+                            j["textures"].push_back({{"source", index}});
+                            materialNode["pbrMetallicRoughness"]["baseColorTexture"]["index"] = index;
+                        }
                     }
                 }
             }
