@@ -154,7 +154,7 @@ Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ra
 
             auto reflectedDirection = reflect(ray.getDirection(), surfaceNormal);
             auto newOrigin =
-                intersection.getIntersection() + reflectedDirection * std::numeric_limits<float>::epsilon();
+                intersection.getIntersection() + reflectedDirection * 10 * std::numeric_limits<float>::epsilon();
             Engine::Util::Ray reflectedRay{newOrigin, reflectedDirection};
             return calculateColor(registry, reflectedRay);
         }
