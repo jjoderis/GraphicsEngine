@@ -63,7 +63,7 @@ void Engine::GeometryComponent::calculateNormals()
     {
         Math::Vector3 a{m_vertices[m_faces[i + 1]] - m_vertices[m_faces[i]]};
         Math::Vector3 b{m_vertices[m_faces[i + 2]] - m_vertices[m_faces[i]]};
-        Math::Vector3 faceNormal = MathLib::cross(a, b).normalize();
+        Math::Vector3 faceNormal = normalize(MathLib::cross(a, b));
 
         // add the faceNormal to each of the faces vertices
         m_normals[m_faces[i]] += faceNormal;
@@ -81,7 +81,7 @@ void Engine::GeometryComponent::calculateNormals()
         {
             // this vertex has adjacent faces => calculate vertex normal
             m_normals[i] / normalContributions[i];
-            m_normals[i].normalize();
+            normalize(m_normals[i]);
         }
         else
         {
@@ -91,8 +91,9 @@ void Engine::GeometryComponent::calculateNormals()
     }
 }
 
-void Engine::GeometryComponent::calculateBoundingBox() {
-    m_bounding = AccelerationStructure{nullptr, 0, m_vertices.size(), this};   
+void Engine::GeometryComponent::calculateBoundingBox()
+{
+    m_bounding = AccelerationStructure{nullptr, 0, m_vertices.size(), this};
 }
 
 std::shared_ptr<Engine::GeometryComponent>
@@ -255,7 +256,10 @@ std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const filesystem:
 
 Engine::AccelerationStructure::AccelerationStructure() {}
 
-Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *parent, int start, int end, GeometryComponent *geometry) 
+Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *parent,
+                                                     int start,
+                                                     int end,
+                                                     GeometryComponent *geometry)
     : m_parent{parent}, m_startIndex{start}, m_endIndex{end}, m_geometry{geometry}
 {
     m_min = Math::Vector3{std::numeric_limits<float>::infinity(),
@@ -286,24 +290,29 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
     m_max += 0.01;
 
     std::vector<int> vertexRef(m_endIndex);
-    for (int i = 0; i < m_endIndex; ++i) {
+    for (int i = 0; i < m_endIndex; ++i)
+    {
         vertexRef[i] = i;
     }
 
     subdivide(vertexRef);
 
-    // // TODO: reorganize the vertices in the geometry based on the vertexRef (sort normals and uv coordinates as well, change faces to reference correct new indices)
+    // // TODO: reorganize the vertices in the geometry based on the vertexRef (sort normals and uv coordinates as well,
+    // change faces to reference correct new indices)
     std::vector<Engine::Math::Vector3> tmp3(m_endIndex);
 
-    for (int i = 0; i < m_endIndex; ++i) {
+    for (int i = 0; i < m_endIndex; ++i)
+    {
         tmp3[i] = vertices[vertexRef[i]];
     }
 
     vertices.swap(tmp3);
 
     auto &normals{geometry->getNormals()};
-    if (normals.size() == m_endIndex) {
-        for (int i = 0; i < m_endIndex; ++i) {
+    if (normals.size() == m_endIndex)
+    {
+        for (int i = 0; i < m_endIndex; ++i)
+        {
             tmp3[i] = normals[vertexRef[i]];
         }
 
@@ -311,9 +320,11 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
     }
 
     auto &uv{geometry->getTexCoords()};
-    if (uv.size() == m_endIndex) {
+    if (uv.size() == m_endIndex)
+    {
         std::vector<Engine::Math::Vector2> tmp2(m_endIndex);
-        for (int i = 0; i < m_endIndex; ++i) {
+        for (int i = 0; i < m_endIndex; ++i)
+        {
             tmp2[i] = uv[vertexRef[i]];
         }
         uv.swap(tmp2);
@@ -323,35 +334,39 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
 
     auto &faces{geometry->getFaces()};
 
-
-    if (faces.size()) {
+    if (faces.size())
+    {
         // create a reference to use to update the faces
-        for (int i = 0; i < m_endIndex; ++i) {
+        for (int i = 0; i < m_endIndex; ++i)
+        {
             reverseRef[vertexRef[i]] = i;
         }
 
         // update faces
-        for (auto &index : faces) {
+        for (auto &index : faces)
+        {
             index = reverseRef[index];
         }
 
         // assign triangles to bounding boxes
-        if (faces.size() % 3 == 0) {
-            for (int i = 0; i < faces.size(); i += 3) {
+        if (faces.size() % 3 == 0)
+        {
+            for (int i = 0; i < faces.size(); i += 3)
+            {
                 // calculate triangles bounding box
                 Engine::Math::Vector3 min{std::numeric_limits<float>::infinity(),
                                           std::numeric_limits<float>::infinity(),
-                                          std::numeric_limits<float>::infinity()
-                                         };
+                                          std::numeric_limits<float>::infinity()};
                 Engine::Math::Vector3 max{-std::numeric_limits<float>::infinity(),
                                           -std::numeric_limits<float>::infinity(),
-                                          -std::numeric_limits<float>::infinity()
-                                         };
+                                          -std::numeric_limits<float>::infinity()};
 
-                for (int corner = 0; corner < 3; ++corner) {
+                for (int corner = 0; corner < 3; ++corner)
+                {
                     Engine::Math::Vector3 &vertex{vertices[faces[i + corner]]};
 
-                    for (int axis = 0; axis < 3; ++axis) {
+                    for (int axis = 0; axis < 3; ++axis)
+                    {
                         min.at(axis) = (vertex.at(axis) < min.at(axis)) ? vertex.at(axis) : min.at(axis);
                         max.at(axis) = (vertex.at(axis) > max.at(axis)) ? vertex.at(axis) : max.at(axis);
                     }
@@ -363,17 +378,24 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
     }
 }
 
-bool Engine::AccelerationStructure::assignTriangle(int index, const Engine::Math::Vector3 &min, const Engine::Math::Vector3 &max) {
+bool Engine::AccelerationStructure::assignTriangle(int index,
+                                                   const Engine::Math::Vector3 &min,
+                                                   const Engine::Math::Vector3 &max)
+{
     // early exit if the bounding box of the triangle doesn't fit into this hierarchy element
-    for (int i = 0; i < 3; ++i) {
-        if (min.at(i) < m_min.at(i) || max.at(i) > m_max.at(i)) {
+    for (int i = 0; i < 3; ++i)
+    {
+        if (min.at(i) < m_min.at(i) || max.at(i) > m_max.at(i))
+        {
             return false;
         }
     }
 
     // see if the triangle fits into one of the children
-    for (auto &child : m_children) {
-        if (child.assignTriangle(index, min, max)) {
+    for (auto &child : m_children)
+    {
+        if (child.assignTriangle(index, min, max))
+        {
             return true;
         }
     }
@@ -384,8 +406,10 @@ bool Engine::AccelerationStructure::assignTriangle(int index, const Engine::Math
     return true;
 }
 
-Engine::AccelerationStructure& Engine::AccelerationStructure::operator=(const AccelerationStructure& other) {
-    if (&other == this) {
+Engine::AccelerationStructure &Engine::AccelerationStructure::operator=(const AccelerationStructure &other)
+{
+    if (&other == this)
+    {
         return *this;
     }
 
@@ -399,19 +423,23 @@ Engine::AccelerationStructure& Engine::AccelerationStructure::operator=(const Ac
     m_geometry = other.m_geometry;
 }
 
-void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef) {
+void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef)
+{
     int numVertices{m_endIndex - m_startIndex};
     // don't subdivide if there are no more than the maximum allowed vertices inside this object
-    if (numVertices <= m_maxVertices) {
+    if (numVertices <= m_maxVertices)
+    {
         return;
     }
 
     // get the side with the biggest length
     int maxIndex{-1};
     float maxLength{0};
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         float length{abs(m_max.at(i) - m_min.at(i))};
-        if (length > maxLength) {
+        if (length > maxLength)
+        {
             maxIndex = i;
             maxLength = length;
         }
@@ -420,9 +448,9 @@ void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef) {
     auto &vertices{m_geometry->getVertices()};
 
     // sort along the longest side
-    std::sort(vertexRef.begin() + m_startIndex, vertexRef.begin() + m_endIndex, [&vertices, maxIndex](int a, int b) {
-        return vertices[a].at(maxIndex) < vertices[b].at(maxIndex);
-    });
+    std::sort(vertexRef.begin() + m_startIndex,
+              vertexRef.begin() + m_endIndex,
+              [&vertices, maxIndex](int a, int b) { return vertices[a].at(maxIndex) < vertices[b].at(maxIndex); });
 
     // subdivide into two new boxes along the longest side
     int middle = m_startIndex + (numVertices / 2);
@@ -456,15 +484,7 @@ void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef) {
     m_children.emplace_back(b);
 }
 
-Engine::Math::Vector3 &Engine::AccelerationStructure::getMin() {
-    return m_min;
-}
-Engine::Math::Vector3 &Engine::AccelerationStructure::getMax() {
-    return m_max;
-}
-std::vector<int> &Engine::AccelerationStructure::getTriangles() {
-    return m_triangles;
-}
-std::vector<Engine::AccelerationStructure> &Engine::AccelerationStructure::getChildren() {
-    return m_children;
-}
+Engine::Math::Vector3 &Engine::AccelerationStructure::getMin() { return m_min; }
+Engine::Math::Vector3 &Engine::AccelerationStructure::getMax() { return m_max; }
+std::vector<int> &Engine::AccelerationStructure::getTriangles() { return m_triangles; }
+std::vector<Engine::AccelerationStructure> &Engine::AccelerationStructure::getChildren() { return m_children; }

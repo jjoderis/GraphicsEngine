@@ -1,49 +1,58 @@
-#include "../helpers.h"
 #include "light.h"
+#include "../helpers.h"
 #include <Core/Components/Light/light.h>
 
 UICreation::LightComponentWindow::LightComponentWindow(int &currentEntity, Engine::Registry &registry)
     : ComponentWindow{"Light", currentEntity, registry}
 {
 }
-    
 
-void UICreation::LightComponentWindow::render() {
+void UICreation::LightComponentWindow::render()
+{
     bool hasAmbientLight = m_registry.hasComponent<Engine::AmbientLightComponent>(m_selectedEntity);
     bool hasPointLight = m_registry.hasComponent<Engine::PointLightComponent>(m_selectedEntity);
     bool hasSpotLight = m_registry.hasComponent<Engine::SpotLightComponent>(m_selectedEntity);
     bool hasDirectionalLight = m_registry.hasComponent<Engine::DirectionalLightComponent>(m_selectedEntity);
-    if (hasAmbientLight || hasPointLight || hasSpotLight || hasDirectionalLight) {
+    if (hasAmbientLight || hasPointLight || hasSpotLight || hasDirectionalLight)
+    {
         ComponentWindow::render();
     }
 }
 
-void UICreation::LightComponentWindow::main() {
+void UICreation::LightComponentWindow::main()
+{
 
-    if (auto ambientLight{m_registry.getComponent<Engine::AmbientLightComponent>(m_currentEntity)}) {
+    if (auto ambientLight{m_registry.getComponent<Engine::AmbientLightComponent>(m_currentEntity)})
+    {
         ImGui::Text("Ambient Light");
         ImGui::SameLine();
-        if (ImGui::Button("x##Ambient")) {
+        if (ImGui::Button("x##Ambient"))
+        {
             m_registry.removeComponent<Engine::AmbientLightComponent>(m_currentEntity);
         }
 
-        ImGui::DragFloat3("Color##Ambient", ambientLight->getColor().raw(), 0.01, 0.0, 1.0);
+        ImGui::DragFloat3("Color##Ambient", ambientLight->getColor().data(), 0.01, 0.0, 1.0);
         if (ImGui::IsItemEdited())
         {
             m_registry.updated<Engine::AmbientLightComponent>(m_currentEntity);
         }
 
         ImGui::Separator();
-    } else {
-        if (ImGui::Button("Add Ambient Light")) {
+    }
+    else
+    {
+        if (ImGui::Button("Add Ambient Light"))
+        {
             m_registry.createComponent<Engine::AmbientLightComponent>(m_currentEntity);
         }
     }
 
-    if (auto pointLight{m_registry.getComponent<Engine::PointLightComponent>(m_currentEntity)}) {
+    if (auto pointLight{m_registry.getComponent<Engine::PointLightComponent>(m_currentEntity)})
+    {
         ImGui::Text("Point Light");
         ImGui::SameLine();
-        if (ImGui::Button("x##Point")) {
+        if (ImGui::Button("x##Point"))
+        {
             m_registry.removeComponent<Engine::PointLightComponent>(m_currentEntity);
         }
 
@@ -55,23 +64,28 @@ void UICreation::LightComponentWindow::main() {
             m_registry.updated<Engine::PointLightComponent>(m_currentEntity);
         }
 
-        ImGui::DragFloat3("Color##Point", pointLight->getColor().raw(), 0.01, 0.0, 1.0);
+        ImGui::DragFloat3("Color##Point", pointLight->getColor().data(), 0.01, 0.0, 1.0);
         if (ImGui::IsItemEdited())
         {
             m_registry.updated<Engine::PointLightComponent>(m_currentEntity);
         }
 
         ImGui::Separator();
-    } else {
-        if (ImGui::Button("Add Point Light")) {
+    }
+    else
+    {
+        if (ImGui::Button("Add Point Light"))
+        {
             m_registry.createComponent<Engine::PointLightComponent>(m_currentEntity);
         }
     }
 
-    if (auto spotLight{m_registry.getComponent<Engine::SpotLightComponent>(m_currentEntity)}) {
+    if (auto spotLight{m_registry.getComponent<Engine::SpotLightComponent>(m_currentEntity)})
+    {
         ImGui::Text("Spot Light");
         ImGui::SameLine();
-        if (ImGui::Button("x##Spot")) {
+        if (ImGui::Button("x##Spot"))
+        {
             m_registry.removeComponent<Engine::SpotLightComponent>(m_currentEntity);
         }
 
@@ -99,35 +113,43 @@ void UICreation::LightComponentWindow::main() {
             m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
         }
 
-        ImGui::DragFloat3("Color##Spot", spotLight->getColor().raw(), 0.01, 0.0, 1.0);
+        ImGui::DragFloat3("Color##Spot", spotLight->getColor().data(), 0.01, 0.0, 1.0);
         if (ImGui::IsItemEdited())
         {
             m_registry.updated<Engine::SpotLightComponent>(m_currentEntity);
         }
 
         ImGui::Separator();
-    } else {
-        if (ImGui::Button("Add Spot Light")) {
+    }
+    else
+    {
+        if (ImGui::Button("Add Spot Light"))
+        {
             m_registry.createComponent<Engine::SpotLightComponent>(m_currentEntity);
         }
     }
 
-    if (auto directionalLight{m_registry.getComponent<Engine::DirectionalLightComponent>(m_currentEntity)}) {
+    if (auto directionalLight{m_registry.getComponent<Engine::DirectionalLightComponent>(m_currentEntity)})
+    {
         ImGui::Text("Directional Light");
         ImGui::SameLine();
-        if (ImGui::Button("x##Directional")) {
+        if (ImGui::Button("x##Directional"))
+        {
             m_registry.removeComponent<Engine::DirectionalLightComponent>(m_currentEntity);
         }
 
-        ImGui::DragFloat3("Color##Directional", directionalLight->getColor().raw(), 0.01, 0.0, 1.0);
+        ImGui::DragFloat3("Color##Directional", directionalLight->getColor().data(), 0.01, 0.0, 1.0);
         if (ImGui::IsItemEdited())
         {
             m_registry.updated<Engine::DirectionalLightComponent>(m_currentEntity);
         }
 
         ImGui::Separator();
-    } else {
-        if (ImGui::Button("Add Directional Light")) {
+    }
+    else
+    {
+        if (ImGui::Button("Add Directional Light"))
+        {
             m_registry.createComponent<Engine::DirectionalLightComponent>(m_currentEntity);
         }
     }

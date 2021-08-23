@@ -133,7 +133,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::AmbientLightComponent>::update
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
     // add color
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getColor().data());
 }
 
 template <>
@@ -144,9 +144,9 @@ void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::up
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
     // add direction
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getDirection().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), light->getDirection().data());
     // add color (vec3s are padded to the size of vec4 leading to the offset)
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getColor().data());
 }
 
 template <>
@@ -160,9 +160,9 @@ void Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::updateLi
     float intensity{light->getIntensity()};
     glBufferSubData(GL_UNIFORM_BUFFER, offset, 1 * sizeof(float), &intensity);
     // add position
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().data());
     // add color (vec3s are padded to the size of vec4 leading to the offset)
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getColor().data());
 }
 
 template <>
@@ -182,11 +182,11 @@ void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateLig
     float penumbra{light->getPenumbra()};
     glBufferSubData(GL_UNIFORM_BUFFER, offset + 2 * sizeof(float), 1 * sizeof(float), &penumbra);
     // add position
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 4 * sizeof(float), 3 * sizeof(float), light->getPosition().data());
     // add direction
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getDirection().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 8 * sizeof(float), 3 * sizeof(float), light->getDirection().data());
     // add color (vec3s are padded to the size of vec4 leading to the offset)
-    glBufferSubData(GL_UNIFORM_BUFFER, offset + 12 * sizeof(float), 3 * sizeof(float), light->getColor().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset + 12 * sizeof(float), 3 * sizeof(float), light->getColor().data());
 }
 
 template <typename LightType>
@@ -338,7 +338,7 @@ void Engine::Systems::OpenGLLightsTracker<LightType>::updateTransformInfo(
     size_t offset{std::get<0>(m_entityData.at(entity))};
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_lightsUBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), transform->getTranslation().raw());
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, 3 * sizeof(float), transform->getTranslation().data());
 }
 
 template <>

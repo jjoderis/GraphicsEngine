@@ -413,7 +413,7 @@ void addToFile(FILE *out, std::vector<Engine::Math::Vector3> &data, int padding)
     // TODO: consider endianess (gltf is little endian)
     for (auto &vector : data)
     {
-        fwrite(vector.raw(), sizeof(float), 3, out);
+        fwrite(vector.data(), sizeof(float), 3, out);
     }
 }
 
@@ -426,7 +426,7 @@ void addToFile(FILE *out, std::vector<Engine::Math::Vector2> &data, int padding)
     // TODO: consider endianess (gltf is little endian)
     for (auto &vector : data)
     {
-        fwrite(vector.raw(), sizeof(float), 2, out);
+        fwrite(vector.data(), sizeof(float), 2, out);
     }
 }
 

@@ -12,8 +12,32 @@ Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Vector3 &rot
     return MathLib::getRotation(rotation);
 }
 
-Engine::Math::Matrix4 Engine::Math::getRotation(const Quaternion& quat) {
-    return MathLib::getRotation(quat);
+Engine::Math::Matrix4 Engine::Math::getRotation(const Quaternion &quat)
+{
+    float q0 = quat.qw();
+    float q1 = quat.qx();
+    float q2 = quat.qy();
+    float q3 = quat.qz();
+    float q02 = pow(q0, 2);
+    float q12 = pow(q1, 2);
+    float q22 = pow(q2, 2);
+    float q32 = pow(q3, 2);
+    return Matrix4{2 * (q02 + q12) - 1,
+                   2 * (q1 * q2 - q0 * q3),
+                   2 * (q1 * q3 + q0 * q2),
+                   0,
+                   2 * (q1 * q2 + q0 * q3),
+                   2 * (q02 + q22) - 1,
+                   2 * (q2 * q3 - q0 * q1),
+                   0,
+                   2 * (q1 * q3 - q0 * q2),
+                   2 * (q2 * q3 + q0 * q1),
+                   2 * (q02 + q32) - 1,
+                   0,
+                   0,
+                   0,
+                   0,
+                   1};
 }
 
 Engine::Math::Vector3 Engine::Math::extractEuler(const Matrix4 &rotationMat)
@@ -27,8 +51,8 @@ Engine::Math::Vector3 Engine::Math::extractEuler(const Matrix4 &rotationMat)
 
 Engine::Math::Matrix4 Engine::Math::lookAt(const Vector3 &position, const Vector3 &up, const Vector3 &target)
 {
-    Vector3 v = (target - position).normalize();
-    Vector3 r = -cross(v, up).normalize();
+    Vector3 v = normalize((target - position));
+    Vector3 r = normalize(-cross(v, up));
     Vector3 u = cross(v, r);
 
     // clang-format off

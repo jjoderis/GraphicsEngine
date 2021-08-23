@@ -8,7 +8,7 @@
 Engine::Util::Ray::Ray(const Math::Vector3 &origin, const Math::Vector3 &direction) : m_origin{origin}
 {
     Math::Vector3 normalizedDirection = direction;
-    m_direction = normalizedDirection.normalize();
+    m_direction = normalize(normalizedDirection);
 }
 
 Engine::Math::Vector3 Engine::Util::Ray::getOrigin() const { return m_origin; }

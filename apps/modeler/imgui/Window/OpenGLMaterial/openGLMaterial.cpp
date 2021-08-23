@@ -183,7 +183,7 @@ void UICreation::MaterialComponentWindow::main()
             m_registry.removeComponent<Engine::RaytracingMaterial>(m_currentEntity);
         }
 
-        ImGui::ColorEdit4("Color##Raytrace", raytracingMaterial->getColor().raw());
+        ImGui::ColorEdit4("Color##Raytrace", raytracingMaterial->getColor().data());
         bool isReflective = raytracingMaterial->isReflective();
         ImGui::Checkbox("Reflective##Raytrace", &isReflective);
         if (ImGui::IsItemClicked(0))

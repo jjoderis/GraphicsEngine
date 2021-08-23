@@ -1,9 +1,9 @@
 #include "geometryNode.h"
+#include "../helpers.h"
+#include <Components/Render/render.h>
 #include <Core/Components/Geometry/geometry.h>
 #include <OpenGL/Components/OpenGLGeometry/openGLGeometry.h>
-#include <Components/Render/render.h>
 #include <imgui.h>
-#include "../helpers.h"
 
 extern bool dragging;
 
@@ -12,13 +12,16 @@ UICreation::GeometryComponentWindow::GeometryComponentWindow(int &currentEntity,
 {
 }
 
-void UICreation::GeometryComponentWindow::main() {
+void UICreation::GeometryComponentWindow::main()
+{
     ImGui::Button("Start Drag");
     createImGuiComponentDragSource<Engine::GeometryComponent>(m_component);
 
-    if (!m_registry.hasComponent<Engine::RenderComponent>(m_selectedEntity)) {
+    if (!m_registry.hasComponent<Engine::RenderComponent>(m_selectedEntity))
+    {
         ImGui::SameLine();
-        if (ImGui::Button("Remove")) {
+        if (ImGui::Button("Remove"))
+        {
             m_registry.removeComponent<Engine::GeometryComponent>(m_selectedEntity);
         }
     }
@@ -30,7 +33,7 @@ void UICreation::GeometryComponentWindow::main() {
         {
             std::string str = std::to_string(i);
             str.insert(0, "Vertex ");
-            ImGui::DragFloat3(str.c_str(), vertices[i].raw(), 0.1);
+            ImGui::DragFloat3(str.c_str(), vertices[i].data(), 0.1);
             if (ImGui::IsItemEdited())
             {
                 m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
@@ -43,7 +46,7 @@ void UICreation::GeometryComponentWindow::main() {
         }
         if (ImGui::BeginPopup("Add Vertex"))
         {
-            ImGui::InputFloat3("##new_vertex_input", newVertex.raw());
+            ImGui::InputFloat3("##new_vertex_input", newVertex.data());
             ImGui::SameLine();
             if (ImGui::Button("+##add_vertex"))
             {

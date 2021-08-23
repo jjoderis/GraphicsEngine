@@ -114,14 +114,14 @@ void Engine::OpenGLGeometryComponent::update(GeometryComponent *geometry)
 
     for (int i = 0; i < m_numPoints; ++i)
     {
-        glBufferSubData(GL_ARRAY_BUFFER, pointSize * i, positionSize, vertices[i].raw());
+        glBufferSubData(GL_ARRAY_BUFFER, pointSize * i, positionSize, vertices[i].data());
         if (m_useNormals)
         {
-            glBufferSubData(GL_ARRAY_BUFFER, pointSize * i + positionSize, normalSize, normals[i].raw());
+            glBufferSubData(GL_ARRAY_BUFFER, pointSize * i + positionSize, normalSize, normals[i].data());
         }
         if (m_useTexCoords)
         {
-            glBufferSubData(GL_ARRAY_BUFFER, pointSize * i + offset, texCoordSize, texCoords[i].raw());
+            glBufferSubData(GL_ARRAY_BUFFER, pointSize * i + offset, texCoordSize, texCoords[i].data());
         }
     }
 

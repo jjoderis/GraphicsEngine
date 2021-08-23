@@ -175,7 +175,7 @@ void UICreation::MainViewPort::onMouseClick()
     if (index > -1)
     {
         m_clickedEntity = index;
-        m_framebuffer.getPixel(m_currentPoint.raw(),
+        m_framebuffer.getPixel(m_currentPoint.data(),
                                pixelPosition(0),
                                m_size(1) - pixelPosition(1),
                                GL_RGB,
@@ -273,7 +273,7 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
         float angle{acos(dot(oldRay.getDirection(), newRay.getDirection()))};
         auto axis{cross(oldRay.getDirection(), newRay.getDirection())};
         axis = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{axis, 0};
-        axis.normalize();
+        normalize(axis);
 
         auto cameraTransform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
         cameraTransform->rotate(angle, axis);
@@ -292,7 +292,7 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
 
         if (t.norm() > 200)
         {
-            t.normalize();
+            normalize(t);
             t *= 200;
         }
 
@@ -320,7 +320,7 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
     {
         Engine::Math::Vector3 cameraSpacePosition =
             m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
-        cameraSpacePosition.normalize();
+        normalize(cameraSpacePosition);
         auto cameraSpaceDirection = cameraSpacePosition * scroll * 0.1;
         Engine::Math::Vector3 direction =
             m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};

@@ -18,6 +18,7 @@ set(CORE_HEADERS
 
 set(CORE_SOURCES
     Util/fileHandling.cpp
+    Core/Math/quaternion.cpp
     Core/Math/math.cpp
     Core/Util/Raycaster/raycaster.cpp
     Core/Components/Tag/tag.cpp

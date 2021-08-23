@@ -1,29 +1,29 @@
 #ifndef CORE_MATH_MATH_H
 #define CORE_MATH_MATH_H
 
+#include "./quaternion.h"
+#include "./vector.h"
 #include <mathlib/mathlib.h>
 
 namespace Engine
 {
 namespace Math
 {
-using Vector2 = MathLib::Vector<float, 2>;
-using Vector3 = MathLib::Vector<float, 3>;
-using Vector4 = MathLib::Vector<float, 4>;
+using Vector2 = TypeVector2<float>;
+using Vector3 = TypeVector3<float>;
+using Vector4 = TypeVector4<float>;
 
-using IVector2 = MathLib::Vector<int, 2>;
-using IVector3 = MathLib::Vector<int, 3>;
-using IVector4 = MathLib::Vector<int, 4>;
+using IVector2 = TypeVector2<int>;
+using IVector3 = TypeVector3<int>;
+using IVector4 = TypeVector4<int>;
 
-using DVector2 = MathLib::Vector<double, 2>;
-using DVector3 = MathLib::Vector<double, 3>;
-using DVector4 = MathLib::Vector<double, 4>;
+using DVector2 = TypeVector2<double>;
+using DVector3 = TypeVector3<double>;
+using DVector4 = TypeVector4<double>;
 
 using Matrix2 = MathLib::Matrix<float, 2, 2>;
 using Matrix3 = MathLib::Matrix<float, 3, 3>;
 using Matrix4 = MathLib::Matrix<float, 4, 4>;
-
-using Quaternion = MathLib::Quaternion<float>;
 
 Matrix4 getTranslation(const Vector3 &location);
 Matrix4 getScaling(const Vector3 &scaling);

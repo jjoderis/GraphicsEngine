@@ -156,11 +156,11 @@ void Engine::OpenGLFramebuffer::clear()
     {
         if (m_clearColors.find(i) != m_clearColors.end())
         {
-            glClearBufferfv(GL_COLOR, i, m_clearColors.at(i).raw());
+            glClearBufferfv(GL_COLOR, i, m_clearColors.at(i).data());
         }
         if (m_clearColorsI.find(i) != m_clearColorsI.end())
         {
-            glClearBufferiv(GL_COLOR, i, m_clearColorsI.at(i).raw());
+            glClearBufferiv(GL_COLOR, i, m_clearColorsI.at(i).data());
         }
     }
 
