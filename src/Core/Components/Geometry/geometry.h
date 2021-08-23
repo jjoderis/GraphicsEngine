@@ -12,24 +12,23 @@ namespace Engine
 {
 class GeometryComponent;
 
-class AccelerationStructure {
+class AccelerationStructure
+{
 
 public:
-
     AccelerationStructure();
     AccelerationStructure(AccelerationStructure *parent, int start, int end, GeometryComponent *geometry);
-    AccelerationStructure &operator=(const AccelerationStructure& other);
+    AccelerationStructure &operator=(const AccelerationStructure &other);
 
-    Engine::Math::Vector3 &getMin();
-    Engine::Math::Vector3 &getMax();
+    Engine::Point3 &getMin();
+    Engine::Point3 &getMax();
     std::vector<int> &getTriangles();
     std::vector<AccelerationStructure> &getChildren();
 
 private:
-
-    AccelerationStructure* m_parent{nullptr};
-    Engine::Math::Vector3 m_min{};
-    Engine::Math::Vector3 m_max{};
+    AccelerationStructure *m_parent{nullptr};
+    Engine::Point3 m_min{};
+    Engine::Point3 m_max{};
     int m_startIndex{0};
     int m_endIndex{0};
     std::vector<int> m_triangles{};
@@ -38,35 +37,35 @@ private:
     int m_maxVertices{50};
 
     void subdivide(std::vector<int> &vertexRef);
-    bool assignTriangle(int index, const Engine::Math::Vector3 &min, const Engine::Math::Vector3 &max);
+    bool assignTriangle(int index, const Engine::Point3 &min, const Engine::Point3 &max);
 };
 
 class GeometryComponent
 {
 private:
-    std::vector<Math::Vector3> m_vertices;
-    std::vector<Math::Vector3> m_normals;
-    std::vector<Math::Vector2> m_texCoords;
+    std::vector<Point3> m_vertices;
+    std::vector<Vector3> m_normals;
+    std::vector<Vector2> m_texCoords;
     std::vector<unsigned int> m_faces;
 
     AccelerationStructure m_bounding{};
 
 public:
     GeometryComponent();
-    GeometryComponent(std::initializer_list<Math::Vector3> vertices, std::initializer_list<unsigned int> faces);
-    GeometryComponent(std::vector<Math::Vector3> &&vertices,
-                      std::vector<Math::Vector3> &&normals,
+    GeometryComponent(std::initializer_list<Point3> vertices, std::initializer_list<unsigned int> faces);
+    GeometryComponent(std::vector<Point3> &&vertices,
+                      std::vector<Vector3> &&normals,
                       std::vector<unsigned int> &&faces);
-    std::vector<Math::Vector3> &getVertices();
-    const std::vector<Math::Vector3> &getVertices() const;
-    std::vector<Math::Vector3> &getNormals();
-    std::vector<Math::Vector2> &getTexCoords();
+    std::vector<Point3> &getVertices();
+    const std::vector<Point3> &getVertices() const;
+    std::vector<Vector3> &getNormals();
+    std::vector<Vector2> &getTexCoords();
     std::vector<unsigned int> &getFaces();
 
-    AccelerationStructure& getAccStructure();
+    AccelerationStructure &getAccStructure();
 
     // adds a single vertex
-    void addVertex(Math::Vector3 &&newVertex);
+    void addVertex(Point3 &&newVertex);
 
     // adds a face consisting of three indices
     void addFace(unsigned int a, unsigned int b, unsigned int c);

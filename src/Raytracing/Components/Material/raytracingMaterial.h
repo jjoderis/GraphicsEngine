@@ -11,16 +11,16 @@ class RaytracingMaterial
 public:
     RaytracingMaterial();
 
-    void setColor(const Math::Vector4 &color);
+    void setColor(const Vector4 &color);
     void setColor(float r, float g, float b, float a);
-    Math::Vector4 &getColor();
+    Vector4 &getColor();
 
     void makeReflective();
     void makeUnreflective();
     bool isReflective();
 
 private:
-    Math::Vector4 m_color{0, 0, 0, 0};
+    Vector4 m_color{0, 0, 0, 0};
     bool m_reflective{false};
 };
 

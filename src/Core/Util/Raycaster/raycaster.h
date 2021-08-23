@@ -15,40 +15,37 @@ class Ray
 {
 public:
     Ray() = delete;
-    Ray(const Math::Vector3 &origin, const Math::Vector3 &direction);
+    Ray(const Point3 &origin, const Vector3 &direction);
 
-    Math::Vector3 getOrigin() const;
-    Math::Vector3 getDirection() const;
+    const Point3 &getOrigin() const;
+    const Vector3 &getDirection() const;
 
 private:
-    Math::Vector3 m_origin;
-    Math::Vector3 m_direction;
+    Point3 m_origin;
+    Vector3 m_direction;
 };
 
-Ray operator*(const Math::Matrix4 &matrix, const Ray &ray);
+Ray operator*(const Matrix4 &matrix, const Ray &ray);
 
 class RayIntersection
 {
 public:
     RayIntersection() = delete;
-    RayIntersection(const Math::Vector3 &intersection,
-                    float distance,
-                    unsigned int entity,
-                    int face,
-                    const Math::Vector2 &baryParams);
+    RayIntersection(
+        const Point3 &intersection, float distance, unsigned int entity, int face, const Vector2 &baryParams);
 
-    const Math::Vector3 &getIntersection() const;
-    int getDistance() const;
+    const Point3 &getIntersection() const;
+    float getDistance() const;
     unsigned int getEntity() const;
     int getFace() const;
-    const Math::Vector2 &getBaryParams() const;
+    const Vector2 &getBaryParams() const;
 
 private:
-    Math::Vector3 m_intersection;
+    Point3 m_intersection;
     float m_distance;
     unsigned int m_entity;
     int m_face;
-    Math::Vector2 m_baryParams{0, 0};
+    Vector2 m_baryParams{0, 0};
 };
 
 bool operator<(const RayIntersection &a, const RayIntersection &b);

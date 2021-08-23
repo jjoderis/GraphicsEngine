@@ -12,32 +12,32 @@ class Registry;
 namespace UICreation
 {
 
-class TransformComponentWindow : public TemplatedComponentWindow<Engine::TransformComponent> {
+class TransformComponentWindow : public TemplatedComponentWindow<Engine::TransformComponent>
+{
 
 public:
-
-  TransformComponentWindow() = delete;
-  TransformComponentWindow(int &currentEntity, Engine::Registry &registry);
+    TransformComponentWindow() = delete;
+    TransformComponentWindow(int &currentEntity, Engine::Registry &registry);
 
 private:
-  Engine::Math::Vector3 m_euler{0, 0, 0};
-  Engine::Math::Vector4 m_axisAngle{0, 0, 0, 0};
-  Engine::Math::Quaternion m_quat{0.0, 0.0, 0.0, 1.0};
-  
-  void updateInternals();
+    Engine::Vector3 m_euler{0, 0, 0};
+    Engine::Vector4 m_axisAngle{0, 0, 0, 0};
+    Engine::Quaternion m_quat{0.0, 0.0, 0.0, 1.0};
 
-  virtual void main() override;
+    void updateInternals();
 
-  void drawEuler();
-  void drawAngleAxis();
-  void drawQuaternion();
+    virtual void main() override;
 
-  virtual void onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent) override;
+    void drawEuler();
+    void drawAngleAxis();
+    void drawQuaternion();
 
-  std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::TransformComponent>)>> m_transformChangeCallback;
+    virtual void onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent) override;
 
+    std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<Engine::TransformComponent>)>>
+        m_transformChangeCallback;
 };
 
-}
+} // namespace UICreation
 
 #endif

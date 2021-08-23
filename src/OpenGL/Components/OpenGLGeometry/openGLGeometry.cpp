@@ -30,9 +30,9 @@ constexpr size_t faceSize{sizeof(unsigned int)};
 
 void Engine::OpenGLGeometryComponent::update(GeometryComponent *geometry)
 {
-    std::vector<Math::Vector3> &vertices{geometry->getVertices()};
-    std::vector<Math::Vector3> &normals{geometry->getNormals()};
-    std::vector<Math::Vector2> &texCoords{geometry->getTexCoords()};
+    std::vector<Point3> &vertices{geometry->getVertices()};
+    std::vector<Vector3> &normals{geometry->getNormals()};
+    std::vector<Vector2> &texCoords{geometry->getTexCoords()};
     std::vector<unsigned int> &faces{geometry->getFaces()};
 
     size_t pointSize{positionSize};

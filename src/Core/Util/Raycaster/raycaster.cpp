@@ -5,25 +5,25 @@
 #include "../../Components/Transform/transform.h"
 #include "../../ECS/registry.h"
 
-Engine::Util::Ray::Ray(const Math::Vector3 &origin, const Math::Vector3 &direction) : m_origin{origin}
+Engine::Util::Ray::Ray(const Point3 &origin, const Vector3 &direction) : m_origin{origin}
 {
-    Math::Vector3 normalizedDirection = direction;
+    auto normalizedDirection{direction};
     m_direction = normalize(normalizedDirection);
 }
 
-Engine::Math::Vector3 Engine::Util::Ray::getOrigin() const { return m_origin; }
-Engine::Math::Vector3 Engine::Util::Ray::getDirection() const { return m_direction; }
+const Engine::Point3 &Engine::Util::Ray::getOrigin() const { return m_origin; }
+const Engine::Vector3 &Engine::Util::Ray::getDirection() const { return m_direction; }
 
-Engine::Util::Ray Engine::Util::operator*(const Math::Matrix4 &matrix, const Ray &ray)
+Engine::Util::Ray Engine::Util::operator*(const Matrix4 &matrix, const Ray &ray)
 {
-    Math::Vector3 transformedOrigin = matrix * Math::Vector4{ray.getOrigin(), 1};
-    Math::Vector3 transformedDirection = matrix * Math::Vector4{ray.getDirection(), 0};
+    auto transformedOrigin{matrix * ray.getOrigin()};
+    auto transformedDirection{matrix * ray.getDirection()};
 
     return Ray{transformedOrigin, transformedDirection};
 }
 
 Engine::Util::RayIntersection::RayIntersection(
-    const Math::Vector3 &intersection, float distance, unsigned int entity, int face, const Math::Vector2 &baryParams)
+    const Point3 &intersection, float distance, unsigned int entity, int face, const Vector2 &baryParams)
     : m_intersection{intersection}, m_distance{distance}, m_entity{entity}, m_face{face}, m_baryParams{baryParams}
 {
 }
@@ -33,11 +33,11 @@ bool Engine::Util::operator<(const RayIntersection &a, const RayIntersection &b)
     return a.getDistance() < b.getDistance();
 }
 
-int Engine::Util::RayIntersection::getDistance() const { return m_distance; }
+float Engine::Util::RayIntersection::getDistance() const { return m_distance; }
 unsigned int Engine::Util::RayIntersection::getEntity() const { return m_entity; }
-const Engine::Math::Vector3 &Engine::Util::RayIntersection::getIntersection() const { return m_intersection; }
+const Engine::Point3 &Engine::Util::RayIntersection::getIntersection() const { return m_intersection; }
 int Engine::Util::RayIntersection::getFace() const { return m_face; }
-const Engine::Math::Vector2 &Engine::Util::RayIntersection::getBaryParams() const { return m_baryParams; }
+const Engine::Vector2 &Engine::Util::RayIntersection::getBaryParams() const { return m_baryParams; }
 
 void calculateBoundingIntersection(Engine::Util::Ray &ray,
                                    Engine::AccelerationStructure &acc,
@@ -112,8 +112,8 @@ void calculateBoundingIntersection(Engine::Util::Ray &ray,
                                    std::set<Engine::Util::RayIntersection> &intersections,
                                    unsigned int entity)
 {
-    Engine::Math::Vector3 origin = ray.getOrigin();
-    Engine::Math::Vector3 direction = ray.getDirection();
+    auto origin = ray.getOrigin();
+    auto direction = ray.getDirection();
 
     auto &min{acc.getMin()};
     auto &max{acc.getMax()};
@@ -169,30 +169,30 @@ void calculateTriangleIntersections(Engine::Util::Ray &ray,
 
     for (auto &startIndex : triangles)
     {
-        Engine::Math::Vector3 p0{vertices[faces[startIndex]]};
-        Engine::Math::Vector3 p1{vertices[faces[startIndex + 1]]};
-        Engine::Math::Vector3 p2{vertices[faces[startIndex + 2]]};
-        Engine::Math::Vector3 e1{p1 - p0};
-        Engine::Math::Vector3 e2{p2 - p0};
-        Engine::Math::Vector3 s{origin - p0};
+        auto &p0{vertices[faces[startIndex]]};
+        auto &p1{vertices[faces[startIndex + 1]]};
+        auto &p2{vertices[faces[startIndex + 2]]};
+        auto e1{p1 - p0};
+        auto e2{p2 - p0};
+        auto s{origin - p0};
 
         float tripleProduct{1 / dot(cross(direction, e2), e1)};
 
-        float t = tripleProduct * dot(cross(s, e1), e2);
-        float b1 = tripleProduct * dot(cross(direction, e2), s);
-        float b2 = tripleProduct * dot(cross(s, e1), direction);
+        float t{tripleProduct * dot(cross(s, e1), e2)};
+        float b1{tripleProduct * dot(cross(direction, e2), s)};
+        float b2{tripleProduct * dot(cross(s, e1), direction)};
 
         // check if intersection with triangle plane is inside triangle and the triangle is in front of the ray
         if (b1 > 0 && b2 > 0 && b1 + b2 < 1 && t > 0)
         {
-            auto intersection = (1 - b1 - b2) * p0 + b1 * p1 + b2 * p2;
+            auto intersection{combine((1 - b1 - b2), p0, b1, p1, b2, p2)};
 
-            intersection = transform.getMatrixWorld() * Engine::Math::Vector4{intersection, 1};
-            Engine::Math::Vector3 rayWorldOrigin{transform.getMatrixWorld() * Engine::Math::Vector4{origin, 1}};
-            float distance = (intersection - rayWorldOrigin).norm();
+            intersection = transform.getMatrixWorld() * intersection;
+            auto rayWorldOrigin{transform.getMatrixWorld() * origin};
+            float distance{(intersection - rayWorldOrigin).norm()};
 
-            intersections.emplace(Engine::Util::RayIntersection{
-                intersection, distance, entity, startIndex, Engine::Math::Vector2{b1, b2}});
+            intersections.emplace(
+                Engine::Util::RayIntersection{intersection, distance, entity, startIndex, Engine::Vector2{b1, b2}});
         }
     }
 }

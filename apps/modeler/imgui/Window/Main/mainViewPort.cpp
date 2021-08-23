@@ -119,7 +119,7 @@ void UICreation::MainViewPort::main()
 
     if (ImGui::IsMouseDragging(ImGuiPopupFlags_MouseButtonLeft) || ImGui::IsMouseDragging(ImGuiMouseButton_Right))
     {
-        auto mouseDelta = Engine::Math::IVector2{ImGui::GetIO().MouseDelta.x, ImGui::GetIO().MouseDelta.y};
+        auto mouseDelta = Engine::IVector2{ImGui::GetIO().MouseDelta.x, ImGui::GetIO().MouseDelta.y};
 
         onMouseDrag(mouseDelta);
     }
@@ -164,9 +164,9 @@ void UICreation::MainViewPort::onMouseClick()
         return;
     }
 
-    Engine::Math::IVector2 mousePos{ImGui::GetMousePos().x, ImGui::GetMousePos().y};
+    Engine::IVector2 mousePos{ImGui::GetMousePos().x, ImGui::GetMousePos().y};
 
-    Engine::Math::IVector2 pixelPosition{mousePos - m_pos};
+    Engine::IVector2 pixelPosition{mousePos - m_pos};
 
     int index{};
     m_framebuffer.getPixel(
@@ -195,7 +195,7 @@ void UICreation::MainViewPort::onMouseClick()
 
     m_currentPixel = pixelPosition;
 }
-void UICreation::MainViewPort::onLeftClick(const Engine::Math::IVector2 &clickedPixel)
+void UICreation::MainViewPort::onLeftClick(const Engine::IVector2 &clickedPixel)
 {
     m_grabbedEntity = m_clickedEntity;
 
@@ -204,20 +204,19 @@ void UICreation::MainViewPort::onLeftClick(const Engine::Math::IVector2 &clicked
         m_selectedEntity = m_clickedEntity;
     }
 }
-void UICreation::MainViewPort::onRightClick(const Engine::Math::IVector2 &clickedPixel)
+void UICreation::MainViewPort::onRightClick(const Engine::IVector2 &clickedPixel)
 {
     Engine::Util::Ray cameraRay = m_camera->getCameraRay(clickedPixel, m_size);
 
-    Engine::Math::Vector3 direction =
-        m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraRay.getDirection(), 0.0};
+    auto direction = m_cameraTransform->getViewMatrixWorldInverse() * cameraRay.getDirection();
 
     if (m_clickedEntity < -1)
     {
-        m_currentPoint = (direction / direction.at(2)) * m_camera->getFar();
+        m_currentPoint = ((direction / direction.at(2)) * m_camera->getFar()) + Engine::Point3{0, 0, 0};
     }
 }
 
-void UICreation::MainViewPort::onMouseDrag(const Engine::Math::IVector2 &dragDelta)
+void UICreation::MainViewPort::onMouseDrag(const Engine::IVector2 &dragDelta)
 {
     auto newPixel = m_currentPixel + dragDelta;
 
@@ -232,18 +231,18 @@ void UICreation::MainViewPort::onMouseDrag(const Engine::Math::IVector2 &dragDel
     m_currentPixel = newPixel;
 }
 
-void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel)
+void UICreation::MainViewPort::dragEntity(const Engine::IVector2 &newPixel)
 {
     auto newRay = m_camera->getCameraSpaceRay(newPixel, m_size);
 
-    Engine::Math::Vector3 cameraSpacePosition{m_cameraTransform->getViewMatrixWorld() *
-                                              Engine::Math::Vector4{m_currentPoint, 1}};
+    auto cameraSpacePosition{m_cameraTransform->getViewMatrixWorld() * m_currentPoint};
 
-    auto newCameraSpacePosition{(newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2)};
+    auto newCameraSpacePosition{((newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2)) +
+                                Engine::Point3{0, 0, 0}};
 
     auto t{newCameraSpacePosition - cameraSpacePosition};
 
-    t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{t, 0};
+    t = m_cameraTransform->getViewMatrixWorldInverse() * t;
 
     if (ImGui::IsKeyDown(82))
     {
@@ -253,8 +252,7 @@ void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel
     {
         auto transform{m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity)};
 
-        Engine::Math::Vector3 parentSpaceT{transform->getModelMatrix() * transform->getMatrixWorldInverse() *
-                                           Engine::Math::Vector4{t, 0}};
+        Engine::Vector3 parentSpaceT{transform->getModelMatrix() * transform->getMatrixWorldInverse() * t};
 
         transform->translate(parentSpaceT);
         transform->update();
@@ -264,7 +262,7 @@ void UICreation::MainViewPort::dragEntity(const Engine::Math::IVector2 &newPixel
     }
 }
 
-void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel)
+void UICreation::MainViewPort::dragCamera(const Engine::IVector2 &newPixel)
 {
     auto oldRay{m_camera->getCameraSpaceRay(m_currentPixel, m_size)};
     auto newRay{m_camera->getCameraSpaceRay(newPixel, m_size)};
@@ -272,7 +270,7 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
     {
         float angle{acos(dot(oldRay.getDirection(), newRay.getDirection()))};
         auto axis{cross(oldRay.getDirection(), newRay.getDirection())};
-        axis = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{axis, 0};
+        axis = m_cameraTransform->getViewMatrixWorldInverse() * axis;
         normalize(axis);
 
         auto cameraTransform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
@@ -281,14 +279,15 @@ void UICreation::MainViewPort::dragCamera(const Engine::Math::IVector2 &newPixel
     }
     else
     {
-        Engine::Math::Vector3 cameraSpacePosition =
-            m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
+        auto cameraSpacePosition = m_cameraTransform->getViewMatrixWorld() * m_currentPoint;
 
-        auto newCameraSpacePosition = (newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2);
+        auto newCameraSpacePosition{
+            ((newRay.getDirection() / newRay.getDirection().at(2)) * cameraSpacePosition.at(2)) +
+            Engine::Point3{0, 0, 0}};
 
-        auto t = newCameraSpacePosition - cameraSpacePosition;
+        auto t{newCameraSpacePosition - cameraSpacePosition};
 
-        t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{t, 0};
+        t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Vector4{t, 0};
 
         if (t.norm() > 200)
         {
@@ -308,8 +307,7 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
     // just move the camera if nothing is grabbed
     if (m_grabbedEntity < 0)
     {
-        auto direction{m_cameraTransform->getViewMatrixWorldInverse() *
-                       (Engine::Math::Vector4{0, 0, -1, 0} * scroll * 0.1)};
+        auto direction{m_cameraTransform->getViewMatrixWorldInverse() * (Engine::Vector4{0, 0, -1, 0} * scroll * 0.1)};
         auto transform{m_registry.getComponent<Engine::TransformComponent>(m_cameraEntity)};
         transform->translate(direction);
         transform->update();
@@ -318,17 +316,16 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
     // move the grabbed entity along the cameras z axis
     else
     {
-        Engine::Math::Vector3 cameraSpacePosition =
-            m_cameraTransform->getViewMatrixWorld() * Engine::Math::Vector4{m_currentPoint, 1};
+        auto cameraSpacePosition = (m_cameraTransform->getViewMatrixWorld() * m_currentPoint) - Engine::Point3{0, 0, 0};
         normalize(cameraSpacePosition);
         auto cameraSpaceDirection = cameraSpacePosition * scroll * 0.1;
-        Engine::Math::Vector3 direction =
-            m_cameraTransform->getViewMatrixWorldInverse() * Engine::Math::Vector4{cameraSpaceDirection, 0};
+        Engine::Vector3 direction =
+            m_cameraTransform->getViewMatrixWorldInverse() * Engine::Vector4{cameraSpaceDirection, 0};
 
         auto transform = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
 
         transform->translate(transform->getModelMatrix() * transform->getMatrixWorldInverse() *
-                             Engine::Math::Vector4{direction, 0});
+                             Engine::Vector4{direction, 0});
         transform->update();
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 

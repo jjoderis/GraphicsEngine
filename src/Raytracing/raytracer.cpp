@@ -10,7 +10,7 @@
 
 #include <thread>
 
-Engine::Math::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ray);
+Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ray);
 
 void raytraceScenePart(Engine::Registry &registry,
                        std::vector<float> &texels,
@@ -26,7 +26,7 @@ std::vector<float> Engine::raytraceScene(Engine::Registry &registry, int width, 
     std::vector<float> pixelColors{};
     pixelColors.resize(3 * width * height, 0);
 
-    Engine::Math::Vector4 color;
+    Engine::Vector4 color;
 
     auto possibleThreads = std::thread::hardware_concurrency();
 
@@ -98,7 +98,7 @@ void raytraceScenePart(Engine::Registry &registry,
     Engine::CameraComponent adjustedCamera{*camera};
     adjustedCamera.setAspect((float)width / (float)height);
 
-    Engine::Math::Vector4 color;
+    Engine::Vector4 color;
 
     for (int y = startY; y < endY; ++y)
     {
@@ -115,17 +115,17 @@ void raytraceScenePart(Engine::Registry &registry,
     }
 }
 
-Engine::Math::Vector4 calculateLighting(Engine::Registry &registry,
-                                        const Engine::Math::Vector4 &materialColor,
-                                        const Engine::Util::RayIntersection &intersection);
+Engine::Vector4 calculateLighting(Engine::Registry &registry,
+                                  const Engine::Vector4 &materialColor,
+                                  const Engine::Util::RayIntersection &intersection);
 
-Engine::Math::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ray)
+Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ray)
 {
     auto intersections = Engine::Util::castRay(ray, registry);
 
     if (!intersections.size())
     {
-        return Engine::Math::Vector4{0, 0, 0, 0};
+        return Engine::Vector4{0, 0, 0, 0};
     }
 
     auto &intersection = *intersections.begin();
@@ -164,25 +164,25 @@ Engine::Math::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::R
         }
     }
 
-    return Engine::Math::Vector4{0.9, 0.126, 0.777, 1};
+    return Engine::Vector4{0.9, 0.126, 0.777, 1};
 }
 
-Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
-                                               unsigned int entity,
-                                               const Engine::Util::RayIntersection &intersection);
+Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
+                                         unsigned int entity,
+                                         const Engine::Util::RayIntersection &intersection);
 
-Engine::Math::Vector4 calculateLighting(Engine::Registry &registry,
-                                        const Engine::Math::Vector4 &materialColor,
-                                        const Engine::Util::RayIntersection &intersection)
+Engine::Vector4 calculateLighting(Engine::Registry &registry,
+                                  const Engine::Vector4 &materialColor,
+                                  const Engine::Util::RayIntersection &intersection)
 {
-    Engine::Math::Vector4 color{0, 0, 0, 0};
+    Engine::Vector4 color{0, 0, 0, 0};
 
     for (auto &pointLightOwners : registry.getOwners<Engine::PointLightComponent>())
     {
         for (auto owner : pointLightOwners)
         {
-            Engine::Math::Vector3 lightColor = calculatePointLightColor(registry, owner, intersection);
-            color += materialColor * Engine::Math::Vector4{lightColor, 1};
+            Engine::Vector3 lightColor = calculatePointLightColor(registry, owner, intersection);
+            color += materialColor * Engine::Vector4{lightColor, 1};
         }
     }
 
@@ -204,15 +204,15 @@ float clamp(float val, float min, float max)
     return val;
 }
 
-Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
-                                               unsigned int entity,
-                                               const Engine::Util::RayIntersection &intersection)
+Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
+                                         unsigned int entity,
+                                         const Engine::Util::RayIntersection &intersection)
 {
-    Engine::Math::Vector3 lighPosition{0, 0, 0};
+    Engine::Point3 lighPosition{0, 0, 0};
 
     if (auto lightTransform = registry.getComponent<Engine::TransformComponent>(entity))
     {
-        lighPosition = lightTransform->getMatrixWorld() * Engine::Math::Vector4{lighPosition, 1};
+        lighPosition = lightTransform->getMatrixWorld() * lighPosition;
     }
 
     unsigned int intersectionEntity = intersection.getEntity();
@@ -230,7 +230,7 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
                          baryParams(0) * vertexNormals[faces[intersectionFaceIndex + 1]] +
                          baryParams(1) * vertexNormals[faces[intersectionFaceIndex + 2]];
 
-    surfaceNormal = transform->getNormalMatrixWorld() * Engine::Math::Vector4{surfaceNormal, 1};
+    surfaceNormal = transform->getNormalMatrixWorld() * Engine::Vector4{surfaceNormal, 1};
     normalize(surfaceNormal);
 
     auto origin = intersection.getIntersection() + 10 * std::numeric_limits<float>::epsilon() * surfaceNormal;
@@ -244,9 +244,9 @@ Engine::Math::Vector3 calculatePointLightColor(Engine::Registry &registry,
     auto shadowIntersections = Engine::Util::castRay(lightRay, registry);
 
     // if there was an intersection between the object and the light then it is in shadow
-    if (shadowIntersections.size())
+    if (shadowIntersections.size() && shadowIntersections.begin()->getDistance() < lightDist)
     {
-        return Engine::Math::Vector4{0, 0, 0, 0};
+        return Engine::Vector4{0, 0, 0, 0};
     }
 
     float lightAngle = clamp(dot(lightVector, surfaceNormal), 0, 1);

@@ -46,9 +46,9 @@ void Util::loadOBJFile(Engine::Registry &registry,
     auto geometry = registry.createComponent<Engine::GeometryComponent>(rootEntity);
 
     // parse all information from the file content
-    std::vector<Engine::Math::Vector3> vertices{};
-    std::vector<Engine::Math::Vector3> normals{};
-    std::vector<Engine::Math::Vector2> texCoords{};
+    std::vector<Engine::Point3> vertices{};
+    std::vector<Engine::Vector3> normals{};
+    std::vector<Engine::Vector2> texCoords{};
 
     std::map<std::string, int> refMap{};
 
@@ -59,9 +59,9 @@ void Util::loadOBJFile(Engine::Registry &registry,
 
     while (!stream.eof())
     {
-        std::vector<Engine::Math::Vector3> &gVertices{geometry->getVertices()};
-        std::vector<Engine::Math::Vector3> &gNormals{geometry->getNormals()};
-        std::vector<Engine::Math::Vector2> &gTexCoords{geometry->getTexCoords()};
+        std::vector<Engine::Point3> &gVertices{geometry->getVertices()};
+        std::vector<Engine::Vector3> &gNormals{geometry->getNormals()};
+        std::vector<Engine::Vector2> &gTexCoords{geometry->getTexCoords()};
         std::vector<unsigned int> &gFaces{geometry->getFaces()};
 
         std::string line;
@@ -77,21 +77,21 @@ void Util::loadOBJFile(Engine::Registry &registry,
                 // load vertex
                 float x = 0, y = 0, z = 0, w = 1;
                 lineStream >> x >> y >> z;
-                vertices.push_back(Engine::Math::Vector3{x, y, z} / w);
+                vertices.push_back(Engine::Point3{x, y, z} / w);
             }
             else if (type == "vn")
             {
                 // load normal
                 float i = 0, j = 0, k = 0;
                 lineStream >> i >> j >> k;
-                normals.push_back(Engine::Math::Vector3{i, j, k});
+                normals.push_back(Engine::Vector3{i, j, k});
             }
             else if (type == "vt")
             {
                 // load texture coordinate
                 float u = 0, v = 0;
                 lineStream >> u >> v;
-                texCoords.push_back(Engine::Math::Vector2{u, v});
+                texCoords.push_back(Engine::Vector2{u, v});
             }
             else if (type == "f")
             {

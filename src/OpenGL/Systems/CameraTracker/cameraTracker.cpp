@@ -38,8 +38,7 @@ Engine::Systems::OpenGLCameraTracker::OpenGLCameraTracker(unsigned int &cameraUB
                 }
                 else
                 {
-                    this->updateCameraBufferTransform(Engine::Math::Matrix4{}.setIdentity(),
-                                                      Engine::Math::Matrix4{}.setIdentity());
+                    this->updateCameraBufferTransform(Engine::Matrix4{}.setIdentity(), Engine::Matrix4{}.setIdentity());
                 }
             }
 
@@ -87,8 +86,7 @@ Engine::Systems::OpenGLCameraTracker::OpenGLCameraTracker(unsigned int &cameraUB
         {
             if (this->m_currentActiveCamera == entity)
             {
-                this->updateCameraBufferTransform(Engine::Math::Matrix4{}.setIdentity(),
-                                                  Engine::Math::Matrix4{}.setIdentity());
+                this->updateCameraBufferTransform(Engine::Matrix4{}.setIdentity(), Engine::Matrix4{}.setIdentity());
             }
         });
 }
@@ -146,8 +144,8 @@ void Engine::Systems::OpenGLCameraTracker::updateCameraBuffer(const std::shared_
     glBufferSubData(GL_UNIFORM_BUFFER, 32 * sizeof(float), 16 * sizeof(float), camera->getProjectionMatrix().raw());
 }
 
-void Engine::Systems::OpenGLCameraTracker::updateCameraBufferTransform(Engine::Math::Matrix4 &viewMatrix,
-                                                                       Engine::Math::Matrix4 &viewMatrixInverse)
+void Engine::Systems::OpenGLCameraTracker::updateCameraBufferTransform(Engine::Matrix4 &viewMatrix,
+                                                                       Engine::Matrix4 &viewMatrixInverse)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, m_cameraUBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, 16 * sizeof(float), viewMatrix.raw());

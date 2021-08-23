@@ -6,36 +6,36 @@
 namespace filesystem = std::filesystem;
 
 Engine::GeometryComponent::GeometryComponent() : m_vertices{}, m_faces{} {}
-Engine::GeometryComponent::GeometryComponent(std::initializer_list<Math::Vector3> vertices,
+Engine::GeometryComponent::GeometryComponent(std::initializer_list<Point3> vertices,
                                              std::initializer_list<unsigned int> faces)
     : m_vertices{vertices}, m_faces{faces}
 {
     calculateBoundingBox();
 }
-Engine::GeometryComponent::GeometryComponent(std::vector<Math::Vector3> &&vertices,
-                                             std::vector<Math::Vector3> &&normals,
+Engine::GeometryComponent::GeometryComponent(std::vector<Point3> &&vertices,
+                                             std::vector<Vector3> &&normals,
                                              std::vector<unsigned int> &&faces)
     : m_vertices{std::move(vertices)}, m_normals{std::move(normals)}, m_faces{std::move(faces)}
 {
     calculateBoundingBox();
 }
 
-std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getVertices() { return m_vertices; }
-const std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getVertices() const { return m_vertices; }
+std::vector<Engine::Point3> &Engine::GeometryComponent::getVertices() { return m_vertices; }
+const std::vector<Engine::Point3> &Engine::GeometryComponent::getVertices() const { return m_vertices; }
 
 std::vector<unsigned int> &Engine::GeometryComponent::getFaces() { return m_faces; }
 
-std::vector<Engine::Math::Vector3> &Engine::GeometryComponent::getNormals() { return m_normals; }
+std::vector<Engine::Vector3> &Engine::GeometryComponent::getNormals() { return m_normals; }
 
-std::vector<Engine::Math::Vector2> &Engine::GeometryComponent::getTexCoords() { return m_texCoords; };
+std::vector<Engine::Vector2> &Engine::GeometryComponent::getTexCoords() { return m_texCoords; };
 
 Engine::AccelerationStructure &Engine::GeometryComponent::getAccStructure() { return m_bounding; }
 
-void Engine::GeometryComponent::addVertex(Math::Vector3 &&newVertex)
+void Engine::GeometryComponent::addVertex(Point3 &&newVertex)
 {
     m_vertices.emplace_back(newVertex);
     // to prevent errors with expected normals atm
-    m_normals.emplace_back(Math::Vector3{0.0, 0.0, -1.0});
+    m_normals.emplace_back(Vector3{0.0, 0.0, -1.0});
 }
 
 void Engine::GeometryComponent::addFace(unsigned int a, unsigned int b, unsigned int c)
@@ -48,7 +48,7 @@ void Engine::GeometryComponent::addFace(unsigned int a, unsigned int b, unsigned
 void Engine::GeometryComponent::calculateNormals()
 {
     m_normals.clear();
-    m_normals.resize(m_vertices.size(), Math::Vector3{0.0, 0.0, 0.0});
+    m_normals.resize(m_vertices.size(), Vector3{0.0, 0.0, 0.0});
 
     // the normal of a vertex is the normalized average of the normals of its adjacent faces (keep track how many faces
     // contributed to a vertex)
@@ -61,9 +61,9 @@ void Engine::GeometryComponent::calculateNormals()
     // TODO: maybe make this a bit more foolproof
     for (int i{0}; i < m_faces.size(); i += 3)
     {
-        Math::Vector3 a{m_vertices[m_faces[i + 1]] - m_vertices[m_faces[i]]};
-        Math::Vector3 b{m_vertices[m_faces[i + 2]] - m_vertices[m_faces[i]]};
-        Math::Vector3 faceNormal = normalize(MathLib::cross(a, b));
+        Vector3 a{m_vertices[m_faces[i + 1]] - m_vertices[m_faces[i]]};
+        Vector3 b{m_vertices[m_faces[i + 2]] - m_vertices[m_faces[i]]};
+        Vector3 faceNormal = normalize(MathLib::cross(a, b));
 
         // add the faceNormal to each of the faces vertices
         m_normals[m_faces[i]] += faceNormal;
@@ -86,7 +86,7 @@ void Engine::GeometryComponent::calculateNormals()
         else
         {
             // this vertex has no adjacent faces => just give some unit vector
-            m_normals[i] = Math::Vector3{0.0, 0.0, 1.0};
+            m_normals[i] = Vector3{0.0, 0.0, 1.0};
         }
     }
 }
@@ -100,8 +100,8 @@ std::shared_ptr<Engine::GeometryComponent>
 Engine::createSphereGeometry(float radius, int hIntersections, int vIntersections)
 {
     std::shared_ptr<GeometryComponent> geometry = std::make_shared<GeometryComponent>();
-    std::vector<Math::Vector3> &vertices{geometry->getVertices()};
-    std::vector<Math::Vector3> &normals{geometry->getNormals()};
+    std::vector<Point3> &vertices{geometry->getVertices()};
+    std::vector<Vector3> &normals{geometry->getNormals()};
     std::vector<unsigned int> &faces{geometry->getFaces()};
 
     // we want at least 4 points around the equator and on between the poles
@@ -109,8 +109,8 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
     vIntersections = std::max(vIntersections, 1);
 
     // add north pole
-    vertices.resize(hIntersections * vIntersections + 2, Engine::Math::Vector3{});
-    normals.resize(hIntersections * vIntersections + 2, Engine::Math::Vector3{});
+    vertices.resize(hIntersections * vIntersections + 2, Engine::Point3{});
+    normals.resize(hIntersections * vIntersections + 2, Engine::Vector3{});
 
     // each faces has 3 indices
     // we have 8 faces between 2 adjacent points on the latitutes closest to the poles and the poles themselves
@@ -118,8 +118,8 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
     // latitude
     faces.resize(3 * 2 * hIntersections * vIntersections);
 
-    vertices[0] = Math::Vector3{0.0f, radius, 0.0f};
-    normals[0] = Math::Vector3{0.0f, 1.0f, 0.0f};
+    vertices[0] = Point3{0.0f, radius, 0.0f};
+    normals[0] = Vector3{0.0f, 1.0f, 0.0f};
     int vertexIndex{1};
     int faceIndex{0};
 
@@ -131,8 +131,8 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
     for (int j{0}; j < hIntersections; ++j)
     {
         vertices[vertexIndex] =
-            Math::Vector3{radius * sinTheta * sin(j * horizontalStep), y, radius * sinTheta * cos(j * horizontalStep)};
-        normals[vertexIndex] = vertices[vertexIndex] / radius;
+            Point3{radius * sinTheta * sin(j * horizontalStep), y, radius * sinTheta * cos(j * horizontalStep)};
+        normals[vertexIndex] = (vertices[vertexIndex] / radius) - Engine::Point3{0, 0, 0};
         faces[faceIndex++] = vertexIndex;
         faces[faceIndex++] = (vertexIndex % hIntersections) + 1;
         faces[faceIndex++] = 0;
@@ -146,9 +146,9 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
         int latitudeStartIndex{vertexIndex};
         for (int j{0}; j < hIntersections; ++j)
         {
-            vertices[vertexIndex] = Math::Vector3{
-                radius * sinTheta * sin(j * horizontalStep), y, radius * sinTheta * cos(j * horizontalStep)};
-            normals[vertexIndex] = vertices[vertexIndex] / radius;
+            vertices[vertexIndex] =
+                Point3{radius * sinTheta * sin(j * horizontalStep), y, radius * sinTheta * cos(j * horizontalStep)};
+            normals[vertexIndex] = (vertices[vertexIndex] / radius) - Engine::Point3{0, 0, 0};
             faces[faceIndex++] = vertexIndex;
             faces[faceIndex++] = latitudeStartIndex + ((vertexIndex % hIntersections));
             faces[faceIndex++] = (latitudeStartIndex + ((vertexIndex % hIntersections))) - hIntersections;
@@ -160,8 +160,8 @@ Engine::createSphereGeometry(float radius, int hIntersections, int vIntersection
     }
 
     int maxVertexIndex{hIntersections * vIntersections + 1};
-    vertices[maxVertexIndex] = Math::Vector3{0.0f, -radius, 0.0f};
-    normals[maxVertexIndex] = Math::Vector3{0.0f, -1.0f, 0.0f};
+    vertices[maxVertexIndex] = Point3{0.0f, -radius, 0.0f};
+    normals[maxVertexIndex] = Vector3{0.0f, -1.0f, 0.0f};
     // go back to the first vertex in the last latitude
     vertexIndex -= hIntersections;
     int latitudeStartIndex{vertexIndex};
@@ -198,10 +198,10 @@ std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const filesystem:
     std::istringstream iss(line);
     int numVertices, numFaces;
     iss >> numVertices >> numFaces;
-    std::vector<Math::Vector3> vertices;
+    std::vector<Point3> vertices;
     vertices.reserve(numVertices);
 
-    std::vector<Math::Vector3> normals;
+    std::vector<Vector3> normals;
     if (hasNormals)
     {
         normals.reserve(numVertices);
@@ -220,7 +220,7 @@ std::shared_ptr<Engine::GeometryComponent> Engine::loadOffFile(const filesystem:
     }
     else
     {
-        normals.resize(numVertices, Math::Vector3{0.0, 0.0, -1.0});
+        normals.resize(numVertices, Vector3{0.0, 0.0, -1.0});
 
         for (int i{0}; i < numVertices; ++i)
         {
@@ -262,12 +262,12 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
                                                      GeometryComponent *geometry)
     : m_parent{parent}, m_startIndex{start}, m_endIndex{end}, m_geometry{geometry}
 {
-    m_min = Math::Vector3{std::numeric_limits<float>::infinity(),
-                          std::numeric_limits<float>::infinity(),
-                          std::numeric_limits<float>::infinity()};
-    m_max = Math::Vector3{-std::numeric_limits<float>::infinity(),
-                          -std::numeric_limits<float>::infinity(),
-                          -std::numeric_limits<float>::infinity()};
+    m_min = Point3{std::numeric_limits<float>::infinity(),
+                   std::numeric_limits<float>::infinity(),
+                   std::numeric_limits<float>::infinity()};
+    m_max = Point3{-std::numeric_limits<float>::infinity(),
+                   -std::numeric_limits<float>::infinity(),
+                   -std::numeric_limits<float>::infinity()};
 
     auto &vertices{geometry->getVertices()};
 
@@ -299,30 +299,32 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
 
     // // TODO: reorganize the vertices in the geometry based on the vertexRef (sort normals and uv coordinates as well,
     // change faces to reference correct new indices)
-    std::vector<Engine::Math::Vector3> tmp3(m_endIndex);
+    std::vector<Engine::Point3> tmpP3(m_endIndex);
 
     for (int i = 0; i < m_endIndex; ++i)
     {
-        tmp3[i] = vertices[vertexRef[i]];
+        tmpP3[i] = vertices[vertexRef[i]];
     }
 
-    vertices.swap(tmp3);
+    vertices.swap(tmpP3);
+
+    std::vector<Engine::Vector3> tmpV3(m_endIndex);
 
     auto &normals{geometry->getNormals()};
     if (normals.size() == m_endIndex)
     {
         for (int i = 0; i < m_endIndex; ++i)
         {
-            tmp3[i] = normals[vertexRef[i]];
+            tmpV3[i] = normals[vertexRef[i]];
         }
 
-        normals.swap(tmp3);
+        normals.swap(tmpV3);
     }
 
     auto &uv{geometry->getTexCoords()};
     if (uv.size() == m_endIndex)
     {
-        std::vector<Engine::Math::Vector2> tmp2(m_endIndex);
+        std::vector<Engine::Vector2> tmp2(m_endIndex);
         for (int i = 0; i < m_endIndex; ++i)
         {
             tmp2[i] = uv[vertexRef[i]];
@@ -354,16 +356,16 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
             for (int i = 0; i < faces.size(); i += 3)
             {
                 // calculate triangles bounding box
-                Engine::Math::Vector3 min{std::numeric_limits<float>::infinity(),
-                                          std::numeric_limits<float>::infinity(),
-                                          std::numeric_limits<float>::infinity()};
-                Engine::Math::Vector3 max{-std::numeric_limits<float>::infinity(),
-                                          -std::numeric_limits<float>::infinity(),
-                                          -std::numeric_limits<float>::infinity()};
+                Engine::Point3 min{std::numeric_limits<float>::infinity(),
+                                   std::numeric_limits<float>::infinity(),
+                                   std::numeric_limits<float>::infinity()};
+                Engine::Point3 max{-std::numeric_limits<float>::infinity(),
+                                   -std::numeric_limits<float>::infinity(),
+                                   -std::numeric_limits<float>::infinity()};
 
                 for (int corner = 0; corner < 3; ++corner)
                 {
-                    Engine::Math::Vector3 &vertex{vertices[faces[i + corner]]};
+                    auto &vertex{vertices[faces[i + corner]]};
 
                     for (int axis = 0; axis < 3; ++axis)
                     {
@@ -378,9 +380,7 @@ Engine::AccelerationStructure::AccelerationStructure(AccelerationStructure *pare
     }
 }
 
-bool Engine::AccelerationStructure::assignTriangle(int index,
-                                                   const Engine::Math::Vector3 &min,
-                                                   const Engine::Math::Vector3 &max)
+bool Engine::AccelerationStructure::assignTriangle(int index, const Engine::Point3 &min, const Engine::Point3 &max)
 {
     // early exit if the bounding box of the triangle doesn't fit into this hierarchy element
     for (int i = 0; i < 3; ++i)
@@ -454,11 +454,11 @@ void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef)
 
     // subdivide into two new boxes along the longest side
     int middle = m_startIndex + (numVertices / 2);
-    Engine::Math::Vector3 &middleVertex{vertices[vertexRef[middle]]};
+    auto &middleVertex{vertices[vertexRef[middle]]};
 
-    Engine::Math::Vector3 middleMin{m_min};
+    auto middleMin{m_min};
     middleMin.at(maxIndex) = middleVertex.at(maxIndex);
-    Engine::Math::Vector3 middleMax{m_max};
+    auto middleMax{m_max};
     middleMax.at(maxIndex) = middleVertex.at(maxIndex);
 
     // TODO: create child Structures with default constructor set their class members and call their subdivide from here
@@ -484,7 +484,7 @@ void Engine::AccelerationStructure::subdivide(std::vector<int> &vertexRef)
     m_children.emplace_back(b);
 }
 
-Engine::Math::Vector3 &Engine::AccelerationStructure::getMin() { return m_min; }
-Engine::Math::Vector3 &Engine::AccelerationStructure::getMax() { return m_max; }
+Engine::Point3 &Engine::AccelerationStructure::getMin() { return m_min; }
+Engine::Point3 &Engine::AccelerationStructure::getMax() { return m_max; }
 std::vector<int> &Engine::AccelerationStructure::getTriangles() { return m_triangles; }
 std::vector<Engine::AccelerationStructure> &Engine::AccelerationStructure::getChildren() { return m_children; }

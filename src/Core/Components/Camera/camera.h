@@ -27,7 +27,7 @@ private:
     // to react to changes in the Transform of that entity
     std::shared_ptr<std::function<void(unsigned int, std::weak_ptr<CameraComponent>)>> m_associateCallback;
 
-    Math::Matrix4 m_projectionMatrix{};
+    Matrix4 m_projectionMatrix{};
     Registry &m_registry;
     unsigned int m_entity{0};
 
@@ -49,7 +49,7 @@ public:
     void updateAspect(float aspect);
     void calculateProjection();
 
-    const Math::Matrix4 &getProjectionMatrix();
+    const Matrix4 &getProjectionMatrix();
 
     float &getNear();
     void setNear(float near);
@@ -78,8 +78,8 @@ public:
     bool isPerspective();
     bool isOrtographic();
 
-    Util::Ray getCameraRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
-    Util::Ray getCameraSpaceRay(const Math::IVector2 &pixelPosition, const Math::IVector2 &screenSize);
+    Util::Ray getCameraRay(const IVector2 &pixelPosition, const IVector2 &screenSize);
+    Util::Ray getCameraSpaceRay(const IVector2 &pixelPosition, const IVector2 &screenSize);
 };
 
 class ActiveCameraComponent

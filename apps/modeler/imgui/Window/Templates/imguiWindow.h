@@ -22,9 +22,9 @@ protected:
     bool m_open{NULL};
 
     // position of the window
-    Engine::Math::IVector2 m_pos{0, 0};
+    Engine::IVector2 m_pos{0, 0};
     // size of the windows content
-    Engine::Math::IVector2 m_size{0, 0};
+    Engine::IVector2 m_size{0, 0};
 
     // prevent instances of this class
     ImGuiWindow(const std::string &name);

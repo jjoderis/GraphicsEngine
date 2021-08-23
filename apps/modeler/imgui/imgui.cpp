@@ -51,9 +51,6 @@ using namespace UICreation;
 int selectedEntity = -1;
 int possible_component_current = 0;
 
-Engine::Math::Vector3 debugOrigin{0, 0, 0};
-Engine::Math::Vector3 debugDirection{0, 0, 0};
-
 void UI::init(Engine::Registry &registry,
               Engine::OpenGLRenderer &renderer,
               Engine::Util::OpenGLTextureIndex &textureIndex)
@@ -114,9 +111,8 @@ void drawGeometryTypeSelection(Engine::Registry &registry)
         if (ImGui::Button("Triangle"))
         {
             auto geometry = std::make_shared<Engine::GeometryComponent>(
-                std::initializer_list<Engine::Math::Vector3>{Engine::Math::Vector3{0.5, -0.5, 0.0},
-                                                             Engine::Math::Vector3{-0.5, -0.5, 0.0},
-                                                             Engine::Math::Vector3{0.0, 0.5, 0.0}},
+                std::initializer_list<Engine::Point3>{
+                    Engine::Point3{0.5, -0.5, 0.0}, Engine::Point3{-0.5, -0.5, 0.0}, Engine::Point3{0.0, 0.5, 0.0}},
                 std::initializer_list<unsigned int>{0, 1, 2});
             geometry->calculateNormals();
             registry.addComponent<Engine::GeometryComponent>(selectedEntity, geometry);

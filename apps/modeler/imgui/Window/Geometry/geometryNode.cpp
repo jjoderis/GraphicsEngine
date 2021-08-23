@@ -28,7 +28,7 @@ void UICreation::GeometryComponentWindow::main()
 
     if (ImGui::TreeNode("Vertices"))
     {
-        std::vector<Engine::Math::Vector3> &vertices{m_component->getVertices()};
+        std::vector<Engine::Point3> &vertices{m_component->getVertices()};
         for (int i = 0; i < vertices.size(); ++i)
         {
             std::string str = std::to_string(i);
@@ -39,7 +39,7 @@ void UICreation::GeometryComponentWindow::main()
                 m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
             }
         }
-        static Engine::Math::Vector3 newVertex{0.0, 0.0, 0.0};
+        static Engine::Point3 newVertex{0.0, 0.0, 0.0};
         if (ImGui::Button("+##open_add_vertex_popup"))
         {
             ImGui::OpenPopup("Add Vertex");
@@ -50,9 +50,9 @@ void UICreation::GeometryComponentWindow::main()
             ImGui::SameLine();
             if (ImGui::Button("+##add_vertex"))
             {
-                m_component->addVertex(Engine::Math::Vector3{newVertex});
+                m_component->addVertex(Engine::Point3{newVertex});
                 m_registry.updated<Engine::GeometryComponent>(m_selectedEntity);
-                newVertex = Engine::Math::Vector3{0.0f, 0.0f, 0.0f};
+                newVertex = Engine::Point3{0.0f, 0.0f, 0.0f};
             }
             ImGui::EndPopup();
         }
@@ -101,7 +101,7 @@ void UICreation::GeometryComponentWindow::main()
     }
     if (ImGui::Button("Invert Normals"))
     {
-        for (Engine::Math::Vector3 &normal : m_component->getNormals())
+        for (Engine::Vector3 &normal : m_component->getNormals())
         {
             normal = -normal;
         }
@@ -110,14 +110,14 @@ void UICreation::GeometryComponentWindow::main()
 
     if (ImGui::Button("Center on origin"))
     {
-        Engine::Math::Vector3 avg{0.0, 0.0, 0.0};
-        for (const Engine::Math::Vector3 &vert : m_component->getVertices())
+        Engine::Vector3 avg{0.0, 0.0, 0.0};
+        for (const auto &vert : m_component->getVertices())
         {
-            avg += vert;
+            avg += vert - Engine::Point3{0, 0, 0};
         }
         avg /= m_component->getVertices().size();
 
-        for (Engine::Math::Vector3 &vert : m_component->getVertices())
+        for (auto &vert : m_component->getVertices())
         {
             vert -= avg;
         }

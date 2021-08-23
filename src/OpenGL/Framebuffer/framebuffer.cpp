@@ -130,7 +130,7 @@ void Engine::OpenGLFramebuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 unsigned int Engine::OpenGLFramebuffer::getTexture(int index) { return m_textures.at(index); }
 
-void Engine::OpenGLFramebuffer::setClearColor(const Engine::Math::Vector4 &color, int textureIndex)
+void Engine::OpenGLFramebuffer::setClearColor(const Engine::Vector4 &color, int textureIndex)
 {
     if (textureIndex < m_textures.size())
     {
@@ -138,7 +138,7 @@ void Engine::OpenGLFramebuffer::setClearColor(const Engine::Math::Vector4 &color
     }
 }
 
-void Engine::OpenGLFramebuffer::setClearColorI(const Engine::Math::IVector4 &color, int textureIndex)
+void Engine::OpenGLFramebuffer::setClearColorI(const Engine::IVector4 &color, int textureIndex)
 {
     if (textureIndex < m_textures.size())
     {

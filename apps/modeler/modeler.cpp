@@ -82,7 +82,7 @@ int main()
     registry.createComponent<Engine::RaytracingMaterial>(object1);
 
     auto transform = registry.createComponent<Engine::TransformComponent>(object1);
-    transform->translate(Engine::Math::Vector3{0.0f, 0.0f, 4.0f});
+    transform->translate(Engine::Vector3{0.0f, 0.0f, 4.0f});
     transform->rotate(MathLib::Util::degToRad(-90), {0, 1, 0});
     transform->update();
     auto geometry = registry.addComponent<Engine::GeometryComponent>(object1, sphereGeometry);

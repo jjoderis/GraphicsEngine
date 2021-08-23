@@ -46,7 +46,7 @@ private:
 
     void updateCameraBuffer(const std::shared_ptr<CameraComponent> &camera);
 
-    void updateCameraBufferTransform(Engine::Math::Matrix4 &viewMatrix, Engine::Math::Matrix4 &viewMatrixInverse);
+    void updateCameraBufferTransform(Engine::Matrix4 &viewMatrix, Engine::Matrix4 &viewMatrixInverse);
 
 public:
     OpenGLCameraTracker() = delete;

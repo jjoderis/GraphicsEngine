@@ -301,22 +301,28 @@ void addTypeData<std::vector<unsigned int>>(json &accessor)
     addTypeData<unsigned int>(accessor);
 }
 template <>
-void addTypeData<std::vector<Engine::Math::Vector2>>(json &accessor)
+void addTypeData<std::vector<Engine::Vector2>>(json &accessor)
 {
     addTypeData<float>(accessor);
     accessor["type"] = "VEC2";
 }
 template <>
-void addTypeData<std::vector<Engine::Math::Vector3>>(json &accessor)
+void addTypeData<std::vector<Engine::Vector3>>(json &accessor)
 {
     addTypeData<float>(accessor);
     accessor["type"] = "VEC3";
 }
 template <>
-void addTypeData<std::vector<Engine::Math::Vector4>>(json &accessor)
+void addTypeData<std::vector<Engine::Vector4>>(json &accessor)
 {
     addTypeData<float>(accessor);
     accessor["type"] = "VEC4";
+}
+template <>
+void addTypeData<std::vector<Engine::Point3>>(json &accessor)
+{
+    addTypeData<float>(accessor);
+    accessor["type"] = "VEC3";
 }
 
 template <typename T>
@@ -344,7 +350,8 @@ int finalOffset(int offset, int dataSize)
     return offset;
 }
 
-json createBufferView(int bufferIndex, int byteOffset, std::vector<Engine::Math::Vector3> &data)
+template <typename T, typename = typename std::enable_if<MathLib::is_point_or_vector<T>::value, T>::type>
+json createBufferView(int bufferIndex, int byteOffset, std::vector<T> &data)
 {
     int dataSize = sizeof(float);
     byteOffset = finalOffset(byteOffset, dataSize);
@@ -353,20 +360,6 @@ json createBufferView(int bufferIndex, int byteOffset, std::vector<Engine::Math:
     view["buffer"] = bufferIndex;
     view["byteOffset"] = byteOffset;
     view["byteLength"] = 3 * dataSize * data.size();
-    view["target"] = 34962; // ARRAY_BUFFER
-
-    return view;
-}
-
-json createBufferView(int bufferIndex, int byteOffset, std::vector<Engine::Math::Vector2> &data)
-{
-    int dataSize = sizeof(float);
-    byteOffset = finalOffset(byteOffset, dataSize);
-
-    json view = json::object();
-    view["buffer"] = bufferIndex;
-    view["byteOffset"] = byteOffset;
-    view["byteLength"] = 2 * dataSize * data.size();
     view["target"] = 34962; // ARRAY_BUFFER
 
     return view;
@@ -404,7 +397,8 @@ constexpr bool isBigEndian()
     return !*((char *)&i);
 }
 
-void addToFile(FILE *out, std::vector<Engine::Math::Vector3> &data, int padding)
+template <typename T, typename = typename std::enable_if<MathLib::is_point_or_vector<T>::value, T>::type>
+void addToFile(FILE *out, std::vector<T> &data, int padding)
 {
     static bool bigEndian = isBigEndian();
 
@@ -413,20 +407,7 @@ void addToFile(FILE *out, std::vector<Engine::Math::Vector3> &data, int padding)
     // TODO: consider endianess (gltf is little endian)
     for (auto &vector : data)
     {
-        fwrite(vector.data(), sizeof(float), 3, out);
-    }
-}
-
-void addToFile(FILE *out, std::vector<Engine::Math::Vector2> &data, int padding)
-{
-    static bool bigEndian = isBigEndian();
-
-    padFile(out, padding);
-
-    // TODO: consider endianess (gltf is little endian)
-    for (auto &vector : data)
-    {
-        fwrite(vector.data(), sizeof(float), 2, out);
+        fwrite(vector.data(), sizeof(float), vector.size(), out);
     }
 }
 

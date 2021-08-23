@@ -303,7 +303,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::re
     std::shared_ptr<DirectionalLightComponent> light{m_registry.getComponent<DirectionalLightComponent>(entity)};
 
     // let the updateLightInfo function take care of this
-    light->setDirection(Math::Vector3{0.0, 0.0, 1.0});
+    light->setDirection(Vector3{0.0, 0.0, 1.0});
     m_registry.updated<DirectionalLightComponent>(entity);
 }
 
@@ -314,7 +314,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::PointLightComponent>::resetTra
     std::shared_ptr<PointLightComponent> light{m_registry.getComponent<PointLightComponent>(entity)};
 
     // let the updateLightInfo function take care of this
-    light->setPosition(Math::Vector3{0.0, 0.0, 0.0});
+    light->setPosition(Vector3{0.0, 0.0, 0.0});
     m_registry.updated<PointLightComponent>(entity);
 }
 
@@ -325,9 +325,9 @@ void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::resetTran
     std::shared_ptr<SpotLightComponent> light{m_registry.getComponent<SpotLightComponent>(entity)};
 
     // let the updateLightInfo function take care of this
-    light->setPosition(Math::Vector3{0.0, 0.0, 0.0});
+    light->setPosition(Vector3{0.0, 0.0, 0.0});
 
-    light->setDirection(Math::Vector3{0.0, 0.0, 1.0});
+    light->setDirection(Vector3{0.0, 0.0, 1.0});
     m_registry.updated<SpotLightComponent>(entity);
 }
 
@@ -356,7 +356,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::DirectionalLightComponent>::up
     std::shared_ptr<DirectionalLightComponent> light{m_registry.getComponent<DirectionalLightComponent>(entity)};
 
     // let the updateLightInfo function take care of this
-    light->setDirection(transform->getMatrixWorld() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
+    light->setDirection(transform->getMatrixWorld() * Vector4{0.0, 0.0, 1.0, 0.0});
     m_registry.updated<DirectionalLightComponent>(entity);
 }
 
@@ -381,7 +381,7 @@ void Engine::Systems::OpenGLLightsTracker<Engine::SpotLightComponent>::updateTra
 
     // let the updateLightInfo function take care of this
     light->setPosition(transform->getTranslation());
-    light->setDirection(transform->getMatrixWorld() * Math::Vector4{0.0, 0.0, 1.0, 0.0});
+    light->setDirection(transform->getMatrixWorld() * Vector4{0.0, 0.0, 1.0, 0.0});
     m_registry.updated<SpotLightComponent>(entity);
 }
 

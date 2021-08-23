@@ -1,18 +1,33 @@
 #include "math.h"
 
-Engine::Math::Matrix4 Engine::Math::getTranslation(const Engine::Math::Vector3 &position)
+MathLib::Vector<float, 3> MathLib::operator*(const Matrix<float, 4, 4> &mat, const Vector<float, 3> &vec)
 {
-    return MathLib::getTranslation(position);
+    return mat * MathLib::Vector<float, 4>{vec, 0};
+}
+MathLib::Point<float, 3> MathLib::operator*(const Matrix<float, 4, 4> &mat, const Point<float, 3> &point)
+{
+    return mat * MathLib::Point<float, 4>{point, 1};
 }
 
-Engine::Math::Matrix4 Engine::Math::getScaling(const Vector3 &scaling) { return MathLib::getScaling(scaling); }
-
-Engine::Math::Matrix4 Engine::Math::getRotation(const Engine::Math::Vector3 &rotation)
+MathLib::Point<float, 3> MathLib::combine(float a,
+                                          const Point<float, 3> &aPoint,
+                                          float b,
+                                          const Point<float, 3> &bPoint,
+                                          float c,
+                                          const Point<float, 3> &cPoint)
 {
-    return MathLib::getRotation(rotation);
+    return {a * aPoint(0) + b * bPoint(0) + c * cPoint(0),
+            a * aPoint(1) + b * bPoint(1) + c * cPoint(1),
+            a * aPoint(2) + b * bPoint(2) + c * cPoint(2)};
 }
 
-Engine::Math::Matrix4 Engine::Math::getRotation(const Quaternion &quat)
+Engine::Matrix4 Engine::getTranslation(const Engine::Vector3 &position) { return MathLib::getTranslation(position); }
+
+Engine::Matrix4 Engine::getScaling(const Vector3 &scaling) { return MathLib::getScaling(scaling); }
+
+Engine::Matrix4 Engine::getRotation(const Engine::Vector3 &rotation) { return MathLib::getRotation(rotation); }
+
+Engine::Matrix4 Engine::getRotation(const Quaternion &quat)
 {
     float q0 = quat.qw();
     float q1 = quat.qx();
@@ -40,7 +55,7 @@ Engine::Math::Matrix4 Engine::Math::getRotation(const Quaternion &quat)
                    1};
 }
 
-Engine::Math::Vector3 Engine::Math::extractEuler(const Matrix4 &rotationMat)
+Engine::Vector3 Engine::extractEuler(const Matrix4 &rotationMat)
 {
     float head{atan2(-rotationMat(2, 0), rotationMat(2, 2))};
     float pitch{asin(rotationMat(2, 1))};
@@ -49,7 +64,7 @@ Engine::Math::Vector3 Engine::Math::extractEuler(const Matrix4 &rotationMat)
     return Vector3{pitch, head, roll};
 }
 
-Engine::Math::Matrix4 Engine::Math::lookAt(const Vector3 &position, const Vector3 &up, const Vector3 &target)
+Engine::Matrix4 Engine::lookAt(const Vector3 &position, const Vector3 &up, const Vector3 &target)
 {
     Vector3 v = normalize((target - position));
     Vector3 r = normalize(-cross(v, up));

@@ -8,13 +8,13 @@ namespace Engine
 class Light
 {
 public:
-    void setColor(const Math::Vector3 &color);
-    Math::Vector3 &getColor();
+    void setColor(const Vector3 &color);
+    Vector3 &getColor();
 
 protected:
     Light();
-    Light(const Math::Vector3 &color);
-    Math::Vector3 m_color{1.0, 1.0, 1.0};
+    Light(const Vector3 &color);
+    Vector3 m_color{1.0, 1.0, 1.0};
 };
 
 class AmbientLightComponent : public Light
@@ -25,28 +25,28 @@ class DirectionalLightComponent : virtual public Light
 {
 public:
     DirectionalLightComponent();
-    DirectionalLightComponent(const Math::Vector3 &color, const Math::Vector3 &direction);
+    DirectionalLightComponent(const Vector3 &color, const Vector3 &direction);
 
-    void setDirection(const Math::Vector3 &direction);
-    Math::Vector3 &getDirection();
+    void setDirection(const Vector3 &direction);
+    Vector3 &getDirection();
 
 private:
-    Math::Vector3 m_direction{0.0, 0.0, 1.0};
+    Vector3 m_direction{0.0, 0.0, 1.0};
 };
 
 class PunctualLight : virtual public Light
 {
 public:
-    void setPosition(const Math::Vector3 &position);
-    Math::Vector3 &getPosition();
+    void setPosition(const Vector3 &position);
+    Vector3 &getPosition();
 
     void setIntensity(float intensity);
     float getIntensity();
 
 protected:
     PunctualLight();
-    PunctualLight(const Math::Vector3 &color, const Math::Vector3 &position, float intensity);
-    Math::Vector3 m_position{0.0, 0.0, 0.0};
+    PunctualLight(const Vector3 &color, const Vector3 &position, float intensity);
+    Vector3 m_position{0.0, 0.0, 0.0};
     float m_intensity{1.0};
 };
 
@@ -54,15 +54,14 @@ class PointLightComponent : public PunctualLight
 {
 public:
     PointLightComponent();
-    PointLightComponent(const Math::Vector3 &color, const Math::Vector3 &position, float intensity);
+    PointLightComponent(const Vector3 &color, const Vector3 &position, float intensity);
 };
 
 class SpotLightComponent : public DirectionalLightComponent, public PunctualLight
 {
 public:
     SpotLightComponent();
-    SpotLightComponent(
-        const Math::Vector3 &color, const Math::Vector3 &position, float intensity, float cutoff, float penumbra);
+    SpotLightComponent(const Vector3 &color, const Vector3 &position, float intensity, float cutoff, float penumbra);
 
     void setCutoff(float angle);
     float getCutoff();

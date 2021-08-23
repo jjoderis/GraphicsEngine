@@ -28,10 +28,10 @@ void UICreation::ImGuiWindow::end() { ImGui::End(); }
 
 void UICreation::ImGuiWindow::checkUpdates()
 {
-    Engine::Math::IVector2 size{ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y};
+    Engine::IVector2 size{ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y};
     auto windowPos{ImGui::GetWindowPos()};
     auto contentOffset{ImGui::GetWindowContentRegionMin()};
-    Engine::Math::IVector2 pos{windowPos.x + contentOffset.x, windowPos.y + contentOffset.y};
+    Engine::IVector2 pos{windowPos.x + contentOffset.x, windowPos.y + contentOffset.y};
 
     if (size != m_size)
     {

@@ -195,36 +195,34 @@ int addEntity(Engine::Registry &registry,
 
             if (lightNode["type"] == "point")
             {
-                registry.createComponent<Engine::PointLightComponent>(
-                    entityIndex,
-                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
-                                          lightNode["color"][1].get<int>(),
-                                          lightNode["color"][2].get<int>()},
-                    Engine::Math::Vector3{0, 0, 0},
-                    lightNode["intensity"]);
+                registry.createComponent<Engine::PointLightComponent>(entityIndex,
+                                                                      Engine::Vector3{lightNode["color"][0].get<int>(),
+                                                                                      lightNode["color"][1].get<int>(),
+                                                                                      lightNode["color"][2].get<int>()},
+                                                                      Engine::Vector3{0, 0, 0},
+                                                                      lightNode["intensity"]);
             }
 
             if (lightNode["type"] == "spot")
             {
-                registry.createComponent<Engine::SpotLightComponent>(
-                    entityIndex,
-                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
-                                          lightNode["color"][1].get<int>(),
-                                          lightNode["color"][2].get<int>()},
-                    Engine::Math::Vector3{0, 0, 0},
-                    lightNode["intensity"],
-                    lightNode["spot"]["outerConeAngle"].get<float>(),
-                    lightNode["spot"]["innerConeAngle"].get<float>());
+                registry.createComponent<Engine::SpotLightComponent>(entityIndex,
+                                                                     Engine::Vector3{lightNode["color"][0].get<int>(),
+                                                                                     lightNode["color"][1].get<int>(),
+                                                                                     lightNode["color"][2].get<int>()},
+                                                                     Engine::Vector3{0, 0, 0},
+                                                                     lightNode["intensity"],
+                                                                     lightNode["spot"]["outerConeAngle"].get<float>(),
+                                                                     lightNode["spot"]["innerConeAngle"].get<float>());
             }
 
             if (lightNode["type"] == "directional")
             {
                 registry.createComponent<Engine::DirectionalLightComponent>(
                     entityIndex,
-                    Engine::Math::Vector3{lightNode["color"][0].get<int>(),
-                                          lightNode["color"][1].get<int>(),
-                                          lightNode["color"][2].get<int>()},
-                    Engine::Math::Vector3{0, 0, -1});
+                    Engine::Vector3{lightNode["color"][0].get<int>(),
+                                    lightNode["color"][1].get<int>(),
+                                    lightNode["color"][2].get<int>()},
+                    Engine::Vector3{0, 0, -1});
             }
         }
     }
@@ -243,10 +241,10 @@ void addTransform(Engine::Registry &registry, json &node, int entityIndex)
         auto transform = registry.createComponent<Engine::TransformComponent>(entityIndex);
         if (hasRotation)
         {
-            Engine::Math::Quaternion q{node["rotation"][0].get<float>(),
-                                       node["rotation"][1].get<float>(),
-                                       node["rotation"][2].get<float>(),
-                                       node["rotation"][3].get<float>()};
+            Engine::Quaternion q{node["rotation"][0].get<float>(),
+                                 node["rotation"][1].get<float>(),
+                                 node["rotation"][2].get<float>(),
+                                 node["rotation"][3].get<float>()};
             transform->setRotation(q);
         }
         if (hasTranslation)
@@ -292,9 +290,6 @@ std::vector<char> &getBuffer(json &j, BufferMap &buffers, int bufferIndex, std::
 }
 
 template <typename T>
-void loadData(json &j, BufferMap &buffers, int accessorIndex, T &target, const std::filesystem::path &path);
-
-template <typename T>
 void castData(T *data, std::vector<unsigned int> &target, int numElements)
 {
     target.reserve(numElements);
@@ -305,12 +300,11 @@ void castData(T *data, std::vector<unsigned int> &target, int numElements)
     }
 }
 
-template <>
-void loadData<std::vector<unsigned int>>(json &j,
-                                         BufferMap &buffers,
-                                         int accessorIndex,
-                                         std::vector<unsigned int> &target,
-                                         const std::filesystem::path &path)
+void loadData(json &j,
+              BufferMap &buffers,
+              int accessorIndex,
+              std::vector<unsigned int> &target,
+              const std::filesystem::path &path)
 {
     auto &accessor = j["accessors"][accessorIndex];
     auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
@@ -349,12 +343,8 @@ void loadData<std::vector<unsigned int>>(json &j,
     }
 }
 
-template <>
-void loadData<std::vector<Engine::Math::Vector3>>(json &j,
-                                                  BufferMap &buffers,
-                                                  int accessorIndex,
-                                                  std::vector<Engine::Math::Vector3> &target,
-                                                  const std::filesystem::path &path)
+template <typename T, typename = typename std::enable_if<MathLib::is_point_or_vector<T>::value, T>::type>
+void loadData(json &j, BufferMap &buffers, int accessorIndex, std::vector<T> &target, const std::filesystem::path &path)
 {
     auto &accessor = j["accessors"][accessorIndex];
     auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
@@ -381,44 +371,13 @@ void loadData<std::vector<Engine::Math::Vector3>>(json &j,
 
     for (int i = 0; i < numElements; ++i)
     {
-        Engine::Math::Vector3 v{data[3 * i], data[3 * i + 1], data[3 * i + 2]};
-        target.emplace_back(v);
-    }
-}
+        T v{};
 
-template <>
-void loadData<std::vector<Engine::Math::Vector2>>(json &j,
-                                                  BufferMap &buffers,
-                                                  int accessorIndex,
-                                                  std::vector<Engine::Math::Vector2> &target,
-                                                  const std::filesystem::path &path)
-{
-    auto &accessor = j["accessors"][accessorIndex];
-    auto &view = j["bufferViews"][accessor["bufferView"].get<int>()];
-    auto &buffer = getBuffer(j, buffers, view["buffer"], path);
+        for (int j{0}; j < v.size(); ++j)
+        {
+            v(j) = data[3 * i + j];
+        }
 
-    int accessorOffset = 0;
-
-    if (accessor.find("byteOffset") != accessor.end())
-    {
-        accessorOffset = accessor["byteOffset"].get<int>();
-    }
-
-    int viewOffset = 0;
-
-    if (view.find("byteOffset") != view.end())
-    {
-        viewOffset = view["byteOffset"].get<int>();
-    }
-
-    int start = accessorOffset + viewOffset;
-    int numElements = accessor["count"];
-    float *data = (float *)(buffer.data() + start);
-    target.reserve(numElements);
-
-    for (int i = 0; i < numElements; ++i)
-    {
-        Engine::Math::Vector2 v{data[2 * i], data[2 * i + 1]};
         target.emplace_back(v);
     }
 }
@@ -454,12 +413,12 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
 
                 if (attributes.find("POSITION") != attributes.end())
                 {
-                    loadData(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
+                    loadData<Engine::Point3>(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
                 }
 
                 if (attributes.find("NORMAL") != attributes.end())
                 {
-                    loadData(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
+                    loadData<Engine::Vector3>(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
                 }
 
                 if (attributes.find("TEXCOORD_0") != attributes.end())

@@ -29,7 +29,7 @@ void UICreation::TransformComponentWindow::updateInternals()
     m_euler = MathLib::Util::radToDeg(m_component->getEulerRotation());
 
     auto angle{MathLib::Util::radToDeg(2 * acos(m_quat.qw()))};
-    m_axisAngle = Engine::Math::Vector4{m_quat.qv(), angle};
+    m_axisAngle = Engine::Vector4{m_quat.qv(), angle};
 }
 
 void UICreation::TransformComponentWindow::onComponentChange(std::shared_ptr<Engine::TransformComponent> oldComponent)
@@ -122,7 +122,7 @@ void UICreation::TransformComponentWindow::drawAngleAxis()
     if (wasUpdated)
     {
         m_component->setRotation(
-            Engine::Math::Quaternion{}.setRotation(m_axisAngle, MathLib::Util::degToRad(m_axisAngle.at(3))));
+            Engine::Quaternion{}.setRotation(m_axisAngle, MathLib::Util::degToRad(m_axisAngle.at(3))));
         m_component->update();
         blockCallback = true;
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);

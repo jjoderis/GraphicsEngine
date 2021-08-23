@@ -7,18 +7,18 @@ TEST(GEOMETRY_TEST, createSphereGeometry_single_latitude)
 {
     std::shared_ptr<GeometryComponent> geometry = createSphereGeometry(1.0f, 4, 1);
 
-    std::vector<Math::Vector3> &vertices{geometry->getVertices()};
+    std::vector<Vector3> &vertices{geometry->getVertices()};
     std::vector<unsigned int> &faces{geometry->getFaces()};
 
     EXPECT_EQ(vertices.size(), 6);
     EXPECT_EQ(faces.size(), 24);
 
-    std::vector<Math::Vector3> expectedVertices{Math::Vector3{0.0f, 1.0f, 0.0f},
-                                                Math::Vector3{0.0f, 0.0f, 1.0f},
-                                                Math::Vector3{1.0f, 0.0f, 0.0f},
-                                                Math::Vector3{0.0f, 0.0f, -1.0f},
-                                                Math::Vector3{-1.0f, 0.0f, 0.0f},
-                                                Math::Vector3{0.0f, -1.0f, 0.0f}};
+    std::vector<Vector3> expectedVertices{Vector3{0.0f, 1.0f, 0.0f},
+                                          Vector3{0.0f, 0.0f, 1.0f},
+                                          Vector3{1.0f, 0.0f, 0.0f},
+                                          Vector3{0.0f, 0.0f, -1.0f},
+                                          Vector3{-1.0f, 0.0f, 0.0f},
+                                          Vector3{0.0f, -1.0f, 0.0f}};
 
     // clang-format off
     std::vector<unsigned int> expectedFaces{
@@ -46,38 +46,38 @@ TEST(GEOMETRY_TEST, createSphereGeometry_multi_latitude)
 {
     std::shared_ptr<GeometryComponent> geometry = createSphereGeometry(1.0f, 4, 2);
 
-    std::vector<Math::Vector3> &vertices{geometry->getVertices()};
+    std::vector<Vector3> &vertices{geometry->getVertices()};
     std::vector<unsigned int> &faces{geometry->getFaces()};
 
     EXPECT_EQ(vertices.size(), 10);
     EXPECT_EQ(faces.size(), 48);
 
-    std::vector<Math::Vector3> expectedVertices{Math::Vector3{0.0f, 1.0f, 0.0f},
-                                                Math::Vector3{sin((1.0 / 3.0) * M_PI) * sin((0.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((1.0 / 3.0) * M_PI),
-                                                              sin((1.0 / 3.0) * M_PI) * cos((0.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((1.0 / 3.0) * M_PI) * sin((1.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((1.0 / 3.0) * M_PI),
-                                                              sin((1.0 / 3.0) * M_PI) * cos((1.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((1.0 / 3.0) * M_PI) * sin((2.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((1.0 / 3.0) * M_PI),
-                                                              sin((1.0 / 3.0) * M_PI) * cos((2.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((1.0 / 3.0) * M_PI) * sin((3.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((1.0 / 3.0) * M_PI),
-                                                              sin((1.0 / 3.0) * M_PI) * cos((3.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((2.0 / 3.0) * M_PI) * sin((0.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((2.0 / 3.0) * M_PI),
-                                                              sin((2.0 / 3.0) * M_PI) * cos((0.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((2.0 / 3.0) * M_PI) * sin((1.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((2.0 / 3.0) * M_PI),
-                                                              sin((2.0 / 3.0) * M_PI) * cos((1.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((2.0 / 3.0) * M_PI) * sin((2.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((2.0 / 3.0) * M_PI),
-                                                              sin((2.0 / 3.0) * M_PI) * cos((2.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{sin((2.0 / 3.0) * M_PI) * sin((3.0 / 4.0) * 2.0 * M_PI),
-                                                              cos((2.0 / 3.0) * M_PI),
-                                                              sin((2.0 / 3.0) * M_PI) * cos((3.0 / 4.0) * 2.0 * M_PI)},
-                                                Math::Vector3{0.0f, -1.0f, 0.0f}};
+    std::vector<Vector3> expectedVertices{Vector3{0.0f, 1.0f, 0.0f},
+                                          Vector3{sin((1.0 / 3.0) * M_PI) * sin((0.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((1.0 / 3.0) * M_PI),
+                                                  sin((1.0 / 3.0) * M_PI) * cos((0.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((1.0 / 3.0) * M_PI) * sin((1.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((1.0 / 3.0) * M_PI),
+                                                  sin((1.0 / 3.0) * M_PI) * cos((1.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((1.0 / 3.0) * M_PI) * sin((2.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((1.0 / 3.0) * M_PI),
+                                                  sin((1.0 / 3.0) * M_PI) * cos((2.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((1.0 / 3.0) * M_PI) * sin((3.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((1.0 / 3.0) * M_PI),
+                                                  sin((1.0 / 3.0) * M_PI) * cos((3.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((2.0 / 3.0) * M_PI) * sin((0.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((2.0 / 3.0) * M_PI),
+                                                  sin((2.0 / 3.0) * M_PI) * cos((0.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((2.0 / 3.0) * M_PI) * sin((1.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((2.0 / 3.0) * M_PI),
+                                                  sin((2.0 / 3.0) * M_PI) * cos((1.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((2.0 / 3.0) * M_PI) * sin((2.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((2.0 / 3.0) * M_PI),
+                                                  sin((2.0 / 3.0) * M_PI) * cos((2.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{sin((2.0 / 3.0) * M_PI) * sin((3.0 / 4.0) * 2.0 * M_PI),
+                                                  cos((2.0 / 3.0) * M_PI),
+                                                  sin((2.0 / 3.0) * M_PI) * cos((3.0 / 4.0) * 2.0 * M_PI)},
+                                          Vector3{0.0f, -1.0f, 0.0f}};
 
     // clang-format off
   std::vector<unsigned int> expectedFaces{
@@ -112,17 +112,15 @@ TEST(GEOMETRY_TEST, createSphereGeometry_multi_latitude)
 
 TEST(GEOMETRY_TEST, calculate_normals_triangle)
 {
-    GeometryComponent geometry{
-        {Math::Vector3{-1.0, 0.0, 0.0}, Math::Vector3{1.0, 0.0, 0.0}, Math::Vector3{0.0, 1.0, 0.0}}, {0, 1, 2}};
+    GeometryComponent geometry{{Vector3{-1.0, 0.0, 0.0}, Vector3{1.0, 0.0, 0.0}, Vector3{0.0, 1.0, 0.0}}, {0, 1, 2}};
 
     geometry.calculateNormals();
 
-    std::vector<Math::Vector3> &normals{geometry.getNormals()};
+    std::vector<Vector3> &normals{geometry.getNormals()};
 
     EXPECT_EQ(normals.size(), 3);
 
-    std::vector<Math::Vector3> expectedNormals{
-        Math::Vector3{0.0, 0.0, 1.0}, Math::Vector3{0.0, 0.0, 1.0}, Math::Vector3{0.0, 0.0, 1.0}};
+    std::vector<Vector3> expectedNormals{Vector3{0.0, 0.0, 1.0}, Vector3{0.0, 0.0, 1.0}, Vector3{0.0, 0.0, 1.0}};
 
     for (int i{0}; i < 3; ++i)
     {
