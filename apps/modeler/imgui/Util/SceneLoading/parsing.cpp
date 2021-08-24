@@ -388,7 +388,7 @@ void loadData(json &j, BufferMap &buffers, int accessorIndex, std::vector<T> &ta
 
         for (int j{0}; j < v.size(); ++j)
         {
-            v(j) = data[3 * i + j];
+            v(j) = data[v.size() * i + j];
         }
 
         target.emplace_back(v);
@@ -426,12 +426,12 @@ GeometryMap parseGeometries(json &j, const std::filesystem::path &path)
 
                 if (attributes.find("POSITION") != attributes.end())
                 {
-                    loadData<Engine::Point3>(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
+                    loadData(j, buffers, attributes["POSITION"], geometry->getVertices(), path);
                 }
 
                 if (attributes.find("NORMAL") != attributes.end())
                 {
-                    loadData<Engine::Vector3>(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
+                    loadData(j, buffers, attributes["NORMAL"], geometry->getNormals(), path);
                 }
 
                 if (attributes.find("TEXCOORD_0") != attributes.end())
