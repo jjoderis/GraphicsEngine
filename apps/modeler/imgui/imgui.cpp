@@ -216,6 +216,11 @@ void UI::render(Engine::Registry &registry)
             raytracingViewport->newFrame();
         }
 
+        if (ImGui::Button("Clear Scene"))
+        {
+            registry.clear();
+        }
+
         entityWindow->render();
 
         if (selectedEntity > -1)

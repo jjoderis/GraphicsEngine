@@ -25,11 +25,62 @@ Engine::Systems::HierarchyTracker::HierarchyTracker(Registry &registry) : m_regi
         });
 }
 
-void updateWorldMatrices(Engine::Registry &registry, unsigned int entity, int parent, bool noUpdate = false)
+/**
+ * makes sure that an entity that is assigned a new parent doesn't change in appearance
+ **/
+void adjustTransform(Engine::Registry &registry, unsigned int entity, int newParent)
+{
+    auto transform{registry.getComponent<Engine::TransformComponent>(entity)};
+    auto &oldWorldMatrix{transform->getMatrixWorld()};
+    Engine::Matrix4 newParentWorldMat{};
+    newParentWorldMat.setIdentity();
+    Engine::Matrix4 newParentWorldInverseMat{};
+    newParentWorldInverseMat.setIdentity();
+
+    if (newParent > -1)
+    {
+        if (auto parentTrans{registry.getComponent<Engine::TransformComponent>(newParent)})
+        {
+            newParentWorldMat = parentTrans->getMatrixWorld();
+            newParentWorldInverseMat = parentTrans->getMatrixWorldInverse();
+        }
+    }
+
+    // calculate the elements new translation so it stays in the same position
+    Engine::Point3 origin{0, 0, 0};
+    auto test{newParentWorldInverseMat * oldWorldMatrix * origin};
+    transform->setTranslation(test - Engine::Point3{0, 0, 0});
+
+    // calculate the elements new rotation so it retains its orientation
+    auto oldRot{Engine::extractEuler(oldWorldMatrix)};
+    auto newRot{Engine::extractEuler(newParentWorldMat)};
+    transform->setRotation(oldRot - newRot);
+
+    // calculate the elements scaling factor so it keeps its size
+    Engine::Vector3 e1{1, 0, 0};
+    Engine::Vector3 e2{0, 1, 0};
+    Engine::Vector3 e3{0, 0, 1};
+
+    auto newE1{newParentWorldInverseMat * oldWorldMatrix * e1};
+    auto newE2{newParentWorldInverseMat * oldWorldMatrix * e2};
+    auto newE3{newParentWorldInverseMat * oldWorldMatrix * e3};
+
+    transform->setScale({newE1.norm(), newE2.norm(), newE3.norm()});
+
+    transform->update();
+}
+
+void updateWorldMatrices(
+    Engine::Registry &registry, unsigned int entity, int parent, int oldParent, bool noUpdate = false)
 {
     if (auto trans{registry.getComponent<Engine::TransformComponent>(entity)})
     {
         std::shared_ptr<Engine::TransformComponent> parentTrans{};
+
+        if (oldParent != parent)
+        {
+            adjustTransform(registry, entity, parent);
+        }
 
         if (parent > -1)
         {
@@ -108,7 +159,7 @@ void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
                 }
 
                 std::get<0>(meta) = newParent;
-                updateWorldMatrices(this->m_registry, entity, newParent);
+                updateWorldMatrices(this->m_registry, entity, newParent, currentParent);
             }
         });
 
@@ -127,7 +178,7 @@ void Engine::Systems::HierarchyTracker::associate(unsigned int entity)
 
                     parentHierarchy->removeChild(entity);
 
-                    updateWorldMatrices(this->m_registry, entity, -1);
+                    updateWorldMatrices(this->m_registry, entity, -1, currentParent);
                 }
 
                 // remove as parent of each child
@@ -164,11 +215,11 @@ void Engine::Systems::HierarchyTracker::awaitTransform(unsigned int entity)
                 // calculate initial world matrix
                 if (auto hierarchy{this->m_registry.getComponent<HierarchyComponent>(entity)})
                 {
-                    updateWorldMatrices(this->m_registry, entity, hierarchy->getParent());
+                    updateWorldMatrices(this->m_registry, entity, hierarchy->getParent(), hierarchy->getParent());
                 }
                 else
                 {
-                    updateWorldMatrices(this->m_registry, entity, -1);
+                    updateWorldMatrices(this->m_registry, entity, -1, -1);
                 }
 
                 handleTransformChanges(entity);
@@ -188,7 +239,7 @@ void Engine::Systems::HierarchyTracker::handleTransformChanges(unsigned int enti
             std::shared_ptr<HierarchyComponent> hierarchy{m_registry.getComponent<HierarchyComponent>(entity)};
             // update world matrix based on parent
             int parent = hierarchy->getParent();
-            updateWorldMatrices(this->m_registry, entity, parent, true);
+            updateWorldMatrices(this->m_registry, entity, parent, parent, true);
 
             updateChildren(entity);
         });
@@ -213,6 +264,6 @@ void Engine::Systems::HierarchyTracker::updateChildren(unsigned int entity)
 
     for (unsigned int child : hierarchy->getChildren())
     {
-        updateWorldMatrices(m_registry, child, entity);
+        updateWorldMatrices(m_registry, child, entity, entity);
     }
 }

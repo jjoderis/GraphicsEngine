@@ -35,6 +35,7 @@ int addEntity(Engine::Registry &registry,
 GeometryMap parseGeometries(json &j, const std::filesystem::path &path);
 MaterialMap parseMaterials(json &j, const std::filesystem::path &path);
 ShaderMap parseShaders(json &j, const std::filesystem::path &path);
+void addTransform(Engine::Registry &registry, json &node, int entityIndex);
 
 void SceneUtil::parseScene(Engine::Registry &registry,
                            json &j,
@@ -51,13 +52,12 @@ void SceneUtil::parseScene(Engine::Registry &registry,
     for (auto &node : j["scenes"][0]["nodes"])
     {
         unsigned int nodeIndex = node.get<unsigned int>();
-        addEntity(registry, path, j, j["nodes"][nodeIndex], meshData, textureIndex);
+        auto entityIndex{addEntity(registry, path, j, j["nodes"][nodeIndex], meshData, textureIndex)};
+        addTransform(registry, j["nodes"][nodeIndex], entityIndex);
     }
 
     Engine::Util::invertTextureOnImportOn();
 }
-
-void addTransform(Engine::Registry &registry, json &node, int entityIndex);
 
 int addEntity(Engine::Registry &registry,
               const std::filesystem::path &path,
@@ -77,8 +77,6 @@ int addEntity(Engine::Registry &registry,
         registry.createComponent<Engine::TagComponent>(entityIndex, "Entity " + std::to_string(entityIndex));
     }
 
-    addTransform(registry, node, entityIndex);
-
     if (node.find("children") != node.end())
     {
         for (auto &child : node["children"])
@@ -88,6 +86,7 @@ int addEntity(Engine::Registry &registry,
             auto childHierarchy = registry.createComponent<Engine::HierarchyComponent>(childIndex);
             childHierarchy->setParent(entityIndex);
             registry.updated<Engine::HierarchyComponent>(childIndex);
+            addTransform(registry, j["nodes"][childNodeIndex], childIndex);
         }
     }
 

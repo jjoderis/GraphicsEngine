@@ -76,8 +76,8 @@ int main()
     float defaultData[48]{1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 100.0, 0.0, 0.0, 0.0};
     float *properties{material->getProperty<float>(0)};
     std::memcpy(properties, defaultData, 9 * sizeof(float));
-    registry.createComponent<Engine::OpenGLTextureComponent>(object1)->addTexture(
-        textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D));
+    auto worldTexture = registry.createComponent<Engine::OpenGLTextureComponent>(object1);
+    worldTexture->addTexture(textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D));
 
     registry.createComponent<Engine::RaytracingMaterial>(object1);
 
@@ -86,25 +86,25 @@ int main()
     transform->rotate(MathLib::Util::degToRad(-90), {0, 1, 0});
     transform->update();
     auto geometry = registry.addComponent<Engine::GeometryComponent>(object1, sphereGeometry);
-    registry.createComponent<Engine::OpenGLShaderComponent>(
+    auto textureShader = registry.createComponent<Engine::OpenGLShaderComponent>(
         object1, Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture"));
     registry.createComponent<Engine::RenderComponent>(object1);
 
     unsigned int object2{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(object2, "Object 2");
     registry.addComponent<Engine::GeometryComponent>(object2, geometry);
+    auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(object2);
+    hierarchy->setParent(object1);
+    registry.updated<Engine::HierarchyComponent>(object2);
     auto transform2{registry.createComponent<Engine::TransformComponent>(object2)};
     transform2->translate({0, 0, -1.5});
     transform2->scale({0.2, 0.2, 0.2});
     transform2->update();
     registry.updated<Engine::TransformComponent>(object2);
     registry.addComponent<Engine::OpenGLMaterialComponent>(object2, material);
-    registry.createComponent<Engine::OpenGLShaderComponent>(object2,
-                                                            Engine::loadShaders("../../data/shaders/Phong_Shading"));
+    registry.addComponent<Engine::OpenGLShaderComponent>(object2, textureShader);
+    registry.addComponent<Engine::OpenGLTextureComponent>(object2, worldTexture);
     registry.createComponent<Engine::RenderComponent>(object2);
-    auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(object2);
-    hierarchy->setParent(object1);
-    registry.updated<Engine::HierarchyComponent>(object2);
 
     while (!glfwWindowShouldClose(window))
     {
