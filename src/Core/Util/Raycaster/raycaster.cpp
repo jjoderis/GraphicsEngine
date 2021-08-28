@@ -185,7 +185,7 @@ void calculateTriangleIntersections(Engine::Util::Ray &ray,
         // check if intersection with triangle plane is inside triangle and the triangle is in front of the ray
         if (b1 > 0 && b2 > 0 && b1 + b2 < 1 && t > 0)
         {
-            auto intersection{combine((1 - b1 - b2), p0, b1, p1, b2, p2)};
+            auto intersection{affineCombination((1 - b1 - b2), p0, b1, p1, b2, p2)};
 
             intersection = transform.getMatrixWorld() * intersection;
             auto rayWorldOrigin{transform.getMatrixWorld() * origin};

@@ -9,18 +9,6 @@ MathLib::Point<float, 3> MathLib::operator*(const Matrix<float, 4, 4> &mat, cons
     return mat * MathLib::Point<float, 4>{point, 1};
 }
 
-MathLib::Point<float, 3> MathLib::combine(float a,
-                                          const Point<float, 3> &aPoint,
-                                          float b,
-                                          const Point<float, 3> &bPoint,
-                                          float c,
-                                          const Point<float, 3> &cPoint)
-{
-    return {a * aPoint(0) + b * bPoint(0) + c * cPoint(0),
-            a * aPoint(1) + b * bPoint(1) + c * cPoint(1),
-            a * aPoint(2) + b * bPoint(2) + c * cPoint(2)};
-}
-
 Engine::Matrix4 Engine::getTranslation(const Engine::Vector3 &position) { return MathLib::getTranslation(position); }
 
 Engine::Matrix4 Engine::getScaling(const Vector3 &scaling) { return MathLib::getScaling(scaling); }

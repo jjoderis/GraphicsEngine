@@ -40,12 +40,6 @@ namespace MathLib
 {
 Vector<float, 3> operator*(const Matrix<float, 4, 4> &mat, const Vector<float, 3> &vec);
 Point<float, 3> operator*(const Matrix<float, 4, 4> &mat, const Point<float, 3> &point);
-Point<float, 3> combine(float a,
-                        const Point<float, 3> &aPoint,
-                        float b,
-                        const Point<float, 3> &bPoint,
-                        float c,
-                        const Point<float, 3> &cPoint);
 } // namespace MathLib
 
 #endif

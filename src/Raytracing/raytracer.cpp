@@ -147,10 +147,12 @@ Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ra
             auto &vertexNormals = geometry->getNormals();
             auto intersectionFaceIndex = intersection.getFace();
 
-            auto surfaceNormal =
-                normalize(((1 - baryParams(0) - baryParams(1)) * vertexNormals[faces[intersectionFaceIndex]] +
-                           baryParams(0) * vertexNormals[faces[intersectionFaceIndex + 1]] +
-                           baryParams(1) * vertexNormals[faces[intersectionFaceIndex + 2]]));
+            auto surfaceNormal = affineCombination((1 - baryParams(0) - baryParams(1)),
+                                                   vertexNormals[faces[intersectionFaceIndex]],
+                                                   baryParams(0),
+                                                   vertexNormals[faces[intersectionFaceIndex + 1]],
+                                                   baryParams(1),
+                                                   vertexNormals[faces[intersectionFaceIndex + 2]]);
 
             auto reflectedDirection = reflect(ray.getDirection(), surfaceNormal);
             auto newOrigin =
@@ -226,9 +228,12 @@ Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
     auto &faces = geometry->getFaces();
     auto &vertexNormals = geometry->getNormals();
 
-    auto surfaceNormal = (1 - baryParams(0) - baryParams(1)) * vertexNormals[faces[intersectionFaceIndex]] +
-                         baryParams(0) * vertexNormals[faces[intersectionFaceIndex + 1]] +
-                         baryParams(1) * vertexNormals[faces[intersectionFaceIndex + 2]];
+    auto surfaceNormal = affineCombination((1 - baryParams(0) - baryParams(1)),
+                                           vertexNormals[faces[intersectionFaceIndex]],
+                                           baryParams(0),
+                                           vertexNormals[faces[intersectionFaceIndex + 1]],
+                                           baryParams(1),
+                                           vertexNormals[faces[intersectionFaceIndex + 2]]);
 
     surfaceNormal = transform->getNormalMatrixWorld() * Engine::Vector4{surfaceNormal, 1};
     normalize(surfaceNormal);
