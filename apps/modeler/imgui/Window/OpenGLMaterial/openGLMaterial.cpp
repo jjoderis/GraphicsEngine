@@ -48,7 +48,7 @@ void UICreation::MaterialComponentWindow::main()
         ImGui::Text("OpenGL Shader");
         ImGui::SameLine();
         ImGui::Button("Drag##OpenGLShader");
-        createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(m_shaderWindow.getShader());
+        createImGuiComponentDragSource<Engine::OpenGLShaderComponent>(shader);
         if (!m_registry.hasComponent<Engine::RenderComponent>(m_currentEntity))
         {
             ImGui::SameLine();
