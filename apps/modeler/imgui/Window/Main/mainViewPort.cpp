@@ -287,7 +287,7 @@ void UICreation::MainViewPort::dragCamera(const Engine::IVector2 &newPixel)
 
         auto t{newCameraSpacePosition - cameraSpacePosition};
 
-        t = m_cameraTransform->getViewMatrixWorldInverse() * Engine::Vector4{t, 0};
+        t = m_cameraTransform->getViewMatrixWorldInverse() * t;
 
         if (t.norm() > 200)
         {
@@ -319,13 +319,11 @@ void UICreation::MainViewPort::onMouseScroll(float scroll)
         auto cameraSpacePosition = (m_cameraTransform->getViewMatrixWorld() * m_currentPoint) - Engine::Point3{0, 0, 0};
         normalize(cameraSpacePosition);
         auto cameraSpaceDirection = cameraSpacePosition * scroll * 0.1;
-        Engine::Vector3 direction =
-            m_cameraTransform->getViewMatrixWorldInverse() * Engine::Vector4{cameraSpaceDirection, 0};
+        Engine::Vector3 direction = m_cameraTransform->getViewMatrixWorldInverse() * cameraSpaceDirection;
 
         auto transform = m_registry.getComponent<Engine::TransformComponent>(m_selectedEntity);
 
-        transform->translate(transform->getModelMatrix() * transform->getMatrixWorldInverse() *
-                             Engine::Vector4{direction, 0});
+        transform->translate(transform->getModelMatrix() * transform->getMatrixWorldInverse() * direction);
         transform->update();
         m_registry.updated<Engine::TransformComponent>(m_selectedEntity);
 

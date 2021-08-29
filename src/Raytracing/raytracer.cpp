@@ -154,6 +154,8 @@ Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ra
                                                    baryParams(1),
                                                    vertexNormals[faces[intersectionFaceIndex + 2]]);
 
+            surfaceNormal = transform->getNormalMatrixWorld() * surfaceNormal;
+
             auto reflectedDirection = reflect(ray.getDirection(), surfaceNormal);
             auto newOrigin =
                 intersection.getIntersection() + reflectedDirection * 10 * std::numeric_limits<float>::epsilon();
@@ -235,7 +237,7 @@ Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
                                            baryParams(1),
                                            vertexNormals[faces[intersectionFaceIndex + 2]]);
 
-    surfaceNormal = transform->getNormalMatrixWorld() * Engine::Vector4{surfaceNormal, 1};
+    surfaceNormal = transform->getNormalMatrixWorld() * surfaceNormal;
     normalize(surfaceNormal);
 
     auto origin = intersection.getIntersection() + 10 * std::numeric_limits<float>::epsilon() * surfaceNormal;
