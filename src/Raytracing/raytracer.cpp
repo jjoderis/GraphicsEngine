@@ -12,14 +12,8 @@
 
 Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ray);
 
-void raytraceScenePart(Engine::Registry &registry,
-                       std::vector<float> &texels,
-                       int startX,
-                       int startY,
-                       int endX,
-                       int endY,
-                       int width,
-                       int height);
+void raytraceScenePart(
+    Engine::Registry &registry, std::vector<float> &texels, int start, int numTexels, int width, int height);
 
 std::vector<float> Engine::raytraceScene(Engine::Registry &registry, int width, int height)
 {
@@ -30,68 +24,41 @@ std::vector<float> Engine::raytraceScene(Engine::Registry &registry, int width, 
 
     auto possibleThreads = std::thread::hardware_concurrency();
 
-    if (possibleThreads < 4)
+    std::vector<std::thread> threads{};
+    threads.reserve(possibleThreads);
+
+    int texelsPerThread{(width * height) / possibleThreads};
+    int currentOffset{0};
+    for (int i{0}; i < possibleThreads - 1; ++i)
     {
-        raytraceScenePart(registry, pixelColors, 0, 0, width, height, width, height);
-    }
-    {
-        possibleThreads = pow(2, floor(log2(possibleThreads)) - 1);
-
-        int medianY = height / 2;
-
-        int xSliceSize = width / possibleThreads;
-
-        std::vector<std::thread> threads{};
-        threads.reserve(possibleThreads * 2);
-
-        int startX = 0;
-
-        for (int i = 0; i < (possibleThreads - 1); ++i)
-        {
-            startX = i * xSliceSize;
-            int endX = startX + xSliceSize;
-            threads.emplace_back(std::thread(
-                raytraceScenePart, std::ref(registry), std::ref(pixelColors), startX, 0, endX, medianY, width, height));
-            threads.emplace_back(std::thread(raytraceScenePart,
-                                             std::ref(registry),
-                                             std::ref(pixelColors),
-                                             startX,
-                                             medianY,
-                                             endX,
-                                             height,
-                                             width,
-                                             height));
-        }
-
-        threads.emplace_back(std::thread(
-            raytraceScenePart, std::ref(registry), std::ref(pixelColors), startX, 0, width, medianY, width, height));
         threads.emplace_back(std::thread(raytraceScenePart,
                                          std::ref(registry),
                                          std::ref(pixelColors),
-                                         startX,
-                                         medianY,
-                                         width,
-                                         height,
+                                         currentOffset,
+                                         texelsPerThread,
                                          width,
                                          height));
+        currentOffset += texelsPerThread;
+    }
 
-        for (int i = 0; i < threads.size(); ++i)
-        {
-            threads[i].join();
-        }
+    threads.emplace_back(std::thread(raytraceScenePart,
+                                     std::ref(registry),
+                                     std::ref(pixelColors),
+                                     currentOffset,
+                                     (width * height) - currentOffset,
+                                     width,
+                                     height));
+
+    for (int i = 0; i < threads.size(); ++i)
+    {
+        threads[i].join();
     }
 
     return pixelColors;
 }
 
-void raytraceScenePart(Engine::Registry &registry,
-                       std::vector<float> &texels,
-                       int startX,
-                       int startY,
-                       int endX,
-                       int endY,
-                       int width,
-                       int height)
+void raytraceScenePart(
+    Engine::Registry &registry, std::vector<float> &texels, int start, int numTexels, int width, int height)
 {
     unsigned int activeCameraEntity = registry.getOwners<Engine::ActiveCameraComponent>()[0].front();
     auto camera = registry.getComponent<Engine::CameraComponent>(activeCameraEntity);
@@ -100,18 +67,18 @@ void raytraceScenePart(Engine::Registry &registry,
 
     Engine::Vector4 color;
 
-    for (int y = startY; y < endY; ++y)
+    for (int i{start}; i < start + numTexels; ++i)
     {
-        for (int x = startX; x < endX; ++x)
-        {
-            Engine::Util::Ray cameraRay = adjustedCamera.getCameraRay({x, y}, {width, height});
+        int x{i % width};
+        int y{i / width};
 
-            color = calculateColor(registry, cameraRay);
+        Engine::Util::Ray cameraRay = adjustedCamera.getCameraRay({x, y}, {width, height});
 
-            texels[3 * ((width * y) + x)] = color(0);
-            texels[3 * ((width * y) + x) + 1] = color(1);
-            texels[3 * ((width * y) + x) + 2] = color(2);
-        }
+        color = calculateColor(registry, cameraRay);
+
+        texels[3 * i] = color(0);
+        texels[3 * i + 1] = color(1);
+        texels[3 * i + 2] = color(2);
     }
 }
 
@@ -171,9 +138,10 @@ Engine::Vector4 calculateColor(Engine::Registry &registry, Engine::Util::Ray &ra
     return Engine::Vector4{0.9, 0.126, 0.777, 1};
 }
 
-Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
+Engine::Vector4 calculatePointLightColor(Engine::Registry &registry,
                                          unsigned int entity,
-                                         const Engine::Util::RayIntersection &intersection);
+                                         const Engine::Util::RayIntersection &intersection,
+                                         const Engine::Vector4 &materialColor);
 
 Engine::Vector4 calculateLighting(Engine::Registry &registry,
                                   const Engine::Vector4 &materialColor,
@@ -185,8 +153,7 @@ Engine::Vector4 calculateLighting(Engine::Registry &registry,
     {
         for (auto owner : pointLightOwners)
         {
-            Engine::Vector3 lightColor = calculatePointLightColor(registry, owner, intersection);
-            color += materialColor * Engine::Vector4{lightColor, 1};
+            color += calculatePointLightColor(registry, owner, intersection, materialColor);
         }
     }
 
@@ -208,9 +175,10 @@ float clamp(float val, float min, float max)
     return val;
 }
 
-Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
+Engine::Vector4 calculatePointLightColor(Engine::Registry &registry,
                                          unsigned int entity,
-                                         const Engine::Util::RayIntersection &intersection)
+                                         const Engine::Util::RayIntersection &intersection,
+                                         const Engine::Vector4 &materialColor)
 {
     Engine::Point3 lighPosition{0, 0, 0};
 
@@ -260,5 +228,16 @@ Engine::Vector3 calculatePointLightColor(Engine::Registry &registry,
 
     auto light = registry.getComponent<Engine::PointLightComponent>(entity);
 
-    return lightAngle * light->getColor();
+    auto reflected{normalize(reflect(-lightVector, surfaceNormal))};
+
+    auto activeCamera{registry.getOwners<Engine::ActiveCameraComponent>()[0].front()};
+    auto cameraTransform{registry.getComponent<Engine::TransformComponent>(activeCamera)};
+    auto cameraPosition{cameraTransform->getViewMatrixInverse() * Engine::Point3{0, 0, 0}};
+    auto cameraDirection{normalize((cameraPosition - intersection.getIntersection()))};
+
+    auto s{clamp(dot(cameraDirection, reflected), 0, 1)};
+
+    s = std::max<float>(pow(s, 100), 0.0f);
+
+    return lightAngle * Engine::Vector4{light->getColor(), 1} * materialColor + s * Engine::Vector4{1, 1, 1, 1};
 }
