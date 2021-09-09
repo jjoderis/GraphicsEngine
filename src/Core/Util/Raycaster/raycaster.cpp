@@ -169,6 +169,7 @@ void calculateTriangleIntersections(Engine::Util::Ray &ray,
 
     for (auto &startIndex : triangles)
     {
+        // ray triangle intersection as seen here: https://youtu.be/PI5jbAdT2zE?t=2259
         auto &p0{vertices[faces[startIndex]]};
         auto &p1{vertices[faces[startIndex + 1]]};
         auto &p2{vertices[faces[startIndex + 2]]};
