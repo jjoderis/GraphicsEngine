@@ -67,3 +67,48 @@ Engine::Matrix4 Engine::lookAt(const Vector3 &position, const Vector3 &up, const
     };
     // clang-format on
 }
+
+Engine::Ray::Ray(const Point3 &origin, const Vector3 &direction) : m_origin{origin}, m_direction{direction} {}
+
+const Engine::Point3 &Engine::Ray::getOrigin() const { return m_origin; }
+const Engine::Vector3 &Engine::Ray::getDirection() const { return m_direction; }
+
+Engine::Point3 Engine::Ray::at(double t) const { return m_origin + t * m_direction; }
+
+Engine::Ray Engine::operator*(const Matrix4 &matrix, const Ray &ray)
+{
+    auto transformedOrigin{matrix * ray.getOrigin()};
+    auto transformedDirection{matrix * ray.getDirection()};
+
+    return Ray{transformedOrigin, transformedDirection};
+}
+
+// Code from Ray Tracing in One Weekend: https://raytracing.github.io/books/RayTracingInOneWeekend.html
+
+Engine::Vector3 Engine::randomInUnitSphere()
+{
+    while (true)
+    {
+        auto v{Vector3::random(-1, 1)};
+        if (v.norm_squared() >= 1)
+        {
+            continue;
+        }
+        return v;
+    }
+}
+
+Engine::Vector3 Engine::randomUnitVector() { return normalize(randomInUnitSphere()); }
+
+Engine::Vector3 Engine::randomInHemisphere(const Vector3 &normal)
+{
+    Vector3 inUnitSphere{randomInUnitSphere()};
+    if (dot(inUnitSphere, normal) > 0)
+    {
+        return inUnitSphere;
+    }
+    else
+    {
+        return -inUnitSphere;
+    }
+}

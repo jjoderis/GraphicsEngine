@@ -11,22 +11,6 @@ class Registry;
 namespace Util
 {
 
-class Ray
-{
-public:
-    Ray() = delete;
-    Ray(const Point3 &origin, const Vector3 &direction);
-
-    const Point3 &getOrigin() const;
-    const Vector3 &getDirection() const;
-
-private:
-    Point3 m_origin;
-    Vector3 m_direction;
-};
-
-Ray operator*(const Matrix4 &matrix, const Ray &ray);
-
 class RayIntersection
 {
 public:

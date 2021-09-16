@@ -8,7 +8,6 @@
 #include <Components/Tag/tag.h>
 #include <Components/Transform/transform.h>
 #include <Core/ECS/registry.h>
-#include <Core/Util/Raycaster/raycaster.h>
 #include <OpenGL/Renderer/renderer.h>
 #include <filesystem>
 #include <imgui.h>
@@ -29,7 +28,6 @@ UICreation::MainViewPort::MainViewPort(Engine::Registry &registry,
     m_cameraEntity = registry.addEntity();
     registry.createComponent<Engine::TagComponent>(m_cameraEntity, "Modeler Camera");
     auto transform = registry.createComponent<Engine::TransformComponent>(m_cameraEntity);
-    transform->setRotation(M_PI, {0.0, 1.0, 0.0});
     transform->update();
     m_cameraTransform = transform;
     m_camera = registry.createComponent<Engine::CameraComponent>(m_cameraEntity, registry);
@@ -204,9 +202,19 @@ void UICreation::MainViewPort::onLeftClick(const Engine::IVector2 &clickedPixel)
         m_selectedEntity = m_clickedEntity;
     }
 }
+
+Engine::Vector2 getScreenPosition(const Engine::IVector2 &clickedPixel, const Engine::IVector2 &size)
+{
+    auto u = float(clickedPixel(0)) / (size(0) - 1);
+    auto v = float(clickedPixel(1)) / (size(1) - 1);
+
+    return {u, v};
+}
+
 void UICreation::MainViewPort::onRightClick(const Engine::IVector2 &clickedPixel)
 {
-    Engine::Util::Ray cameraRay = m_camera->getCameraRay(clickedPixel, m_size);
+    auto screenPosition{getScreenPosition(clickedPixel, m_size)};
+    Engine::Ray cameraRay = m_camera->getCameraRay(screenPosition(0), screenPosition(1));
 
     auto direction = m_cameraTransform->getViewMatrixWorldInverse() * cameraRay.getDirection();
 
@@ -233,7 +241,8 @@ void UICreation::MainViewPort::onMouseDrag(const Engine::IVector2 &dragDelta)
 
 void UICreation::MainViewPort::dragEntity(const Engine::IVector2 &newPixel)
 {
-    auto newRay = m_camera->getCameraSpaceRay(newPixel, m_size);
+    auto screenPosition{getScreenPosition(newPixel, m_size)};
+    auto newRay = m_camera->getCameraSpaceRay(screenPosition(0), screenPosition(1));
 
     auto cameraSpacePosition{m_cameraTransform->getViewMatrixWorld() * m_currentPoint};
 
@@ -264,8 +273,12 @@ void UICreation::MainViewPort::dragEntity(const Engine::IVector2 &newPixel)
 
 void UICreation::MainViewPort::dragCamera(const Engine::IVector2 &newPixel)
 {
-    auto oldRay{m_camera->getCameraSpaceRay(m_currentPixel, m_size)};
-    auto newRay{m_camera->getCameraSpaceRay(newPixel, m_size)};
+    auto oldScreenPosition{getScreenPosition(m_currentPixel, m_size)};
+    auto oldRay = m_camera->getCameraSpaceRay(oldScreenPosition(0), oldScreenPosition(1));
+
+    auto newScreenPosition{getScreenPosition(newPixel, m_size)};
+    auto newRay = m_camera->getCameraSpaceRay(newScreenPosition(0), newScreenPosition(1));
+
     if (ImGui::IsKeyDown(82))
     {
         float angle{acos(dot(oldRay.getDirection(), newRay.getDirection()))};

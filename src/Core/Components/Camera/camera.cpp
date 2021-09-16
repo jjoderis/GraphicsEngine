@@ -18,6 +18,18 @@ Engine::CameraComponent::CameraComponent(Registry &registry) : m_registry{regist
         });
 }
 
+void Engine::CameraComponent::update()
+{
+    auto h{tan(m_fov / 2)};
+
+    float viewportHeight{2.0 * h};
+    float viewportWidth{m_aspect * viewportHeight};
+
+    m_horizontal = Engine::Vector3{viewportWidth, 0, 0};
+    m_vertical = Engine::Vector3{0, viewportHeight, 0};
+    m_lowerLeftCorner = Engine::Point3{0, 0, 0} - m_horizontal / 2 - m_vertical / 2 - Engine::Vector3{0, 0, 1.0};
+}
+
 void Engine::CameraComponent::updateAspect(float aspect)
 {
     m_aspect = aspect;
@@ -55,7 +67,11 @@ void Engine::CameraComponent::calculateProjection()
 const Engine::Matrix4 &Engine::CameraComponent::getProjectionMatrix() { return m_projectionMatrix; }
 
 float &Engine::CameraComponent::getNear() { return m_near; }
-void Engine::CameraComponent::setNear(float near) { m_near = near; }
+void Engine::CameraComponent::setNear(float near)
+{
+    m_near = near;
+    update();
+}
 
 float &Engine::CameraComponent::getFar() { return m_far; }
 void Engine::CameraComponent::setFar(float far) { m_far = far; }
@@ -73,30 +89,31 @@ float &Engine::CameraComponent::getTop() { return m_top; }
 void Engine::CameraComponent::setTop(float top) { m_top = top; }
 
 float &Engine::CameraComponent::getFov() { return m_fov; }
-void Engine::CameraComponent::setFov(float fov) { m_fov = fov; }
+void Engine::CameraComponent::setFov(float fov)
+{
+    m_fov = fov;
+    update();
+}
 
 float &Engine::CameraComponent::getAspect() { return m_aspect; }
-void Engine::CameraComponent::setAspect(float aspect) { m_aspect = aspect; }
+void Engine::CameraComponent::setAspect(float aspect)
+{
+    m_aspect = aspect;
+    update();
+}
 
 bool Engine::CameraComponent::isPerspective() { return m_projection == ProjectionType::Perspective; }
 bool Engine::CameraComponent::isOrtographic() { return m_projection == ProjectionType::Ortographic; }
 
-Engine::Util::Ray Engine::CameraComponent::getCameraSpaceRay(const IVector2 &pixelPosition, const IVector2 &screenSize)
+Engine::Ray Engine::CameraComponent::getCameraSpaceRay(double u, double v) const
 {
-    float normalizedX = 2 * ((pixelPosition(0) + 0.5) / screenSize(0)) - 1;
-    float normalizedY = 1 - 2 * ((pixelPosition(1) + 0.5) / screenSize(1));
-
-    float projectionPlaneWidth = tan(m_fov / 2);
-
-    float cameraX = projectionPlaneWidth * m_aspect * normalizedX;
-    float cameraY = projectionPlaneWidth * normalizedY;
-
-    return {{0, 0, 0}, {cameraX, cameraY, -1}};
+    return Engine::Ray{Engine::Point3{0, 0, 0},
+                       m_lowerLeftCorner + u * m_horizontal + v * m_vertical - Engine::Point3{0, 0, 0}};
 }
 
-Engine::Util::Ray Engine::CameraComponent::getCameraRay(const IVector2 &pixelPosition, const IVector2 &screenSize)
+Engine::Ray Engine::CameraComponent::getCameraRay(double u, double v) const
 {
-    Engine::Util::Ray ray{getCameraSpaceRay(pixelPosition, screenSize)};
+    Engine::Ray ray{getCameraSpaceRay(u, v)};
 
     if (auto transform{m_registry.getComponent<Engine::TransformComponent>(m_entity)})
     {

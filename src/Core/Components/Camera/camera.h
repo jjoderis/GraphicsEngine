@@ -9,11 +9,7 @@ namespace Engine
 {
 class TransformComponent;
 class Registry;
-
-namespace Util
-{
 class Ray;
-}
 
 enum class ProjectionType
 {
@@ -39,12 +35,17 @@ private:
     float m_top{1.0f};
     float m_fov{M_PI_4};    // 45 degrees
     float m_aspect{16 / 9}; // use actual screen values here
+    Engine::Vector3 m_horizontal{};
+    Engine::Vector3 m_vertical{};
+    Engine::Point3 m_lowerLeftCorner{};
 
     ProjectionType m_projection{ProjectionType::Perspective};
 
 public:
     CameraComponent() = delete;
     CameraComponent(Registry &registry);
+
+    void update();
 
     void updateAspect(float aspect);
     void calculateProjection();
@@ -78,8 +79,8 @@ public:
     bool isPerspective();
     bool isOrtographic();
 
-    Util::Ray getCameraRay(const IVector2 &pixelPosition, const IVector2 &screenSize);
-    Util::Ray getCameraSpaceRay(const IVector2 &pixelPosition, const IVector2 &screenSize);
+    Ray getCameraRay(double u, double v) const;
+    Ray getCameraSpaceRay(double u, double v) const;
 };
 
 class ActiveCameraComponent

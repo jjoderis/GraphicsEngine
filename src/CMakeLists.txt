@@ -93,11 +93,15 @@ target_include_directories(engineOpenGL INTERFACE Core/ OpenGL/)
 set(RAYTRACING_HEADERS
     Raytracing/raytracer.h
     Raytracing/Components/Material/raytracingMaterial.h
+    Raytracing/Components/Hittable/hittable.h
+    Raytracing/Util/hitrecord.h
 )
 
 set(RAYTRACING_SOURCES
     Raytracing/raytracer.cpp
     Raytracing/Components/Material/raytracingMaterial.cpp
+    Raytracing/Components/Hittable/hittable.cpp
+    Raytracing/Util/hitrecord.cpp
 )
 
 add_library(engineRaytracing ${RAYTRACING_SOURCES} ${RAYTRACING_HEADERS})

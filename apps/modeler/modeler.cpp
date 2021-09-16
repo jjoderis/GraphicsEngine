@@ -28,6 +28,7 @@
 #include <OpenGL/Systems/ShaderTracker/shaderTracker.h>
 #include <OpenGL/Systems/TransformTracker/transformTracker.h>
 #include <OpenGL/Util/textureIndex.h>
+#include <Raytracing/Components/Hittable/hittable.h>
 #include <Raytracing/Components/Material/raytracingMaterial.h>
 #include <Systems/RenderTracker/renderTracker.h>
 #include <cstring>
@@ -37,6 +38,39 @@
 GLFWwindow *Window::m_window = nullptr;
 Engine::Registry registry{};
 Engine::Util::OpenGLTextureIndex textureIndex{};
+
+void addSphere(Engine::Registry &registry,
+               const char *name,
+               const Engine::Vector3 &position,
+               float radius,
+               const Engine::Vector3 &color,
+               int material,
+               float refractionIndex = 0)
+{
+    unsigned int sphere{registry.addEntity()};
+    registry.createComponent<Engine::TagComponent>(sphere, name);
+
+    auto transform{registry.createComponent<Engine::TransformComponent>(sphere)};
+    transform->translate(position);
+    transform->update();
+
+    registry.addComponent<Engine::Hittable>(sphere,
+                                            std::make_shared<Engine::HittableSphere>(Engine::Point3{0, 0, 0}, radius));
+
+    if (material == 0)
+    {
+        registry.addComponent<Engine::RaytracingMaterial>(sphere, std::make_shared<Engine::LambertianMaterial>(color));
+    }
+    else if (material == 1)
+    {
+        registry.addComponent<Engine::RaytracingMaterial>(sphere, std::make_shared<Engine::MetalMaterial>(color, 0));
+    }
+    else
+    {
+        registry.addComponent<Engine::RaytracingMaterial>(
+            sphere, std::make_shared<Engine::DielectricMaterial>(refractionIndex));
+    }
+}
 
 int main()
 {
@@ -58,53 +92,19 @@ int main()
 
     unsigned int light1{registry.addEntity()};
     registry.createComponent<Engine::TagComponent>(light1, "Light 1");
-    registry.createComponent<Engine::PointLightComponent>(light1);
+    auto pointLight{registry.createComponent<Engine::PointLightComponent>(light1)};
+
+    pointLight->setIntensity(0.3);
 
     registry.createComponent<Engine::TransformComponent>(light1);
-    auto sphereGeometry = Engine::createSphereGeometry(1.0, 20, 20);
-    registry.addComponent<Engine::GeometryComponent>(light1, sphereGeometry);
 
-    unsigned int object1{registry.addEntity()};
-    registry.createComponent<Engine::TagComponent>(object1, "Object 1");
-    auto material = registry.createComponent<Engine::OpenGLMaterialComponent>(object1);
-    // TODO: nicer way to set data
-    material->setMaterialData(
-        Engine::ShaderMaterialData{48,
-                                   std::vector<Engine::MaterialUniformData>{{"diffuseColor", GL_FLOAT_VEC4, 0},
-                                                                            {"specularColor", GL_FLOAT_VEC4, 16},
-                                                                            {"specularExponent", GL_FLOAT, 32}}});
-    float defaultData[48]{1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 100.0, 0.0, 0.0, 0.0};
-    float *properties{material->getProperty<float>(0)};
-    std::memcpy(properties, defaultData, 9 * sizeof(float));
-    registry.createComponent<Engine::OpenGLTextureComponent>(object1)->addTexture(
-        textureIndex.needTexture("../../data/textures/earth.jpg", GL_TEXTURE_2D));
+    addSphere(registry, "Center Sphere", {0.0f, 0.0f, -1.0f}, 0.5, {0.1, 0.2, 0.5}, 0);
 
-    registry.createComponent<Engine::RaytracingMaterial>(object1);
+    addSphere(registry, "Left Sphere", {-1.0f, 0.0f, -1.0f}, 0.5, {0.8, 0.8, 0.8}, 2, 1.5);
 
-    auto transform = registry.createComponent<Engine::TransformComponent>(object1);
-    transform->translate(Engine::Vector3{0.0f, 0.0f, 4.0f});
-    transform->rotate(MathLib::Util::degToRad(-90), {0, 1, 0});
-    transform->update();
-    auto geometry = registry.addComponent<Engine::GeometryComponent>(object1, sphereGeometry);
-    registry.createComponent<Engine::OpenGLShaderComponent>(
-        object1, Engine::loadShaders("../../data/shaders/Phong_Sphere_Texture"));
-    registry.createComponent<Engine::RenderComponent>(object1);
+    addSphere(registry, "Right Sphere", {1.0f, 0.0f, -1.0f}, 0.5, {0.8, 0.6, 0.2}, 1);
 
-    unsigned int object2{registry.addEntity()};
-    registry.createComponent<Engine::TagComponent>(object2, "Object 2");
-    registry.addComponent<Engine::GeometryComponent>(object2, geometry);
-    auto transform2{registry.createComponent<Engine::TransformComponent>(object2)};
-    transform2->translate({0, 0, -1.5});
-    transform2->scale({0.2, 0.2, 0.2});
-    transform2->update();
-    registry.updated<Engine::TransformComponent>(object2);
-    registry.addComponent<Engine::OpenGLMaterialComponent>(object2, material);
-    registry.createComponent<Engine::OpenGLShaderComponent>(object2,
-                                                            Engine::loadShaders("../../data/shaders/Phong_Shading"));
-    registry.createComponent<Engine::RenderComponent>(object2);
-    auto hierarchy = registry.createComponent<Engine::HierarchyComponent>(object2);
-    hierarchy->setParent(object1);
-    registry.updated<Engine::HierarchyComponent>(object2);
+    addSphere(registry, "Ground Sphere", {0.0f, -100.5f, -1.0f}, 100, {0.8, 0.8, 0.0}, 0);
 
     while (!glfwWindowShouldClose(window))
     {

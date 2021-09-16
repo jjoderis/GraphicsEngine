@@ -285,7 +285,8 @@ void UI::render(Engine::Registry &registry)
             {
                 if (!strcmp(possibleComponents[possible_component_current], "Raytracing Material"))
                 {
-                    registry.createComponent<Engine::RaytracingMaterial>(selectedEntity);
+                    registry.addComponent<Engine::RaytracingMaterial>(
+                        selectedEntity, std::make_shared<Engine::LambertianMaterial>(Engine::Vector3{0.5, 0.5, 0.5}));
                 }
                 else if (!strcmp(possibleComponents[possible_component_current], "Geometry"))
                 {

@@ -40,6 +40,17 @@ bool isImage(const fs::path &path)
     return extension == ".jpg" || extension == ".jpeg" || extension == ".png";
 }
 
+void renderMaterialUI(std::shared_ptr<Engine::LambertianMaterial> material)
+{
+    ImGui::ColorEdit4("Color##Raytrace", material->getAlbedo().data());
+}
+
+void renderMaterialUI(std::shared_ptr<Engine::MetalMaterial> material)
+{
+    ImGui::ColorEdit4("Color##Raytrace", material->getAlbedo().data());
+    ImGui::DragFloat("Fuzziness##Raytracing", &material->getFuzz(), 0.001, 0, 1.0);
+}
+
 void UICreation::MaterialComponentWindow::main()
 {
 
@@ -183,27 +194,23 @@ void UICreation::MaterialComponentWindow::main()
             m_registry.removeComponent<Engine::RaytracingMaterial>(m_currentEntity);
         }
 
-        ImGui::ColorEdit4("Color##Raytrace", raytracingMaterial->getColor().data());
-        bool isReflective = raytracingMaterial->isReflective();
-        ImGui::Checkbox("Reflective##Raytrace", &isReflective);
-        if (ImGui::IsItemClicked(0))
+        if (raytracingMaterial->getType() == "Lambertian")
         {
-            if (!isReflective)
-            {
-                raytracingMaterial->makeReflective();
-            }
-            else
-            {
-                raytracingMaterial->makeUnreflective();
-            }
+            renderMaterialUI(std::dynamic_pointer_cast<Engine::LambertianMaterial>(raytracingMaterial));
         }
+        else if (raytracingMaterial->getType() == "Metal")
+        {
+            renderMaterialUI(std::dynamic_pointer_cast<Engine::MetalMaterial>(raytracingMaterial));
+        }
+
         ImGui::Separator();
     }
     else
     {
         if (ImGui::Button("Add Raytracing Material"))
         {
-            m_registry.createComponent<Engine::RaytracingMaterial>(m_selectedEntity);
+            m_registry.addComponent<Engine::RaytracingMaterial>(
+                m_selectedEntity, std::make_shared<Engine::LambertianMaterial>(Engine::Vector3{0.5, 0.5, 0.5}));
         }
     }
 }

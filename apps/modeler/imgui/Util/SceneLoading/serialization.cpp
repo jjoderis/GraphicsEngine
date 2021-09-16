@@ -154,9 +154,9 @@ int addEntity(unsigned int entity,
 
                 if (rtMaterial)
                 {
-                    auto &rtColor{rtMaterial->getColor()};
-                    materialNode["pbrMetallicRoughness"]["baseColorFactor"] = {
-                        rtColor(0), rtColor(1), rtColor(2), rtColor(2)};
+                    // auto &rtColor{rtMaterial->getColor()};
+                    // materialNode["pbrMetallicRoughness"]["baseColorFactor"] = {
+                    //     rtColor(0), rtColor(1), rtColor(2), rtColor(2)};
                 }
 
                 if (texture)

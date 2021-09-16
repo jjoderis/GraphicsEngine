@@ -137,11 +137,11 @@ int addEntity(Engine::Registry &registry,
                         material["pbrMetallicRoughness"].end())
                     {
                         json &jColor{material["pbrMetallicRoughness"]["baseColorFactor"]};
-                        auto color{registry.createComponent<Engine::RaytracingMaterial>(primitiveEntity)};
+                        // auto color{registry.createComponent<Engine::RaytracingMaterial>(primitiveEntity)};
 
                         for (int i{0}; i < jColor.size(); ++i)
                         {
-                            color->getColor()(i) = jColor[i];
+                            // color->getColor()(i) = jColor[i];
                         }
                     }
                 }

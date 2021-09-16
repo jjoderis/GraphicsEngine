@@ -25,6 +25,24 @@ using Matrix2 = MathLib::Matrix<float, 2, 2>;
 using Matrix3 = MathLib::Matrix<float, 3, 3>;
 using Matrix4 = MathLib::Matrix<float, 4, 4>;
 
+class Ray
+{
+public:
+    Ray() = delete;
+    Ray(const Point3 &origin, const Vector3 &direction);
+
+    const Point3 &getOrigin() const;
+    const Vector3 &getDirection() const;
+
+    Point3 at(double t) const;
+
+private:
+    Point3 m_origin;
+    Vector3 m_direction;
+};
+
+Ray operator*(const Matrix4 &matrix, const Ray &ray);
+
 Matrix4 getTranslation(const Vector3 &location);
 Matrix4 getScaling(const Vector3 &scaling);
 Matrix4 getRotation(const Vector3 &rotation);
@@ -33,6 +51,10 @@ Matrix4 getRotation(const Quaternion &quat);
 Matrix4 lookAt(const Vector3 &position, const Vector3 &up, const Vector3 &target);
 
 Vector3 extractEuler(const Matrix4 &rotationMat);
+
+Vector3 randomInUnitSphere();
+Vector3 randomUnitVector();
+Vector3 randomInHemisphere(const Vector3 &normal);
 
 } // namespace Engine
 
