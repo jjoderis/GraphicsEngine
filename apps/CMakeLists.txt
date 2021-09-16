@@ -46,3 +46,18 @@ target_include_directories(modelerLib PUBLIC ${IMGUI_INCLUDE_DIR} ${SRC_DIR} ${N
 add_executable(Modeler modeler/modeler.cpp ${IMGUI_SOURCES})
 target_include_directories(Modeler PRIVATE ${SRC_DIR})
 target_link_libraries(Modeler modelerLib)
+
+# Compute Shader Tests
+add_library(ComputeTestLib
+    compute-shader-test/window/window.cpp
+    compute-shader-test/openGL/openGL.cpp
+    compute-shader-test/helpers/shaderHelper.cpp
+    compute-shader-test/helpers/textureHelper.cpp
+)
+
+target_link_libraries(ComputeTestLib glfw glad engineCore engineOpenGL stb)
+target_include_directories(ComputeTestLib PUBLIC ${SRC_DIR})
+
+add_executable(ComputeTest compute-shader-test/main.cpp)
+target_include_directories(ComputeTest PRIVATE ${SRC_DIR})
+target_link_libraries(ComputeTest ComputeTestLib)
