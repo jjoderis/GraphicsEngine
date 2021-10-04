@@ -447,8 +447,8 @@ int main()
         "   HitRecord tempRec = HitRecord(vec3(0,0,0), vec3(0,0,0), Material(0, vec3(0,0,0), 0.0, 0.0), 0, false);"
         "   bool hitAnything = false;"
         "   float closestSoFar = t_max;"
-        "   for (int i = 0; i < hittables.length(); ++i) {"
-        "       if (hit(hittables[i], r, t_min, closestSoFar, tempRec)) {"
+        "   for (int i = 0; i < spheres.length(); ++i) {"
+        "       if (hit(spheres[i], r, t_min, closestSoFar, tempRec)) {"
         "           hitAnything = true;"
         "           closestSoFar = tempRec.t;"
         "           rec = tempRec;"
@@ -636,18 +636,18 @@ int main()
         }
     }
 
-    char *bbData{(char *)malloc(boxSize * (count - 6))};
+    // char *bbData{(char *)malloc(boxSize * (count - 6))};
 
-    std::vector<int> sphereIndices{(count - 6)};
+    // std::vector<int> sphereIndices{(count - 6)};
 
-    for (int i{0}; i < (count - 6); ++i)
-    {
-        sphereIndices[i] = i + 6;
-    }
+    // for (int i{0}; i < (count - 6); ++i)
+    // {
+    //     sphereIndices[i] = i + 6;
+    // }
 
-    addBox(bbData, sphereData + 6 * sphereSize, sphereIndices, 0, (count - 6), 0);
+    // addBox(bbData, sphereData + 6 * sphereSize, sphereIndices, 0, (count - 6), 0);
 
-    free(bbData);
+    // free(bbData);
 
     unsigned int materialBuffer;
     glGenBuffers(1, &materialBuffer);
