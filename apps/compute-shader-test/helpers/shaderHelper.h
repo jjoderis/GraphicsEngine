@@ -5,4 +5,6 @@ void checkShader(unsigned int shader);
 
 void checkProgram(unsigned int program);
 
+unsigned int createComputeProgram(const char *source);
+
 #endif

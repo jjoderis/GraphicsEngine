@@ -98,3 +98,13 @@ void visualizeTexture(unsigned int texture)
         glfwSwapBuffers(window);
     }
 }
+
+unsigned int createOutputTexture(int width, int height)
+{
+    unsigned int outTexture;
+    glGenTextures(1, &outTexture);
+    glBindTexture(GL_TEXTURE_2D, outTexture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
+
+    return outTexture;
+}

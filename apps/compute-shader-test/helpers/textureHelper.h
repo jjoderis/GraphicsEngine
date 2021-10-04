@@ -4,4 +4,6 @@
 void initVisualizer();
 void visualizeTexture(unsigned int texture);
 
+unsigned int createOutputTexture(int width, int height);
+
 #endif

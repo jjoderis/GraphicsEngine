@@ -26,3 +26,20 @@ void checkProgram(unsigned int program)
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
 }
+
+unsigned int createComputeProgram(const char *source)
+{
+    auto shader{glCreateShader(GL_COMPUTE_SHADER)};
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    checkShader(shader);
+
+    auto program{glCreateProgram()};
+    glAttachShader(program, shader);
+    glLinkProgram(program);
+
+    checkProgram(program);
+
+    return program;
+}
