@@ -24,6 +24,8 @@
 #include <random>
 #include <vector>
 
+#include <string>
+
 #include <chrono>
 #include <thread>
 
@@ -78,12 +80,12 @@ void addSphere(char *data, const Sphere &sphere)
     std::memcpy(data + 4 * sizeof(float), &sphere.mat, sizeof(int));
 }
 
-// (int) end
+// (int) start, (int) end
 // (int) leftType, (int) leftIndex, (int) rightType, (int) rightIndex
 // (float) minX, (float) maxX
 // (float) minY, (float) maxY
 // (float) minZ, (float) maxZ
-constexpr size_t boxSize{5 * sizeof(int) + 6 * sizeof(float)};
+constexpr size_t boxSize{6 * sizeof(int) + 6 * sizeof(float)};
 
 int addBox(
     char *data, char *sphereData, std::vector<int> &sphereIndices, int startSphere, int numSpheres, int numPrevBoxes)
@@ -97,17 +99,22 @@ int addBox(
 
     for (int i{startSphere}; i < startSphere + numSpheres; ++i)
     {
-        Engine::Point3 *vertex{(Engine::Point3 *)(sphereData + (startSphere + i) * sphereSize)};
+        int sphereIndex{sphereIndices[i]};
+        char *sphere{sphereData + sphereIndex * sphereSize};
+        Engine::Point3 vertex{
+            *((float *)sphere), *((float *)(sphere + sizeof(float))), *((float *)(sphere + 2 * sizeof(float)))};
+
+        float radius{*((float *)(sphere + 3 * sizeof(float)))};
 
         for (int i = 0; i < 3; ++i)
         {
-            if (vertex->at(i) < min.at(i))
+            if ((vertex.at(i) - radius) < min.at(i))
             {
-                min.at(i) = vertex->at(i);
+                min.at(i) = vertex.at(i) - radius;
             }
-            if (vertex->at(i) > max.at(i))
+            if ((vertex.at(i) + radius) > max.at(i))
             {
-                max.at(i) = vertex->at(i);
+                max.at(i) = vertex.at(i) + radius;
             }
         }
     }
@@ -115,7 +122,7 @@ int addBox(
     min -= 0.01;
     max += 0.01;
 
-    float *boundaries{(float *)(data + 5 * sizeof(int))};
+    float *boundaries{(float *)(data + 6 * sizeof(int))};
 
     boundaries[0] = min(0);
     boundaries[1] = max(0);
@@ -140,18 +147,29 @@ int addBox(
               sphereIndices.begin() + startSphere + numSpheres,
               [maxIndex, sphereData](int a, int b)
               {
-                  Engine::Point3 *vertexA{(Engine::Point3 *)(sphereData + a * sphereSize)};
-                  Engine::Point3 *vertexB{(Engine::Point3 *)(sphereData + b * sphereSize)};
-                  return vertexA->at(maxIndex) < vertexB->at(maxIndex);
+                  Engine::Point3 vertexA{*((float *)(sphereData + a * sphereSize)),
+                                         *((float *)(sphereData + a * sphereSize + sizeof(float))),
+                                         *((float *)(sphereData + a * sphereSize + 2 * sizeof(float)))};
+                  Engine::Point3 vertexB{*((float *)(sphereData + b * sphereSize)),
+                                         *((float *)(sphereData + b * sphereSize + sizeof(float))),
+                                         *((float *)(sphereData + b * sphereSize + 2 * sizeof(float)))};
+                  return vertexA.at(maxIndex) < vertexB.at(maxIndex);
               });
 
-    int *children{(int *)(data + sizeof(int))};
+    int *children{(int *)(data + 2 * sizeof(int))};
+    int *start{(int *)data};
+
+    *start = numPrevBoxes;
+
+    int *end{(int *)(data + sizeof(int))};
 
     if (numSpheres == 1)
     {
         children[0] = 0;
         children[1] = sphereIndices[startSphere];
         children[2] = -1;
+
+        *end = numPrevBoxes + 1;
 
         return 1;
     }
@@ -161,6 +179,8 @@ int addBox(
         children[1] = sphereIndices[startSphere];
         children[2] = 0;
         children[3] = sphereIndices[startSphere + 1];
+
+        *end = numPrevBoxes + 1;
 
         return 1;
     }
@@ -172,15 +192,18 @@ int addBox(
             addBox(data + boxSize, sphereData, sphereIndices, startSphere, numSpheres / 2, numPrevBoxes + 1);
 
         children[2] = 1;
+        children[3] = numPrevBoxes + numLeftBoxes + 1;
 
-        int numRigthBoxes = addBox(data + boxSize * numLeftBoxes,
+        int numRigthBoxes = addBox(data + boxSize * (numLeftBoxes + 1),
                                    sphereData,
                                    sphereIndices,
-                                   startSphere + numSpheres / 2,
+                                   startSphere + (numSpheres / 2),
                                    (numSpheres / 2) + (numSpheres % 2),
-                                   numPrevBoxes + numLeftBoxes);
+                                   numPrevBoxes + numLeftBoxes + 1);
 
-        return numLeftBoxes + numRigthBoxes;
+        *end = numPrevBoxes + numLeftBoxes + numRigthBoxes + 1;
+
+        return numLeftBoxes + numRigthBoxes + 1;
     }
 }
 
@@ -195,7 +218,7 @@ int main()
 
     auto program{createComputeProgram(
         "#version 440 core\n"
-        "layout (local_size_x = 50) in;"
+        "layout (local_size_x = 1000) in;"
         "layout (rgba32f, binding = 0) uniform image2D outputTexture;"
 
         "const float infinity = 1.0 / 0.0;"
@@ -364,6 +387,25 @@ int main()
         "   Hittable hittables[];"
         "};"
 
+        "struct BoundingBox {"
+        "   int start;"
+        "   int end;"
+        "   int leftType;"
+        "   int leftIndex;"
+        "   int rightType;"
+        "   int rightIndex;"
+        "   float minX;"
+        "   float maxX;"
+        "   float minY;"
+        "   float maxY;"
+        "   float minZ;"
+        "   float maxZ;"
+        "};"
+
+        "layout(std430, binding = 4) buffer BoundingBoxes {"
+        "   BoundingBox boundingBoxes[];"
+        "};"
+
         "bool scatter(Material mat, Ray rIn, HitRecord rec, out vec3 attenuation, out Ray scattered) {"
         // lambertian
         "   if (mat.type == 0) {"
@@ -436,9 +478,64 @@ int main()
         "   return true;"
         "}"
 
+        "bool hit(BoundingBox box, Ray r, float t_min, float t_max) {"
+        "   vec3 min = vec3(box.minX, box.minY, box.minZ);"
+        "   vec3 max = vec3(box.maxX, box.maxY, box.maxZ);"
+        "   for (int a = 0; a < 3; ++a) {"
+        "       float invD = 1.0 / r.direction[a];"
+        "       float t0 = (min[a] - r.origin[a]) * invD;"
+        "       float t1 = (max[a] - r.origin[a]) * invD;"
+        "       if (invD < 0.0) {"
+        "           float tmp = t0;"
+        "           t0 = t1;"
+        "           t1 = tmp;"
+        "       }"
+        "       t_min = (t0 > t_min) ? t0 : t_min;"
+        "       t_max = (t1 < t_max) ? t1 : t_max;"
+        "       if (t_max <= t_min) return false;"
+        "   }"
+        "   return true;"
+        "}"
+
+        "bool hit(BoundingBox box, Ray r, float t_min, float t_max, inout HitRecord rec) {"
+        "   int end = box.end;"
+
+        "   HitRecord tempRec = HitRecord(vec3(0,0,0), vec3(0,0,0), Material(0, vec3(0,0,0), 0.0, 0.0), 0, false);"
+        "   bool hitAnything = false;"
+        "   float closestSoFar = t_max;"
+
+        "   for (int i = box.start; i < end; ++ i) {"
+        "       BoundingBox curr = boundingBoxes[i];"
+
+        "       if(!hit(curr, r, t_min, t_max)) {"
+        "           i = curr.end - 1;"
+        "           continue;"
+        "       }"
+
+        "       if (curr.leftType == 0) {"
+        "           if (hit(spheres[curr.leftIndex], r, t_min, closestSoFar, tempRec)) {"
+        "               hitAnything = true;"
+        "               closestSoFar = tempRec.t;"
+        "               rec = tempRec;"
+        "           }"
+        "       }"
+        "       if (curr.rightType == 0) {"
+        "           if (hit(spheres[curr.rightIndex], r, t_min, closestSoFar, tempRec)) {"
+        "               hitAnything = true;"
+        "               closestSoFar = tempRec.t;"
+        "               rec = tempRec;"
+        "           }"
+        "       }"
+        "   }"
+
+        "   return hitAnything;"
+        "}"
+
         "bool hit(Hittable object, Ray r, float t_min, float t_max, inout HitRecord rec) {"
         "   if (object.type == 0) {"
         "       return hit(spheres[object.index], r, t_min, t_max, rec);"
+        "   } else if (object.type == 1) {"
+        "       return hit(boundingBoxes[object.index], r, t_min, t_max, rec);"
         "   }"
         "   return false;"
         "}"
@@ -447,8 +544,8 @@ int main()
         "   HitRecord tempRec = HitRecord(vec3(0,0,0), vec3(0,0,0), Material(0, vec3(0,0,0), 0.0, 0.0), 0, false);"
         "   bool hitAnything = false;"
         "   float closestSoFar = t_max;"
-        "   for (int i = 0; i < spheres.length(); ++i) {"
-        "       if (hit(spheres[i], r, t_min, closestSoFar, tempRec)) {"
+        "   for (int i = 0; i < hittables.length(); ++i) {"
+        "       if (hit(hittables[i], r, t_min, closestSoFar, tempRec)) {"
         "           hitAnything = true;"
         "           closestSoFar = tempRec.t;"
         "           rec = tempRec;"
@@ -561,24 +658,10 @@ int main()
         }
     };
 
-    Engine::Point3 lookfrom{13, 2, 3};
-    Engine::Point3 lookat{0, 0, 0};
-    Camera c{lookfrom, lookat, {0, 1, 0}, 20.0, aspectRatio, 0.1, 10.0};
-
     unsigned int cameraBuffer;
     glGenBuffers(1, &cameraBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, cameraBuffer);
     glBufferData(GL_SHADER_STORAGE_BUFFER, 29 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 3 * sizeof(float), c.origin.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(float), 3 * sizeof(float), c.lowerLeftCorner.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 8 * sizeof(float), 3 * sizeof(float), c.horizontal.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 12 * sizeof(float), 3 * sizeof(float), c.vertical.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16 * sizeof(float), 3 * sizeof(float), c.u.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 20 * sizeof(float), 3 * sizeof(float), c.v.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 24 * sizeof(float), 3 * sizeof(float), c.w.data());
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 28 * sizeof(float), sizeof(float), &c.lensRadius);
-
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, cameraBuffer);
 
     char *materialData{(char *)malloc(600 * materialSize)};
@@ -636,18 +719,22 @@ int main()
         }
     }
 
-    // char *bbData{(char *)malloc(boxSize * (count - 6))};
+    char *bbData{(char *)malloc(boxSize * (count + 100))};
 
-    // std::vector<int> sphereIndices{(count - 6)};
+    std::vector<int> sphereIndices(count - 6);
 
-    // for (int i{0}; i < (count - 6); ++i)
-    // {
-    //     sphereIndices[i] = i + 6;
-    // }
+    for (int i{0}; i < (count - 6); ++i)
+    {
+        sphereIndices[i] = i + 6;
+    }
 
-    // addBox(bbData, sphereData + 6 * sphereSize, sphereIndices, 0, (count - 6), 0);
+    int numBoxes{addBox(bbData, sphereData, sphereIndices, 0, (count - 6), 0)};
 
-    // free(bbData);
+    unsigned int boxBuffer;
+    glGenBuffers(1, &boxBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, boxBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numBoxes * boxSize, bbData, GL_STATIC_DRAW);
+    free(bbData);
 
     unsigned int materialBuffer;
     glGenBuffers(1, &materialBuffer);
@@ -661,15 +748,16 @@ int main()
     glBufferData(GL_SHADER_STORAGE_BUFFER, count * sphereSize, sphereData, GL_STATIC_DRAW);
     free(sphereData);
 
-    int hittables[]{0, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5};
+    int hittables[]{0, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 1, 0};
     unsigned int hittableBuffer;
     glGenBuffers(1, &hittableBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, hittableBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 12 * sizeof(int), hittables, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 14 * sizeof(int), hittables, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, materialBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sphereBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, hittableBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, boxBuffer);
 
     glBindImageTexture(0, outTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
@@ -681,36 +769,59 @@ int main()
     auto startXLocation{glGetUniformLocation(program, "startX")};
     auto startYLocation{glGetUniformLocation(program, "startY")};
 
-    auto subX{width / 12};
-    auto subY{height / 12};
+    auto xSubdivisions{7};
+    auto ySubdivisions{7};
+
+    auto subX{width / xSubdivisions};
+    auto subY{height / ySubdivisions};
+
+    std::vector<unsigned char> pixels;
+    pixels.resize(width * height * 3);
+    stbi_flip_vertically_on_write(true);
 
     // subdividing the workload to prevent the compute shader from running to long and being killed by the OS
     // see: https://stackoverflow.com/a/57216257
 
-    for (int y{0}; y < 15; ++y)
+    int numPics{1};
+
+    for (int i{0}; i < numPics; ++i)
     {
-        for (int x{0}; x < 15; ++x)
+        auto rotation{Engine::getRotation({0, MathLib::Util::degToRad(i * (360.0 / numPics)), 0})};
+
+        Engine::Point3 lookfrom{rotation * Engine::Point3{13, 2, 3}};
+        Engine::Point3 lookat{0, 0, 0};
+        Camera c{lookfrom, lookat, {0, 1, 0}, 20.0, aspectRatio, 0.1, 10.0};
+
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, cameraBuffer);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 3 * sizeof(float), c.origin.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(float), 3 * sizeof(float), c.lowerLeftCorner.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 8 * sizeof(float), 3 * sizeof(float), c.horizontal.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 12 * sizeof(float), 3 * sizeof(float), c.vertical.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16 * sizeof(float), 3 * sizeof(float), c.u.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 20 * sizeof(float), 3 * sizeof(float), c.v.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 24 * sizeof(float), 3 * sizeof(float), c.w.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 28 * sizeof(float), sizeof(float), &c.lensRadius);
+
+        for (int y{0}; y < ySubdivisions; ++y)
         {
-            glUniform1i(startXLocation, x * subX);
-            glUniform1i(startYLocation, y * subY);
-            glDispatchCompute(subX, subY, 1);
-            glFinish();
+            for (int x{0}; x < ySubdivisions; ++x)
+            {
+                glUniform1i(startXLocation, x * subX);
+                glUniform1i(startYLocation, y * subY);
+                glDispatchCompute(subX, subY, 1);
+                glFinish();
+            }
         }
+
+        // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        glBindTexture(GL_TEXTURE_2D, outTexture);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+
+        std::string fileName{"test" + std::to_string(i) + ".jpg"};
+
+        stbi_write_jpg(fileName.c_str(), width, height, 3, pixels.data(), 100);
     }
-
-    // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-    glUseProgram(0);
-
-    std::vector<unsigned char> pixels;
-    pixels.resize(width * height * 3);
-
-    glBindTexture(GL_TEXTURE_2D, outTexture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
-
-    stbi_flip_vertically_on_write(true);
-
-    stbi_write_jpg("test.jpg", width, height, 3, pixels.data(), 100);
 
     glDeleteBuffers(1, &cameraBuffer);
     glDeleteBuffers(1, &materialBuffer);
